@@ -1,0 +1,383 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Core identities
+// ---------------------------------------------------------------------------
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  role      Role     @default(STAFF)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Admins who create / handle bookings; creator is optional so customer-submitted
+  // requests can exist before an admin handles them.
+  bookings               Booking[]              @relation("handledBy")
+  payments               Payment[]              @relation("paidBy")
+  siteSettings           SiteSetting?
+  bookingStatusHistories BookingStatusHistory[] @relation("statusHistoryBy")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+// ---------------------------------------------------------------------------
+// Equipment catalogue
+// ---------------------------------------------------------------------------
+
+model Category {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  name        String
+  description String?
+  isGroup     Boolean     @default(false) // e.g. "Bouncing castles" groups specific types
+  parentId    String?
+  parent      Category?   @relation("CategoryTree", fields: [parentId], references: [id])
+  children    Category[]  @relation("CategoryTree")
+  equipment   Equipment[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([parentId])
+}
+
+model Equipment {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String   @unique
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id])
+  description   String?
+  imageUrl      String?  @db.VarChar(2048)
+  imagePublicId String?  @db.VarChar(128) // Cloudinary public_id for deletion
+  note          String? // e.g. "Requires a flat, dry surface"
+
+  // Pricing: a daily rate, an optional weekly rate, and an optional flat per-unit price.
+  // Decide the pricing method per equipment type and only use the relevant fields.
+  // The final calculated price is always stored in BookingItem at booking time.
+  pricePerDay  Decimal? @db.Decimal(10, 2)
+  pricePerWeek Decimal? @db.Decimal(10, 2)
+  flatPrice    Decimal? @db.Decimal(10, 2) // flat price for the whole rental, regardless of days
+
+  minQuantity Int      @default(1)
+  maxQuantity Int      @default(10)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  inventory    EquipmentInventory[]
+  bookingItems BookingItem[]
+  packageItems PackageItem[]
+
+  @@index([categoryId])
+  @@index([slug])
+}
+
+model EquipmentInventory {
+  id          String    @id @default(cuid())
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  total       Int       @default(0) // equipment owned by PartyPlay
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([equipmentId])
+  @@index([equipmentId])
+}
+
+// ---------------------------------------------------------------------------
+// Packages: bundles of equipment at a package price
+// ---------------------------------------------------------------------------
+
+model Package {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  description   String?
+  imageUrl      String?  @db.VarChar(2048)
+  imagePublicId String?  @db.VarChar(128)
+  price         Decimal  @db.Decimal(10, 2)
+  minQuantity   Int      @default(1) // min number of guests
+  maxQuantity   Int? // optional guest cap
+  duration      Int? // recommended rental duration in days
+  isFeatured    Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  items    PackageItem[]    @relation("PackageItems")
+  bookings PackageBooking[]
+
+  @@index([slug])
+}
+
+model PackageItem {
+  id          String    @id @default(cuid())
+  packageId   String
+  package     Package   @relation("PackageItems", fields: [packageId], references: [id], onDelete: Cascade)
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id])
+  quantity    Int       @default(1)
+
+  @@unique([packageId, equipmentId])
+  @@index([packageId])
+  @@index([equipmentId])
+}
+
+model PackageBooking {
+  id        String  @id @default(cuid())
+  packageId String
+  package   Package @relation(fields: [packageId], references: [id])
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  // Snapshots so later package edits do not change an agreed booking.
+  packageName  String
+  packagePrice Decimal @db.Decimal(10, 2)
+
+  // Snapshot of the equipment and quantities included in the package at booking time.
+  // Stored as a JSON string so we can also include per-item quantities.
+  itemsSnapshot String @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@unique([packageId, bookingId])
+  @@index([bookingId])
+}
+
+// ---------------------------------------------------------------------------
+// Offers / promotions
+// ---------------------------------------------------------------------------
+
+model Offer {
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  name          String
+  description   String?
+  discountType  DiscountType
+  discountValue Decimal        @db.Decimal(10, 2) // % or amount off — Decimal(10,2), not (5,2)
+  appliesTo     OfferAppliesTo
+  appliesToId   String? // equipmentId or packageId when APPLICABLE_TO_SINGLE
+  code          String?        @unique // null = automatic, value = promo code
+  startsAt      DateTime?
+  endsAt        DateTime?
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([appliesTo, appliesToId])
+  @@index([code])
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+enum OfferAppliesTo {
+  ALL_BOOKINGS
+  ALL_EQUIPMENT
+  ALL_PACKAGES
+  ONE_EQUIPMENT
+  ONE_PACKAGE
+}
+
+// ---------------------------------------------------------------------------
+// Customers (people who make bookings) — name + phone sufficient, email optional
+// ---------------------------------------------------------------------------
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?  @unique // optional; unique only when provided
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings Booking[]
+
+  @@index([email])
+}
+
+// ---------------------------------------------------------------------------
+// Bookings
+// ---------------------------------------------------------------------------
+
+model Booking {
+  id              String        @id @default(cuid())
+  code            String        @unique @default(cuid()) // human-friendly PP-XXXXXX generated in backend
+  customerId      String
+  customer        Customer      @relation(fields: [customerId], references: [id])
+  startDate       DateTime      @db.Date // inclusive rental start (calendar date)
+  endDate         DateTime      @db.Date // inclusive rental end (calendar date)
+  status          BookingStatus @default(PENDING)
+  notes           String?
+  specialRequests String?
+  totalAmount     Decimal       @db.Decimal(10, 2)
+  transportCharge Decimal       @default(0) @db.Decimal(10, 2)
+  discountAmount  Decimal       @default(0) @db.Decimal(10, 2)
+  paidAmount      Decimal       @default(0) @db.Decimal(10, 2)
+  currency        String        @default("KES")
+  createdById     String? // admin who handled/created the booking; nullable for customer-submitted requests
+  createdBy       Admin?        @relation("handledBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  approvedAt      DateTime?
+  cancelledAt     DateTime?
+  fulfilmentDate  DateTime?
+  deliveredBy     String? // driver/boda name or id
+  dropoffAddress  String?
+  dropoffNotes    String?
+  pickupAddress   String?
+  pickupNotes     String?
+
+  // Pending requests hold stock for a configurable window (default 120 minutes).
+  // Expired pending bookings must stop consuming stock — enforced by the backend.
+  holdExpiresAt DateTime?
+
+  items           BookingItem[]
+  packages        PackageBooking[]
+  statusHistories BookingStatusHistory[]
+  payments        Payment[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdById])
+  @@index([code])
+}
+
+enum BookingStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+model BookingItem {
+  id             String    @id @default(cuid())
+  bookingId      String
+  booking        Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  equipmentId    String
+  equipment      Equipment @relation(fields: [equipmentId], references: [id])
+  quantity       Int
+  unitPrice      Decimal   @db.Decimal(10, 2) // snapshot of price at booking time
+  priceForPeriod Decimal   @db.Decimal(10, 2) // calculated total for this line (quantity * unit * days, or flat)
+  days           Int // number of rental days this item is booked for
+
+  @@index([bookingId])
+  @@index([equipmentId])
+}
+
+// ---------------------------------------------------------------------------
+// Booking status history
+// ---------------------------------------------------------------------------
+
+model BookingStatusHistory {
+  id         String         @id @default(cuid())
+  bookingId  String
+  booking    Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  fromStatus BookingStatus?
+  toStatus   BookingStatus
+  reason     String?
+  note       String?
+  adminId    String?
+  admin      Admin?         @relation("statusHistoryBy", fields: [adminId], references: [id], onDelete: SetNull)
+  createdAt  DateTime       @default(now())
+
+  @@index([bookingId])
+  @@index([adminId])
+}
+
+// ---------------------------------------------------------------------------
+// Payments
+// ---------------------------------------------------------------------------
+
+model Payment {
+  id          String        @id @default(cuid())
+  bookingId   String
+  booking     Booking       @relation(fields: [bookingId], references: [id])
+  paidById    String?
+  paidBy      Admin?        @relation("paidBy", fields: [paidById], references: [id])
+  amount      Decimal       @db.Decimal(10, 2)
+  method      PaymentMethod
+  status      PaymentStatus @default(PENDING)
+  providerRef String? // e.g. M-Pesa transaction id
+  description String?
+  paidAt      DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([bookingId])
+  @@index([status])
+}
+
+enum PaymentMethod {
+  MANUAL
+  MPESA
+  BANK_TRANSFER
+  CASH
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+// ---------------------------------------------------------------------------
+// Transport providers
+// ---------------------------------------------------------------------------
+
+model TransportProvider {
+  id          String   @id @default(cuid())
+  name        String
+  phone       String   @unique
+  serviceArea String? // e.g. "Nairobi CBD and surrounds"
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Site settings / business info
+// ---------------------------------------------------------------------------
+
+model SiteSetting {
+  id                  String   @id @default(cuid())
+  adminId             String   @unique
+  admin               Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  businessName        String   @default("PartyPlay")
+  contactPhone        String?
+  contactWhatsApp     String?
+  contactEmail        String?
+  address             String?
+  aboutText           String?
+  facebookUrl         String?
+  instagramUrl        String?
+  tiktokUrl           String?
+  xUrl                String?
+  defaultDurationDays Int      @default(1)
+  holdMinutes         Int      @default(120) // pending request expiry
+  currency            String   @default("KES")
+  updatedAt           DateTime @updatedAt
+
+  @@index([adminId])
+}
