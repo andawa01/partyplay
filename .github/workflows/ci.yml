@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - "feat/**"
+      - "fix/**"
+      - "chore/**"
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Prisma reads the datasource URL while generating the client. No database
+      # is contacted by this job, so the value only has to be well formed.
+      DATABASE_URL: postgresql://partyplay:partyplay@localhost:5432/partyplay
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate --schema server/prisma/schema.prisma
+
+      - name: Typecheck client and server
+        run: npm run typecheck
+
+  migrations:
+    name: Migrations apply from empty
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: partyplay
+          POSTGRES_PASSWORD: partyplay
+          POSTGRES_DB: partyplay
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U partyplay -d partyplay"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://partyplay:partyplay@localhost:5432/partyplay
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Applies every migration to a database that has never seen this schema.
+      # This is what catches a hand-edited migration that only worked because the
+      # local database already had the objects.
+      - name: Apply all migrations
+        run: npx prisma migrate deploy --schema server/prisma/schema.prisma
+
+      - name: Confirm the database matches the migration history
+        run: npx prisma migrate status --schema server/prisma/schema.prisma
+
+      # The schema has no pending changes against the migrated database. CHECK
+      # constraints live only in the migration SQL, so a failure here means the
+      # datamodel and the applied migrations have diverged.
+      - name: Check for schema drift
+        run: >-
+          npx prisma migrate diff
+          --from-schema-datasource server/prisma/schema.prisma
+          --to-schema-datamodel server/prisma/schema.prisma
+          --exit-code

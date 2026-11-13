@@ -78,9 +78,11 @@ model Equipment {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  inventory    EquipmentInventory[]
-  bookingItems BookingItem[]
-  packageItems PackageItem[]
+  inventory           EquipmentInventory[]
+  bookingItems        BookingItem[]
+  packageItems        PackageItem[]
+  stockHolds          StockHold[]
+  bookingPackageItems BookingPackageItem[]
 
   @@index([categoryId])
   @@index([slug])
@@ -144,18 +146,39 @@ model PackageBooking {
   bookingId String
   booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
+  // Number of this package selected on the booking (e.g. 2 x "Silver Combo").
+  quantity Int @default(1)
+
   // Snapshots so later package edits do not change an agreed booking.
   packageName  String
   packagePrice Decimal @db.Decimal(10, 2)
 
   // Snapshot of the equipment and quantities included in the package at booking time.
-  // Stored as a JSON string so we can also include per-item quantities.
-  itemsSnapshot String @db.Text
+  items BookingPackageItem[]
 
   createdAt DateTime @default(now())
 
   @@unique([packageId, bookingId])
   @@index([bookingId])
+}
+
+// Equipment included in a booked package, frozen at submission time.
+// Kept as rows (not JSON) so inventory availability can be aggregated in SQL:
+// a confirmed booking reserves the package contents exactly like standalone items.
+model BookingPackageItem {
+  id               String         @id @default(cuid())
+  packageBookingId String
+  packageBooking   PackageBooking @relation(fields: [packageBookingId], references: [id], onDelete: Cascade)
+
+  // Nullable so the historical snapshot survives if the equipment is deleted.
+  equipmentId String?
+  equipment   Equipment? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+
+  equipmentName String
+  quantity      Int // total units for this line (package quantity already multiplied in)
+
+  @@index([packageBookingId])
+  @@index([equipmentId])
 }
 
 // ---------------------------------------------------------------------------
@@ -252,11 +275,14 @@ model Booking {
   packages        PackageBooking[]
   statusHistories BookingStatusHistory[]
   payments        Payment[]
+  stockHolds      StockHold[]
 
   @@index([customerId])
   @@index([status])
   @@index([createdById])
   @@index([code])
+  // Availability lookups filter on status + an inclusive date range.
+  @@index([status, startDate, endDate])
 }
 
 enum BookingStatus {
@@ -281,6 +307,41 @@ model BookingItem {
 
   @@index([bookingId])
   @@index([equipmentId])
+}
+
+// ---------------------------------------------------------------------------
+// Stock holds: temporary reservations owned by a pending booking
+// ---------------------------------------------------------------------------
+
+// A pending booking reserves stock until `expiresAt`. Once the hold expires or is
+// released, the units return to the pool. Approved bookings do not rely on holds:
+// their BookingItem / BookingPackageItem rows are the source of truth for what is
+// reserved, so inventory stays consumed after the hold window closes.
+model StockHold {
+  id          String          @id @default(cuid())
+  bookingId   String
+  booking     Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  equipmentId String
+  equipment   Equipment       @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  quantity    Int
+  status      StockHoldStatus @default(ACTIVE)
+  expiresAt   DateTime
+  releasedAt  DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // One hold row per equipment per booking; bookings are edited in place.
+  @@unique([bookingId, equipmentId])
+  @@index([equipmentId, status])
+  @@index([expiresAt])
+  @@index([bookingId])
+}
+
+enum StockHoldStatus {
+  ACTIVE // still counting against availability
+  CONSUMED // booking approved; booking rows now carry the reservation
+  RELEASED // booking rejected/cancelled before approval
+  EXPIRED // hold window lapsed without a decision
 }
 
 // ---------------------------------------------------------------------------
