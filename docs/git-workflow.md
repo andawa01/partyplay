@@ -157,7 +157,8 @@ version, which is also what the PR template asks:
 - [ ] Typecheck passes (CI enforces this)
 - [ ] The feature's verification recipe from build-plan §10 was actually run, with its
       result recorded in the PR description
-- [ ] Business rules are in `src/services/*`, not in the route handler
+- [ ] Route -> middleware -> controller -> service -> db is intact (no `db` in a
+      controller, no `req` in a service)
 - [ ] Errors use the standard envelope and status codes
 - [ ] Schema change has its migration **and** a `database-spec.md` update
 - [ ] Ledger row in build-plan §12 ticked
