@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - "feat/**"
+      - "fix/**"
+      - "chore/**"
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Prisma reads the datasource URL while generating the client. No database
+      # is contacted by this job, so the value only has to be well formed.
+      DATABASE_URL: postgresql://partyplay:partyplay@localhost:5432/partyplay
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate --schema server/prisma/schema.prisma
+
+      - name: Typecheck client and server
+        run: npm run typecheck
