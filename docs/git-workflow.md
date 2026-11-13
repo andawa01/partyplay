@@ -180,24 +180,35 @@ version, which is also what the PR template asks:
 ## 8. CI
 
 `.github/workflows/ci.yml` runs on pushes to `main`, `feat/**`, `fix/**`, `chore/**` and on
-pull requests into `main`:
+pull requests into `main`. Two independent jobs, both on Node 22, both under a minute:
+
+**`Typecheck`** — no database
 
 1. `npm ci`
 2. `npx prisma generate`
 3. `npm run typecheck` (client then server)
 
-It uses Node 22 and needs no database, so it finishes in well under a minute. Two things
-it deliberately does **not** do yet:
+**`Migrations apply from empty`** — `postgres:17-alpine` service container, database
+starting with zero tables
 
-- **No test run** — the suite starts at F6a (pricing). When it exists, the workflow gains
-  a `npm test --workspace server` step; the job name and trigger stay the same.
-- **No migration check** — that needs a PostgreSQL service container. Add a separate job
-  with a `services: postgres:` block when we want CI to prove migrations apply cleanly on
-  an empty database. Worth doing at F6b, when migration 5 lands.
+1. `npx prisma migrate deploy` — every migration, in order, from nothing
+2. `npx prisma migrate status` — must report the schema is up to date
+3. `npx prisma migrate diff --exit-code` — must report no difference between the migrated
+   database and `schema.prisma` (exits non-zero when they diverge)
+
+Why the empty database matters: a hand-edited migration can succeed locally only because
+the object already existed. Applying from nothing is the only honest test of it, and it is
+the step that would have caught a broken CHECK-constraint migration before it reached you.
+The drift step catches the opposite failure — an applied migration whose result no longer
+matches the Prisma schema.
+
+Still **not** run in CI: tests. The suite starts at F6a (pricing); the workflow gains
+`npm test --workspace server` then.
 
 **Branch protection cannot be set from a file.** To make `main` truly un-pushable, turn on
-in GitHub → Settings → Branches: require a pull request before merging, require the
-`Typecheck` check to pass. That is a one-time click and only you can do it.
+in GitHub → Settings → Branches: require a pull request before merging, and require both
+the `Typecheck` and `Migrations apply from empty` checks to pass. That is a one-time click
+and only you can do it.
 
 ---
 
