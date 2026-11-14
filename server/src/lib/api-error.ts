@@ -40,3 +40,7 @@ export function notFound(message = "Not found"): ApiError {
 export function conflict(message = "Conflict", details?: unknown): ApiError {
   return new ApiError(409, "CONFLICT", message, details);
 }
+
+export function tooManyRequests(message = "Too many requests", details?: unknown): ApiError {
+  return new ApiError(429, "RATE_LIMITED", message, details);
+}
