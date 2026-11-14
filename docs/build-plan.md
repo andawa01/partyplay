@@ -108,9 +108,11 @@ invalid is rejected at the controller before the service runs.
 one screen long, and a route file that is a table of contents. Tests (F6a onward) target
 services and need no supertest.
 
-**Existing exception:** `routes/categories.ts` predates this split and does validation,
-rules and `db` access in the handler. F1 moves it to `controllers/categories.ts` +
-`services/categories.ts`, so the codebase has exactly one shape from F1 onward.
+**Resolved in F1:** `routes/categories.ts` predated this split — it validated, applied rules
+and queried `db` in the handler. It now runs through `schemas/categories.ts` →
+`controllers/categories.ts` → `services/categories.ts`, so every resource follows one shape.
+Controllers call the zod schema's `.parse()` directly; there is no separate validate
+middleware.
 
 **Planned server layout**
 
@@ -122,9 +124,8 @@ server/src/
   lib/dates.ts            Nairobi <-> UTC calendar-date helpers (F1)
   lib/booking-code.ts     PP-XXXXXX generation (F6b)
   middleware/auth.ts      existing stub -> real (F2)
-  middleware/error.ts     central error handler (F1)
-  middleware/validate.ts  optional shared zod runner (F1)
-  schemas/*.ts            one file per resource
+  middleware/error.ts     request id, 404 and central error handler (F1)
+  schemas/*.ts            one file per resource, parsed by controllers
   controllers/*.ts        HTTP in and out per resource; no db access
   services/availability.ts  existing
   services/pricing.ts     pure pricing math (F6a)
@@ -693,7 +694,7 @@ the last unit and assert `[201, 409]`.
 | # | Feature | Backend | Client | Branch |
 |---|---|---|---|---|
 | — | Phase 2.2 database design + hardening | ✅ | n/a | `feat/phase-2.2-database-design` |
-| F1 | Platform foundation | ☐ | — | `feat/f1-platform-foundation` |
+| F1 | Platform foundation | ✅ | — | `feat/f1-platform-foundation` |
 | F2 | Admin auth | ☐ | — | `feat/f2-admin-auth` |
 | F3 | Public catalogue reads | ☐ | — | `feat/f3-catalogue-reads` |
 | F4 | Admin catalogue management | ☐ | — | `feat/f4-admin-catalogue` |
