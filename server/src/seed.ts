@@ -1,15 +1,10 @@
 import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
-import { db } from "./config/db";
-
-// seed.ts reuses the shared client for seed data.
-if (process.env.NODE_ENV !== "production") {
-  // In dev with tsx watch, ensure the singleton is warm.
-  void db.$queryRaw`SELECT 1`;
-}
+import { db, ensureClient } from "./config/db";
 
 async function main() {
+  // `db` is only bound once ensureClient() has connected; touching it earlier throws.
+  await ensureClient();
   console.log("seeding...");
 
   // ---- Admin ----
@@ -44,7 +39,9 @@ async function main() {
   });
   console.log("site settings created");
 
-  // ---- Categories (with a group + children) ----
+  // ---- Categories (a group plus its children) ----
+  // The children are kept in variables: equipment belongs to the leaf categories, so a
+  // group page still shows its items through the category filter that includes children.
   const bouncing = await db.category.create({
     data: {
       slug: "bouncing-castles",
@@ -52,9 +49,8 @@ async function main() {
       isGroup: true,
       description: "Inflatable castles for kids' parties and events.",
     },
-    include: { children: true },
   });
-  await db.category.create({
+  const comboCastles = await db.category.create({
     data: {
       slug: "combo-castles",
       name: "Combo Castles",
@@ -62,7 +58,7 @@ async function main() {
       description: "Castles with a slide or swing attached.",
     },
   });
-  await db.category.create({
+  const smallCastles = await db.category.create({
     data: {
       slug: "small-castles",
       name: "Small Castles",
@@ -78,16 +74,15 @@ async function main() {
       isGroup: true,
       description: "Foldable tables and stacking chairs.",
     },
-    include: { children: true },
   });
-  await db.category.create({
+  const chairs = await db.category.create({
     data: {
       slug: "chairs",
       name: "Chairs",
       parentId: tables.id,
     },
   });
-  await db.category.create({
+  const foldingTables = await db.category.create({
     data: {
       slug: "tables",
       name: "Tables",
@@ -110,7 +105,7 @@ async function main() {
     data: {
       slug: "fun-bounce-combo-castle",
       name: "Fun Bounce Combo Castle",
-      categoryId: bouncing.children[0]?.id ?? bouncing.id,
+      categoryId: comboCastles.id,
       description:
         "Two-level bounce castle with a small slide. Suitable for ages 3–10. Requires a flat, dry surface and a power source nearby if using blowers.",
       note: "Recommend an adult attendant during use.",
@@ -131,7 +126,7 @@ async function main() {
     data: {
       slug: "happy-kids-castle",
       name: "Happy Kids Castle",
-      categoryId: bouncing.children[1]?.id ?? bouncing.id,
+      categoryId: smallCastles.id,
       description: "Single-unit bounce castle, 3m x 3m. Great for birthdays.",
       minQuantity: 1,
       maxQuantity: 6,
@@ -150,7 +145,7 @@ async function main() {
     data: {
       slug: "stacking-chair-set",
       name: "Stacking Chair Set",
-      categoryId: tables.children[0]?.id ?? tables.id,
+      categoryId: chairs.id,
       description: "A set of 20 stacking plastic chairs. Ideal for party seating.",
       note: "Include legs and stacking straps.",
       minQuantity: 1,
@@ -169,7 +164,7 @@ async function main() {
     data: {
       slug: "six-foot-folding-table",
       name: "6ft Folding Table",
-      categoryId: tables.children[1]?.id ?? tables.id,
+      categoryId: foldingTables.id,
       description: "Rectangular 6ft folding table. Used for food, gifts, cake displays.",
       minQuantity: 1,
       maxQuantity: 20,
