@@ -5,6 +5,7 @@ import express from "express";
 
 import { db, ensureClient } from "./config/db";
 import { errorHandler, notFoundHandler, requestId } from "./middleware/error";
+import adminRouter from "./routes/admin";
 import authRouter from "./routes/auth";
 import categoriesRouter from "./routes/categories";
 import equipmentRouter from "./routes/equipment";
@@ -36,6 +37,7 @@ app.get("/api/health", async (_req, res) => {
   res.json({ status: "ok", service: "partyplay-api" });
 });
 
+app.use("/api/admin", adminRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/categories", categoriesRouter);
 app.use("/api/equipment", equipmentRouter);

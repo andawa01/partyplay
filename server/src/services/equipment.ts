@@ -5,6 +5,7 @@ import { badRequest, notFound } from "../lib/api-error";
 import { parseCalendarDate } from "../lib/dates";
 import { money } from "../lib/money";
 import type { EquipmentListQuery } from "../schemas/catalogue";
+import type { CreateEquipmentInput, UpdateEquipmentInput } from "../schemas/equipment";
 import { getAvailability } from "./availability";
 
 /**
@@ -150,4 +151,126 @@ async function availabilityForQuery(
 
   const rows = await getAvailability({ equipmentIds, startDate, endDate });
   return new Map(rows.map((row) => [row.equipmentId, row.available]));
+}
+
+// ---------------------------------------------------------------------------
+// Admin management (F4). Admins see inactive rows and write; the public
+// functions above stay active-only and read-only.
+// ---------------------------------------------------------------------------
+
+const adminEquipmentFields = {
+  ...equipmentDetailFields,
+  isActive: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.EquipmentSelect;
+
+type AdminEquipmentRow = Prisma.EquipmentGetPayload<{ select: typeof adminEquipmentFields }>;
+
+function toAdminEquipment(row: AdminEquipmentRow) {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+    imageUrl: row.imageUrl,
+    note: row.note,
+    pricePerDay: money(row.pricePerDay),
+    pricePerWeek: money(row.pricePerWeek),
+    flatPrice: money(row.flatPrice),
+    minQuantity: row.minQuantity,
+    maxQuantity: row.maxQuantity,
+    total: row.inventory[0]?.total ?? 0,
+    category: row.category,
+    isActive: row.isActive,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+export async function listAdminEquipment(query: EquipmentListQuery) {
+  const where: Prisma.EquipmentWhereInput = {};
+
+  if (query.category) {
+    where.categoryId = { in: await categoryIdsForSlug(query.category) };
+  }
+
+  if (query.q) {
+    where.OR = [
+      { name: { contains: query.q, mode: "insensitive" } },
+      { description: { contains: query.q, mode: "insensitive" } },
+    ];
+  }
+
+  const [total, rows] = await db.$transaction([
+    db.equipment.count({ where }),
+    db.equipment.findMany({
+      where,
+      select: adminEquipmentFields,
+      orderBy: { name: "asc" },
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+    }),
+  ]);
+
+  return {
+    data: rows.map(toAdminEquipment),
+    meta: { total, page: query.page, pageSize: query.pageSize },
+  };
+}
+
+export async function getAdminEquipmentById(id: string) {
+  const row = await db.equipment.findUnique({ where: { id }, select: adminEquipmentFields });
+  if (!row) {
+    throw notFound(`Equipment "${id}" was not found`);
+  }
+  return toAdminEquipment(row);
+}
+
+export async function createEquipment(input: CreateEquipmentInput) {
+  await assertCategoryExists(input.categoryId);
+
+  const created = await db.equipment.create({ data: input, select: { id: true } });
+  return getAdminEquipmentById(created.id);
+}
+
+export async function updateEquipmentById(id: string, input: UpdateEquipmentInput) {
+  await assertEquipmentExists(id);
+  if (input.categoryId) {
+    await assertCategoryExists(input.categoryId);
+  }
+
+  await db.equipment.update({ where: { id }, data: input });
+  return getAdminEquipmentById(id);
+}
+
+/** Deactivation is the delete: bookings keep their rows, the public list stops showing it. */
+export async function deactivateEquipmentById(id: string): Promise<void> {
+  await assertEquipmentExists(id);
+  await db.equipment.update({ where: { id }, data: { isActive: false } });
+}
+
+export async function setInventoryTotal(id: string, total: number) {
+  await assertEquipmentExists(id);
+
+  return db.equipmentInventory.upsert({
+    where: { equipmentId: id },
+    update: { total },
+    create: { equipmentId: id, total },
+    select: { equipmentId: true, total: true },
+  });
+}
+
+async function assertEquipmentExists(id: string): Promise<void> {
+  const equipment = await db.equipment.findUnique({ where: { id }, select: { id: true } });
+  if (!equipment) {
+    throw notFound(`Equipment "${id}" was not found`);
+  }
+}
+
+async function assertCategoryExists(categoryId: string): Promise<void> {
+  const category = await db.category.findUnique({ where: { id: categoryId }, select: { id: true } });
+  if (!category) {
+    throw notFound(`Category "${categoryId}" was not found`);
+  }
 }

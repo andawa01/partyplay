@@ -4,6 +4,7 @@ import {
   createCategorySchema,
   updateCategorySchema,
 } from "../schemas/categories";
+import { idParamsSchema } from "../schemas/common";
 import * as categories from "../services/categories";
 
 export async function listCategories(_req: Request, res: Response): Promise<void> {
@@ -21,13 +22,13 @@ export async function createCategory(req: Request, res: Response): Promise<void>
 }
 
 export async function updateCategory(req: Request, res: Response): Promise<void> {
-  const { slug } = categorySlugParamsSchema.parse(req.params);
+  const { id } = idParamsSchema.parse(req.params);
   const input = updateCategorySchema.parse(req.body);
-  res.json({ data: await categories.updateCategory(slug, input) });
+  res.json({ data: await categories.updateCategoryById(id, input) });
 }
 
 export async function deleteCategory(req: Request, res: Response): Promise<void> {
-  const { slug } = categorySlugParamsSchema.parse(req.params);
-  await categories.deleteCategory(slug);
+  const { id } = idParamsSchema.parse(req.params);
+  await categories.deleteCategoryById(id);
   res.status(204).send();
 }
