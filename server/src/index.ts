@@ -7,6 +7,10 @@ import { db, ensureClient } from "./config/db";
 import { errorHandler, notFoundHandler, requestId } from "./middleware/error";
 import authRouter from "./routes/auth";
 import categoriesRouter from "./routes/categories";
+import equipmentRouter from "./routes/equipment";
+import offersRouter from "./routes/offers";
+import packagesRouter from "./routes/packages";
+import siteRouter from "./routes/site";
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 4000);
@@ -34,6 +38,10 @@ app.get("/api/health", async (_req, res) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api/categories", categoriesRouter);
+app.use("/api/equipment", equipmentRouter);
+app.use("/api/packages", packagesRouter);
+app.use("/api/offers", offersRouter);
+app.use("/api/site", siteRouter);
 
 // Anything under /api that reached this point matched no route.
 app.use("/api", notFoundHandler);
