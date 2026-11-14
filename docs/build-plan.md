@@ -184,8 +184,8 @@ Prisma error mapping lives in `middleware/error.ts`: `P2002` → 409, `P2025` �
 
 All env reads go through `process.env` in one place per concern; new keys are added to
 `server/.env.example` with a comment. Current keys: `DATABASE_URL`, `PORT`, `CLIENT_URL`,
-`NODE_ENV`. Added by these features: `JWT_SECRET`, `ADMIN_SESSION_HOURS` (F2),
-`HOLD_SWEEP_INTERVAL_MINUTES` (F7).
+`NODE_ENV`. Added by these features: `JWT_SECRET`, `ADMIN_SESSION_HOURS`, `ADMIN_EMAIL`,
+`ADMIN_PASSWORD` (F2), `HOLD_SWEEP_INTERVAL_MINUTES` (F7).
 
 ---
 
@@ -269,8 +269,10 @@ nothing earlier.
   acceptable for a single-instance MVP; note it in code.
 - `requireAdmin` verifies the JWT, loads the `Admin` row, attaches `req.admin`, and
   returns `401` (not `501`, not `403`) when absent. JWT payload holds only `sub`.
-- `scripts/create-admin.ts` (or extend `seed.ts`) creates the owner from
-  `ADMIN_EMAIL` / `ADMIN_PASSWORD`, hashing with bcrypt, and is idempotent.
+- `npm run admin:create` (`server/src/scripts/create-admin.ts`) creates the owner from
+  `ADMIN_EMAIL` / `ADMIN_PASSWORD`, hashing with bcrypt. It is idempotent: rerunning it
+  never overwrites an existing password — signed-in admins change it through
+  `POST /api/auth/password`.
 
 **Verify:** login → cookie set → `/api/auth/me` 200; no cookie → 401; login with wrong
 password → 401; `/api/categories` POST without cookie → 401; with cookie → works
@@ -695,7 +697,7 @@ the last unit and assert `[201, 409]`.
 |---|---|---|---|---|
 | — | Phase 2.2 database design + hardening | ✅ | n/a | `feat/phase-2.2-database-design` |
 | F1 | Platform foundation | ✅ | — | `feat/f1-platform-foundation` |
-| F2 | Admin auth | ☐ | — | `feat/f2-admin-auth` |
+| F2 | Admin auth | ✅ | — | `feat/f2-admin-auth` |
 | F3 | Public catalogue reads | ☐ | — | `feat/f3-catalogue-reads` |
 | F4 | Admin catalogue management | ☐ | — | `feat/f4-admin-catalogue` |
 | F5 | Availability API | ☐ | — | `feat/f5-availability-api` |
