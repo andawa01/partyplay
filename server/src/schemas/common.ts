@@ -8,3 +8,6 @@ export const slugSchema = z
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "slug must be kebab-case");
 
 export const slugParamsSchema = z.object({ slug: slugSchema });
+
+/** Admin routes address rows by id, the same way the database does. */
+export const idParamsSchema = z.object({ id: z.string().min(1).max(64) });

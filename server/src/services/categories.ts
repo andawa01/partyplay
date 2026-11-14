@@ -52,17 +52,18 @@ export async function createCategory(input: CreateCategoryInput) {
   return db.category.create({ data: input });
 }
 
-export async function updateCategory(slug: string, input: UpdateCategoryInput) {
-  const category = await findIdBySlugOrThrow(slug);
+/** Admin mutations address a category by id; the public read above uses the slug. */
+export async function updateCategoryById(id: string, input: UpdateCategoryInput) {
+  await findCategoryByIdOrThrow(id);
   await assertParentExists(input.parentId);
 
-  return db.category.update({ where: { id: category.id }, data: input });
+  return db.category.update({ where: { id }, data: input });
 }
 
-export async function deleteCategory(slug: string) {
-  const category = await findIdBySlugOrThrow(slug);
+export async function deleteCategoryById(id: string) {
+  await findCategoryByIdOrThrow(id);
 
-  const equipmentCount = await db.equipment.count({ where: { categoryId: category.id } });
+  const equipmentCount = await db.equipment.count({ where: { categoryId: id } });
   if (equipmentCount > 0) {
     throw conflict(
       `Remove or reassign the ${equipmentCount} equipment item(s) in this category before deleting it`,
@@ -70,13 +71,13 @@ export async function deleteCategory(slug: string) {
     );
   }
 
-  await db.category.delete({ where: { id: category.id } });
+  await db.category.delete({ where: { id } });
 }
 
-async function findIdBySlugOrThrow(slug: string) {
-  const category = await db.category.findUnique({ where: { slug }, select: { id: true } });
+async function findCategoryByIdOrThrow(id: string) {
+  const category = await db.category.findUnique({ where: { id }, select: { id: true } });
   if (!category) {
-    throw notFound(`Category "${slug}" was not found`);
+    throw notFound(`Category "${id}" was not found`);
   }
   return category;
 }
