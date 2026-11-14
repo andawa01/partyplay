@@ -698,7 +698,7 @@ the last unit and assert `[201, 409]`.
 | — | Phase 2.2 database design + hardening | ✅ | n/a | `feat/phase-2.2-database-design` |
 | F1 | Platform foundation | ✅ | — | `feat/f1-platform-foundation` |
 | F2 | Admin auth | ✅ | — | `feat/f2-admin-auth` |
-| F3 | Public catalogue reads | ☐ | — | `feat/f3-catalogue-reads` |
+| F3 | Public catalogue reads | ✅ | — | `feat/f3-catalogue-reads` |
 | F4 | Admin catalogue management | ☐ | — | `feat/f4-admin-catalogue` |
 | F5 | Availability API | ☐ | — | `feat/f5-availability-api` |
 | F6a | Pricing module | ☐ | — | `feat/f6a-pricing` |

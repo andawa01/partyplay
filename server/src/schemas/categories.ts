@@ -1,13 +1,11 @@
 import { z } from "zod";
 
-/** Category slugs are kebab-case and immutable once created. */
-export const categorySlugSchema = z
-  .string()
-  .min(1)
-  .max(64)
-  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "slug must be kebab-case");
+import { slugParamsSchema, slugSchema } from "./common";
 
-export const categorySlugParamsSchema = z.object({ slug: categorySlugSchema });
+/** Category slugs are kebab-case and immutable once created. */
+export const categorySlugSchema = slugSchema;
+
+export const categorySlugParamsSchema = slugParamsSchema;
 
 export const createCategorySchema = z.object({
   slug: categorySlugSchema,
