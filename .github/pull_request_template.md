@@ -10,7 +10,8 @@ Feature: F
 
 - [ ] `npm run typecheck` passes
 - [ ] The feature's verification recipe was run against the local database
-- [ ] Business rules live in a service, not the route handler
+- [ ] Layers respected: route -> middleware -> controller -> service -> db (no `db` in a
+      controller, no `req` in a service)
 - [ ] Error paths return the standard envelope with the right status code
 
 ## Schema

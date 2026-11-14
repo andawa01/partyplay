@@ -32,7 +32,7 @@ before the next one starts.
 | # | Check |
 |---|---|
 | 1 | Route, zod schema, service and any migration are committed on the feature branch |
-| 2 | Business rules live in `src/services/*`, not in the route handler |
+| 2 | The route -> middleware -> controller -> service -> db flow is intact; no controller imports `db` |
 | 3 | Every error path returns the standard envelope (§4.2) with the right status code |
 | 4 | `npm run typecheck --workspace server` exits 0 |
 | 5 | The feature's verification recipe (§10) has been run against the local database and passed |
@@ -69,26 +69,50 @@ dashboard, and the entire client UI.
 
 ---
 
-## 3. Architecture and boundaries
+## 3. Architecture and layers
+
+Every request follows the same five stages. Nothing skips a stage, and each stage has one
+job.
 
 ```
 request
-  └─ src/routes/<resource>.ts     HTTP only: parse params, call service, send response
-       └─ src/schemas/<x>.ts      zod schemas — the single source of input truth
-       └─ src/services/<x>.ts     business rules, transactions, snapshotting
-            └─ src/config/db.ts   PrismaClient (after ensureClient())
+  └─ routes         match method + URL, attach the middleware chain
+       └─ middleware    authentication, permissions, request context
+            └─ controllers   HTTP in and out: parse input, call service, send envelope
+                 └─ services      business rules, transactions, snapshots
+                      └─ config/db     PrismaClient reads and writes records
 ```
 
 **Layer contract**
 
-- **Routes** may call `db` only for a straight lookup with no rules attached. The moment
-  there is a rule, a transaction, or a snapshot, it goes in a service. `categories.ts`
-  predates this rule and stays as-is until something forces a change.
-- **Services** are the only place that opens transactions or writes more than one table.
-  They take plain parsed objects and throw `ApiError` — never `res`.
-- **Schemas** are imported by routes; nothing else parses requests.
-- **Zod is the input boundary.** Anything the database must never see as invalid is
-  rejected here first; the CHECK constraints are the backstop, not the primary check.
+1. **Route** — `src/routes/<resource>.ts`. Matches the HTTP method and URL, attaches the
+   middleware chain, and does nothing else. No `db` import, no validation logic, no rules.
+2. **Middleware** — `src/middleware/*.ts`. Authentication (`requireAdmin`), permissions,
+   request context (request id, body limits). It may end a request (401/403) but holds no
+   domain rules.
+3. **Controller** — `src/controllers/<resource>.ts`. Handles HTTP input and output: parses
+   `params`/`query`/`body` with the zod schema, calls the service, picks the status code
+   and writes the envelope. Knows HTTP, not rules. **Never imports `db`.**
+4. **Service** — `src/services/<resource>.ts`. Applies business rules, coordinates
+   transactions and snapshots. The only layer that opens a transaction or writes more than
+   one table. Takes plain objects, returns plain objects, throws `ApiError` — **never
+   touches `req` or `res`.**
+5. **Prisma / database** — `src/config/db.ts`. Reads and changes persistent records. No
+   rules live here; DB constraints are the backstop, not the primary check.
+
+**Schemas** live in `src/schemas/<x>.ts` and are imported by controllers only; nothing else
+parses requests. **Zod is the input boundary** — anything the database must never see as
+invalid is rejected at the controller before the service runs.
+
+**Why the split is worth the extra file:** rules tested without HTTP, controllers that stay
+one screen long, and a route file that is a table of contents. Tests (F6a onward) target
+services and need no supertest.
+
+**Resolved in F1:** `routes/categories.ts` predated this split — it validated, applied rules
+and queried `db` in the handler. It now runs through `schemas/categories.ts` →
+`controllers/categories.ts` → `services/categories.ts`, so every resource follows one shape.
+Controllers call the zod schema's `.parse()` directly; there is no separate validate
+middleware.
 
 **Planned server layout**
 
@@ -100,14 +124,14 @@ server/src/
   lib/dates.ts            Nairobi <-> UTC calendar-date helpers (F1)
   lib/booking-code.ts     PP-XXXXXX generation (F6b)
   middleware/auth.ts      existing stub -> real (F2)
-  middleware/error.ts     central error handler (F1)
-  middleware/validate.ts  optional shared zod runner (F1)
-  schemas/*.ts            one file per resource
+  middleware/error.ts     request id, 404 and central error handler (F1)
+  schemas/*.ts            one file per resource, parsed by controllers
+  controllers/*.ts        HTTP in and out per resource; no db access
   services/availability.ts  existing
   services/pricing.ts     pure pricing math (F6a)
   services/bookings.ts    create/transition/reads (F6, F8)
   services/payments.ts    payment records + totals (F9)
-  routes/*.ts             one router per resource
+  routes/*.ts             method + URL -> middleware -> controller, nothing else
   jobs/expire-holds.ts    sweeper (F7)
 ```
 
@@ -206,6 +230,8 @@ dependencies in the list are done.
   `todayInNairobi`, `isPastDate`.
 - `GET /api/health` keeps its current contract (it is used by the compose check).
 - Refactor `/api/hello` to the envelope, or delete it — it is scaffolding.
+- Move `routes/categories.ts` into `controllers/categories.ts` +
+  `services/categories.ts` and put it on the envelope — the one existing exception to §3.
 
 **Verify:** `curl /api/nope` → 404 envelope; malformed JSON body → 400 envelope;
 `SELECT 1` failure path still returns 503; typecheck clean.
@@ -668,7 +694,7 @@ the last unit and assert `[201, 409]`.
 | # | Feature | Backend | Client | Branch |
 |---|---|---|---|---|
 | — | Phase 2.2 database design + hardening | ✅ | n/a | `feat/phase-2.2-database-design` |
-| F1 | Platform foundation | ☐ | — | `feat/f1-platform-foundation` |
+| F1 | Platform foundation | ✅ | — | `feat/f1-platform-foundation` |
 | F2 | Admin auth | ☐ | — | `feat/f2-admin-auth` |
 | F3 | Public catalogue reads | ☐ | — | `feat/f3-catalogue-reads` |
 | F4 | Admin catalogue management | ☐ | — | `feat/f4-admin-catalogue` |
