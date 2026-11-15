@@ -43,6 +43,11 @@ jobs:
       - name: Typecheck client and server
         run: npm run typecheck
 
+      # Pure arithmetic (pricing, then availability and booking transitions). These
+      # tests need no database, so they belong in the job that has none.
+      - name: Test server
+        run: npm test --workspace server
+
   migrations:
     name: Migrations apply from empty
     runs-on: ubuntu-latest

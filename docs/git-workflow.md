@@ -188,6 +188,7 @@ pull requests into `main`. Two independent jobs, both on Node 22, both under a m
 1. `npm ci`
 2. `npx prisma generate`
 3. `npm run typecheck` (client then server)
+4. `npm test --workspace server` (from F6a: pricing, availability, transitions)
 
 **`Migrations apply from empty`** — `postgres:17-alpine` service container, database
 starting with zero tables
@@ -203,8 +204,9 @@ the step that would have caught a broken CHECK-constraint migration before it re
 The drift step catches the opposite failure — an applied migration whose result no longer
 matches the Prisma schema.
 
-Still **not** run in CI: tests. The suite starts at F6a (pricing); the workflow gains
-`npm test --workspace server` then.
+The server test suite started at F6a (pricing). It is part of the `Typecheck` job because
+those tests are pure and need no database; a test that needs Postgres belongs in the
+migrations job or a new job with a service container.
 
 **Branch protection cannot be set from a file.** To make `main` truly un-pushable, turn on
 in GitHub → Settings → Branches: require a pull request before merging, and require both
