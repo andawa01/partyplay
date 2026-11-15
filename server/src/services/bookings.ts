@@ -3,7 +3,7 @@ import type { BookingStatus, FulfilmentMethod } from "@prisma/client";
 
 import { db } from "../config/db";
 import { ApiError, badRequest, conflict, notFound } from "../lib/api-error";
-import { generateBookingCode } from "../lib/booking-code";
+import { generateBookingCode, isBookingCode } from "../lib/booking-code";
 import {
   formatCalendarDate,
   isPastDate,
@@ -464,6 +464,132 @@ function toPublicBooking(result: BookingCreationResult) {
     notice:
       "This is a booking request, not a confirmed booking. PartyPlay will contact you to confirm availability and delivery.",
   };
+}
+
+/**
+ * Public lookup (F6c). Knowing the code is the whole permission, so the query is scoped to
+ * that one row, internal ids never leave the service, and contact details are masked. An
+ * unknown or malformed code is the same 404, which keeps the endpoint unenumerable.
+ */
+export async function getBookingByCode(rawCode: string) {
+  const code = rawCode.trim().toUpperCase();
+
+  if (!isBookingCode(code)) {
+    throw notFound("No booking matches that code");
+  }
+
+  const booking = await db.booking.findUnique({
+    where: { code },
+    select: {
+      code: true,
+      status: true,
+      startDate: true,
+      endDate: true,
+      fulfilmentMethod: true,
+      holdExpiresAt: true,
+      totalAmount: true,
+      transportCharge: true,
+      discountAmount: true,
+      paidAmount: true,
+      currency: true,
+      notes: true,
+      specialRequests: true,
+      dropoffAddress: true,
+      pickupAddress: true,
+      createdAt: true,
+      customer: { select: { name: true, phone: true } },
+      items: {
+        select: {
+          quantity: true,
+          unitPrice: true,
+          priceForPeriod: true,
+          days: true,
+          equipment: { select: { name: true } },
+        },
+      },
+      packages: {
+        select: {
+          quantity: true,
+          packageName: true,
+          packagePrice: true,
+          items: { select: { equipmentName: true, quantity: true } },
+        },
+      },
+    },
+  });
+
+  if (!booking) {
+    throw notFound("No booking matches that code");
+  }
+
+  const outstanding = booking.totalAmount.minus(booking.paidAmount);
+  const amountDue = outstanding.isNegative() ? new Prisma.Decimal(0) : outstanding;
+  // Subtotal is not stored: total = subtotal - discount + transport, so invert it.
+  const subtotal = booking.totalAmount.plus(booking.discountAmount).minus(booking.transportCharge);
+  const holdExpired =
+    booking.status === "PENDING" &&
+    booking.holdExpiresAt !== null &&
+    booking.holdExpiresAt.getTime() <= Date.now();
+
+  return {
+    code: booking.code,
+    status: booking.status,
+    startDate: formatCalendarDate(booking.startDate),
+    endDate: formatCalendarDate(booking.endDate),
+    rentalDays: rentalDays(booking.startDate, booking.endDate),
+    fulfilmentMethod: booking.fulfilmentMethod,
+    customer: {
+      name: booking.customer.name,
+      // The code holder may not be the person who submitted the request.
+      phone: maskPhone(booking.customer.phone),
+    },
+    items: booking.items.map((line) => ({
+      equipmentName: line.equipment.name,
+      quantity: line.quantity,
+      days: line.days,
+      unitPrice: line.unitPrice.toFixed(2),
+      priceForPeriod: line.priceForPeriod.toFixed(2),
+    })),
+    packages: booking.packages.map((pkg) => ({
+      packageName: pkg.packageName,
+      packagePrice: pkg.packagePrice.toFixed(2),
+      quantity: pkg.quantity,
+      lineTotal: pkg.packagePrice.mul(pkg.quantity).toFixed(2),
+      items: pkg.items,
+    })),
+    subtotal: subtotal.toFixed(2),
+    discountAmount: booking.discountAmount.toFixed(2),
+    transportCharge: booking.transportCharge.toFixed(2),
+    totalAmount: booking.totalAmount.toFixed(2),
+    amountDue: amountDue.toFixed(2),
+    paymentDue: amountDue.gt(0),
+    currency: booking.currency,
+    notes: booking.notes,
+    specialRequests: booking.specialRequests,
+    dropoffAddress: booking.dropoffAddress,
+    pickupAddress: booking.pickupAddress,
+    holdExpiresAt: booking.holdExpiresAt?.toISOString() ?? null,
+    holdExpired,
+    createdAt: booking.createdAt.toISOString(),
+    notice:
+      booking.status === "PENDING"
+        ? "This booking is still a request. PartyPlay will contact you to confirm availability and delivery."
+        : null,
+  };
+}
+
+/** `07•• ••• 123`: first two and last three digits stay, everything between is dropped. */
+function maskPhone(phone: string | null): string | null {
+  if (!phone) {
+    return null;
+  }
+
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length <= 5) {
+    return "•".repeat(Math.max(digits.length, 1));
+  }
+
+  return `${digits.slice(0, 2)}•• ••• ${digits.slice(-3)}`;
 }
 
 function isRetryableTransactionError(error: unknown): boolean {
