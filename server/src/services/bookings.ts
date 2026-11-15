@@ -13,6 +13,7 @@ import {
 } from "../lib/dates";
 import type { CreateBookingInput } from "../schemas/bookings";
 import { findShortages } from "./availability";
+import { expireOverdueBookings } from "./hold-expiry";
 import {
   expandPackages,
   priceBooking,
@@ -478,6 +479,9 @@ export async function getBookingByCode(rawCode: string) {
     throw notFound("No booking matches that code");
   }
 
+  // Lazy expiry for this one booking, so an expired request never reads as live.
+  await expireOverdueBookings({ code });
+
   const booking = await db.booking.findUnique({
     where: { code },
     select: {
@@ -571,12 +575,22 @@ export async function getBookingByCode(rawCode: string) {
     holdExpiresAt: booking.holdExpiresAt?.toISOString() ?? null,
     holdExpired,
     createdAt: booking.createdAt.toISOString(),
-    notice:
-      booking.status === "PENDING"
-        ? "This booking is still a request. PartyPlay will contact you to confirm availability and delivery."
-        : null,
+    notice: bookingNotice(booking.status),
   };
 }
+
+function bookingNotice(status: BookingStatus): string | null {
+  if (status === "PENDING") {
+    return "This booking is still a request. PartyPlay will contact you to confirm availability and delivery.";
+  }
+  if (status === "EXPIRED") {
+    return "This request expired before it was confirmed. Please submit a new request.";
+  }
+  return null;
+}
+
+/** Kept on the bookings service for the callers described in the plan (F8 admin ops). */
+export { expireOverdueBookings };
 
 /** `07•• ••• 123`: first two and last three digits stay, everything between is dropped. */
 function maskPhone(phone: string | null): string | null {

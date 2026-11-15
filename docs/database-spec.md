@@ -740,9 +740,11 @@ days, inverted dates and negative stock are rejected with SQLSTATE `23514`.
    `pg_advisory_xact_lock`, so two requests for the last unit cannot both pass.
    `GET /api/availability` remains advisory; CHECK constraints cannot express
    "sum of overlapping reservations ≤ total".
-2. **Hold expiry is lazy.** Nothing sweeps `StockHold`; a `PENDING` booking never
-   moves to a terminal state and `Booking.holdExpiresAt` drifts. Add a periodic
-   job that marks expired holds `EXPIRED` and cancels abandoned bookings.
+2. **Hold expiry — implemented in F7.** Availability and the public lookup expire
+   overdue bookings lazily (bounded to the items or code asked about), and
+   `jobs/expire-holds.ts` sweeps the rest every `HOLD_SWEEP_INTERVAL_MINUTES`.
+   Expiring a booking sets it `EXPIRED`, releases its `ACTIVE` holds and writes a
+   history row; the sweep is idempotent.
 3. **`BookingItem` has no unique `(bookingId, equipmentId)`.** Duplicate lines
    are allowed. Sums remain correct, but normalise to one line per equipment and
    add the constraint.
