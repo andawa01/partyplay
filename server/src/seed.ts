@@ -113,6 +113,7 @@ async function main() {
       maxQuantity: 8,
       pricePerDay: 4500,
       pricePerWeek: 22000,
+      pricingMode: "PER_DAY",
       isActive: true,
     },
   });
@@ -132,6 +133,7 @@ async function main() {
       maxQuantity: 6,
       pricePerDay: 3000,
       pricePerWeek: 15000,
+      pricingMode: "PER_DAY",
       isActive: true,
     },
   });
@@ -151,6 +153,7 @@ async function main() {
       minQuantity: 1,
       maxQuantity: 50,
       flatPrice: 2500,
+      pricingMode: "FLAT",
       isActive: true,
     },
   });
@@ -169,6 +172,7 @@ async function main() {
       minQuantity: 1,
       maxQuantity: 20,
       flatPrice: 1200,
+      pricingMode: "FLAT",
       isActive: true,
     },
   });
@@ -189,6 +193,7 @@ async function main() {
       minQuantity: 1,
       maxQuantity: 4,
       flatPrice: 5000,
+      pricingMode: "FLAT",
       isActive: true,
     },
   });
