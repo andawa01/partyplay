@@ -12,6 +12,8 @@ import { db } from "../config/db";
  */
 
 export type ExpiryScope = {
+  /** Only this booking id (used by admin detail and operations). */
+  bookingId?: string;
   /** Only this booking code (used by the public lookup). */
   code?: string;
   /** Only bookings holding at least one of these equipment items (used by availability). */
@@ -35,6 +37,7 @@ export async function expireOverdueBookings(scope: ExpiryScope = {}): Promise<nu
       { holdExpiresAt: { lt: now } },
       { stockHolds: { some: { status: "ACTIVE", expiresAt: { lt: now } } } },
     ],
+    ...(scope.bookingId ? { id: scope.bookingId } : {}),
     ...(scope.code ? { code: scope.code.trim().toUpperCase() } : {}),
     ...(scope.equipmentIds && scope.equipmentIds.length > 0
       ? { stockHolds: { some: { equipmentId: { in: scope.equipmentIds } } } }
