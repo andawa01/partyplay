@@ -104,4 +104,12 @@ function addDuplicateIssues(
   }
 }
 
+/**
+ * The booking code is the capability. Its PP-XXXXXX shape is checked in the service so a
+ * malformed code and an unknown one produce the same 404 instead of two behaviours.
+ */
+export const bookingCodeParamsSchema = z.object({
+  code: z.string().trim().min(1).max(32),
+});
+
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
