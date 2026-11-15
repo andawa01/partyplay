@@ -701,7 +701,7 @@ the last unit and assert `[201, 409]`.
 | F3 | Public catalogue reads | ✅ | — | `feat/f3-catalogue-reads` |
 | F4 | Admin catalogue management | ✅ | — | `feat/f4-admin-catalogue` |
 | F5 | Availability API | ✅ | — | `feat/f5-availability-api` |
-| F6a | Pricing module | ☐ | — | `feat/f6a-pricing` |
+| F6a | Pricing module | ✅ | — | `feat/f6a-pricing` |
 | F6b | Booking creation | ☐ | — | `feat/f6b-booking-creation` |
 | F6c | Booking lookup | ☐ | — | `feat/f6c-booking-lookup` |
 | F7 | Hold expiry + sweeper | ☐ | — | `feat/f7-hold-expiry` |
