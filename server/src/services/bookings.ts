@@ -21,6 +21,7 @@ import type {
 import { findShortages, type DemandLine } from "./availability";
 import { assertTransition } from "./booking-status";
 import { expireOverdueBookings } from "./hold-expiry";
+import { derivePaymentStatus } from "./payments";
 import {
   expandPackages,
   priceBooking,
@@ -574,6 +575,7 @@ export async function getBookingByCode(rawCode: string) {
     totalAmount: booking.totalAmount.toFixed(2),
     amountDue: amountDue.toFixed(2),
     paymentDue: amountDue.gt(0),
+    paymentStatus: derivePaymentStatus(Number(booking.paidAmount), Number(booking.totalAmount)),
     currency: booking.currency,
     notes: booking.notes,
     specialRequests: booking.specialRequests,
@@ -754,6 +756,7 @@ function toAdminBookingSummary(row: AdminBookingSummaryRow) {
     fulfilmentMethod: row.fulfilmentMethod,
     totalAmount: money(row.totalAmount),
     paidAmount: money(row.paidAmount),
+    paymentStatus: derivePaymentStatus(Number(row.paidAmount), Number(row.totalAmount)),
     currency: row.currency,
     holdExpiresAt: row.holdExpiresAt?.toISOString() ?? null,
     holdExpired: holdExpired(row.status, row.holdExpiresAt),
@@ -766,11 +769,14 @@ function toAdminBookingDetail(row: AdminBookingDetailRow) {
   const subtotal = row.totalAmount.plus(row.discountAmount).minus(row.transportCharge);
   const outstanding = row.totalAmount.minus(row.paidAmount);
   const amountDue = outstanding.isNegative() ? new Prisma.Decimal(0) : outstanding;
+  const surplus = row.paidAmount.minus(row.totalAmount);
+  const overpaidBy = surplus.isNegative() ? new Prisma.Decimal(0) : surplus;
 
   return {
     id: row.id,
     code: row.code,
     status: row.status,
+    paymentStatus: derivePaymentStatus(Number(row.paidAmount), Number(row.totalAmount)),
     customer: row.customer,
     createdBy: row.createdBy,
     startDate: formatCalendarDate(row.startDate),
@@ -826,6 +832,7 @@ function toAdminBookingDetail(row: AdminBookingDetailRow) {
       totalAmount: money(row.totalAmount),
       paidAmount: money(row.paidAmount),
       amountDue: money(amountDue),
+      overpaidBy: money(overpaidBy),
     },
     currency: row.currency,
     notes: row.notes,
