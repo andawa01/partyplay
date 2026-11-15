@@ -5,6 +5,7 @@ import * as categories from "../controllers/categories";
 import * as equipment from "../controllers/equipment";
 import * as offers from "../controllers/offers";
 import * as packages from "../controllers/packages";
+import * as payments from "../controllers/payments";
 import * as site from "../controllers/site";
 import * as providers from "../controllers/transport-providers";
 import { asyncHandler } from "../lib/async";
@@ -49,6 +50,11 @@ router.get("/bookings/:id", asyncHandler(bookings.getAdminBooking));
 router.patch("/bookings/:id/status", asyncHandler(bookings.updateBookingStatus));
 router.patch("/bookings/:id/transport", asyncHandler(bookings.updateBookingTransport));
 router.post("/bookings/:id/availability", asyncHandler(bookings.checkBookingAvailability));
+
+router.post("/bookings/:id/payments", asyncHandler(payments.createPayment));
+router.get("/bookings/:id/payments", asyncHandler(payments.listPayments));
+router.patch("/payments/:id", asyncHandler(payments.updatePayment));
+router.delete("/payments/:id", asyncHandler(payments.deletePayment));
 
 router.get("/settings", asyncHandler(site.getSettings));
 router.put("/settings", asyncHandler(site.updateSettings));
