@@ -1,6 +1,44 @@
 import "dotenv/config";
+import type { Prisma } from "@prisma/client";
 import bcrypt from "bcrypt";
 import { db, ensureClient } from "./config/db";
+
+/**
+ * Idempotent seeders: every row is matched by its natural key (slug, email) and left
+ * untouched when it already exists, so re-running the seed on a live database never
+ * duplicates catalogue rows or overwrites edits the owner made in the admin.
+ */
+function upsertCategory(input: { data: Prisma.CategoryUncheckedCreateInput }) {
+  return db.category.upsert({
+    where: { slug: input.data.slug },
+    update: {},
+    create: input.data,
+  });
+}
+
+function upsertEquipment(input: { data: Prisma.EquipmentUncheckedCreateInput }) {
+  return db.equipment.upsert({
+    where: { slug: input.data.slug },
+    update: {},
+    create: input.data,
+  });
+}
+
+function upsertPackage(input: { data: Prisma.PackageUncheckedCreateInput }) {
+  return db.package.upsert({
+    where: { slug: input.data.slug },
+    update: {},
+    create: input.data,
+  });
+}
+
+function upsertOffer(input: { data: Prisma.OfferUncheckedCreateInput }) {
+  return db.offer.upsert({
+    where: { slug: input.data.slug },
+    update: {},
+    create: input.data,
+  });
+}
 
 async function main() {
   // `db` is only bound once ensureClient() has connected; touching it earlier throws.
@@ -42,7 +80,7 @@ async function main() {
   // ---- Categories (a group plus its children) ----
   // The children are kept in variables: equipment belongs to the leaf categories, so a
   // group page still shows its items through the category filter that includes children.
-  const bouncing = await db.category.create({
+  const bouncing = await upsertCategory({
     data: {
       slug: "bouncing-castles",
       name: "Bouncing Castles",
@@ -50,7 +88,7 @@ async function main() {
       description: "Inflatable castles for kids' parties and events.",
     },
   });
-  const comboCastles = await db.category.create({
+  const comboCastles = await upsertCategory({
     data: {
       slug: "combo-castles",
       name: "Combo Castles",
@@ -58,7 +96,7 @@ async function main() {
       description: "Castles with a slide or swing attached.",
     },
   });
-  const smallCastles = await db.category.create({
+  const smallCastles = await upsertCategory({
     data: {
       slug: "small-castles",
       name: "Small Castles",
@@ -67,7 +105,7 @@ async function main() {
     },
   });
 
-  const tables = await db.category.create({
+  const tables = await upsertCategory({
     data: {
       slug: "tables-chairs",
       name: "Tables and Chairs",
@@ -75,14 +113,14 @@ async function main() {
       description: "Foldable tables and stacking chairs.",
     },
   });
-  const chairs = await db.category.create({
+  const chairs = await upsertCategory({
     data: {
       slug: "chairs",
       name: "Chairs",
       parentId: tables.id,
     },
   });
-  const foldingTables = await db.category.create({
+  const foldingTables = await upsertCategory({
     data: {
       slug: "tables",
       name: "Tables",
@@ -90,7 +128,7 @@ async function main() {
     },
   });
 
-  const sound = await db.category.create({
+  const sound = await upsertCategory({
     data: {
       slug: "sound-systems",
       name: "Sound Systems",
@@ -98,10 +136,10 @@ async function main() {
       description: "Speakers, microphones and DJ setups.",
     },
   });
-  console.log("categories created");
+  console.log("categories ready");
 
   // ---- Equipment with inventory ----
-  const castle1 = await db.equipment.create({
+  const castle1 = await upsertEquipment({
     data: {
       slug: "fun-bounce-combo-castle",
       name: "Fun Bounce Combo Castle",
@@ -123,7 +161,7 @@ async function main() {
     create: { equipmentId: castle1.id, total: 5 },
   });
 
-  const castle2 = await db.equipment.create({
+  const castle2 = await upsertEquipment({
     data: {
       slug: "happy-kids-castle",
       name: "Happy Kids Castle",
@@ -143,7 +181,7 @@ async function main() {
     create: { equipmentId: castle2.id, total: 4 },
   });
 
-  const chairSet = await db.equipment.create({
+  const chairSet = await upsertEquipment({
     data: {
       slug: "stacking-chair-set",
       name: "Stacking Chair Set",
@@ -163,7 +201,7 @@ async function main() {
     create: { equipmentId: chairSet.id, total: 60 },
   });
 
-  const tableSet = await db.equipment.create({
+  const tableSet = await upsertEquipment({
     data: {
       slug: "six-foot-folding-table",
       name: "6ft Folding Table",
@@ -182,7 +220,7 @@ async function main() {
     create: { equipmentId: tableSet.id, total: 15 },
   });
 
-  const speakerPair = await db.equipment.create({
+  const speakerPair = await upsertEquipment({
     data: {
       slug: "party-speaker-pair",
       name: "Party Speaker Pair",
@@ -203,10 +241,10 @@ async function main() {
     create: { equipmentId: speakerPair.id, total: 3 },
   });
 
-  console.log("equipment created");
+  console.log("equipment ready");
 
   // ---- Package ----
-  const birthdayPackage = await db.package.create({
+  const birthdayPackage = await upsertPackage({
     data: {
       slug: "birthday-party-starter",
       name: "Birthday Party Starter",
@@ -221,18 +259,25 @@ async function main() {
       isActive: true,
     },
   });
-  await db.packageItem.createMany({
-    data: [
-      { packageId: birthdayPackage.id, equipmentId: castle2.id, quantity: 1 },
-      { packageId: birthdayPackage.id, equipmentId: chairSet.id, quantity: 1 },
-      { packageId: birthdayPackage.id, equipmentId: tableSet.id, quantity: 1 },
-      { packageId: birthdayPackage.id, equipmentId: speakerPair.id, quantity: 1 },
-    ],
-  });
-  console.log("package created");
+  // One row per equipment in the package; the unique key makes re-seeding a no-op.
+  for (const item of [
+    { equipmentId: castle2.id, quantity: 1 },
+    { equipmentId: chairSet.id, quantity: 1 },
+    { equipmentId: tableSet.id, quantity: 1 },
+    { equipmentId: speakerPair.id, quantity: 1 },
+  ]) {
+    await db.packageItem.upsert({
+      where: {
+        packageId_equipmentId: { packageId: birthdayPackage.id, equipmentId: item.equipmentId },
+      },
+      update: {},
+      create: { packageId: birthdayPackage.id, ...item },
+    });
+  }
+  console.log("package ready");
 
   // ---- Offer ----
-  await db.offer.create({
+  await upsertOffer({
     data: {
       slug: "first-booking-discount",
       name: "First Booking Discount",
@@ -245,7 +290,7 @@ async function main() {
       isActive: true,
     },
   });
-  console.log("offer created");
+  console.log("offer ready");
 
   console.log("seed complete");
 }
