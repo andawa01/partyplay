@@ -33,8 +33,8 @@ export function forbidden(message = "Not allowed"): ApiError {
   return new ApiError(403, "FORBIDDEN", message);
 }
 
-export function notFound(message = "Not found"): ApiError {
-  return new ApiError(404, "NOT_FOUND", message);
+export function notFound(message = "Not found", details?: unknown): ApiError {
+  return new ApiError(404, "NOT_FOUND", message, details);
 }
 
 export function conflict(message = "Conflict", details?: unknown): ApiError {

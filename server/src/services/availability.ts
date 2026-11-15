@@ -1,4 +1,7 @@
 import { db } from "../config/db";
+import { badRequest, notFound } from "../lib/api-error";
+import { formatCalendarDate, isPastDate, parseCalendarDate, todayInNairobi } from "../lib/dates";
+import { money } from "../lib/money";
 
 // ---------------------------------------------------------------------------
 // Inventory availability (Phase 2.2, rules A and C)
@@ -145,6 +148,219 @@ export async function getAvailability(input: AvailabilityInput): Promise<Availab
       available: Math.max(0, total - reservedUnits),
     };
   });
+}
+
+// ---------------------------------------------------------------------------
+// Public API (F5). These functions add request validation, active-only lookups and
+// response shaping on top of the reservation queries above; the counting logic stays
+// in one place so booking creation (F6b) sees exactly what the calendar showed.
+// ---------------------------------------------------------------------------
+
+type DateRangeQuery = { startDate: string; endDate: string };
+
+function parsePublicRange(input: DateRangeQuery): { startDate: Date; endDate: Date } {
+  const startDate = parseCalendarDate(input.startDate);
+  const endDate = parseCalendarDate(input.endDate);
+
+  if (!isValidRange(startDate, endDate)) {
+    throw badRequest("endDate must be on or after startDate", {
+      startDate: formatCalendarDate(startDate),
+      endDate: formatCalendarDate(endDate),
+    });
+  }
+
+  if (isPastDate(startDate)) {
+    throw badRequest("startDate has already passed", {
+      startDate: formatCalendarDate(startDate),
+      today: formatCalendarDate(todayInNairobi()),
+    });
+  }
+
+  return { startDate, endDate };
+}
+
+/**
+ * Availability for an explicit set of equipment ids. Ids that are unknown or inactive
+ * are a 404 rather than a zero row: the calendar should not silently accept a request
+ * for something the site no longer offers.
+ */
+export async function getPublicAvailability(input: { equipmentIds: string[] } & DateRangeQuery) {
+  const range = parsePublicRange(input);
+
+  const found = await db.equipment.findMany({
+    where: { id: { in: input.equipmentIds }, isActive: true },
+    select: { id: true },
+  });
+  const bookable = new Set(found.map((row) => row.id));
+  const missingEquipmentIds = input.equipmentIds.filter((id) => !bookable.has(id));
+
+  if (missingEquipmentIds.length > 0) {
+    throw notFound("Some equipment items were not found", { missingEquipmentIds });
+  }
+
+  const rows = await getAvailability({ equipmentIds: input.equipmentIds, ...range });
+
+  // Answer in the order the caller asked, not whatever order the database returned.
+  const requestedOrder = new Map(input.equipmentIds.map((id, index) => [id, index]));
+  rows.sort(
+    (a, b) => (requestedOrder.get(a.equipmentId) ?? 0) - (requestedOrder.get(b.equipmentId) ?? 0),
+  );
+
+  return {
+    data: rows,
+    meta: {
+      startDate: formatCalendarDate(range.startDate),
+      endDate: formatCalendarDate(range.endDate),
+      note: "Informational only: availability is re-checked when the booking is created.",
+    },
+  };
+}
+
+type CalendarDay = { date: string; available: number };
+
+/**
+ * Expands a package into its equipment demand for the requested number of packages
+ * (Rule A) and reports the largest quantity that fits. `minAvailable` is the floor of
+ * the tightest item, because one short item makes the whole package unbookable.
+ */
+export async function getPackageAvailability(
+  slug: string,
+  input: { quantity: number } & DateRangeQuery,
+) {
+  const range = parsePublicRange(input);
+
+  const pkg = await db.package.findFirst({
+    where: { slug, isActive: true },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      price: true,
+      items: {
+        select: {
+          equipmentId: true,
+          quantity: true,
+          equipment: { select: { name: true, isActive: true } },
+        },
+        orderBy: { equipmentId: "asc" },
+      },
+    },
+  });
+
+  if (!pkg) {
+    throw notFound(`Package "${slug}" was not found`);
+  }
+
+  const summary = {
+    id: pkg.id,
+    slug: pkg.slug,
+    name: pkg.name,
+    price: money(pkg.price),
+  };
+  const meta = {
+    startDate: formatCalendarDate(range.startDate),
+    endDate: formatCalendarDate(range.endDate),
+  };
+
+  // An empty package can never be booked, whatever its price says.
+  if (pkg.items.length === 0) {
+    return {
+      data: {
+        package: summary,
+        ...meta,
+        requestedQuantity: input.quantity,
+        minAvailable: 0,
+        bookable: false,
+        items: [],
+      },
+    };
+  }
+
+  const availability = await getAvailability({
+    equipmentIds: pkg.items.map((item) => item.equipmentId),
+    ...range,
+  });
+  const byEquipmentId = new Map(availability.map((row) => [row.equipmentId, row]));
+
+  const items = pkg.items.map((item) => {
+    const row = byEquipmentId.get(item.equipmentId);
+    // A deactivated item cannot be booked even while the package still lists it.
+    const available = item.equipment.isActive ? (row?.available ?? 0) : 0;
+    const required = item.quantity * input.quantity;
+
+    return {
+      equipmentId: item.equipmentId,
+      name: row?.name ?? item.equipment.name,
+      total: row?.total ?? 0,
+      reserved: row?.reserved ?? 0,
+      available,
+      quantityPerPackage: item.quantity,
+      required,
+      shortfall: Math.max(0, required - available),
+    };
+  });
+
+  const minAvailable = Math.min(
+    ...items.map((item) => Math.floor(item.available / item.quantityPerPackage)),
+  );
+
+  return {
+    data: {
+      package: summary,
+      ...meta,
+      requestedQuantity: input.quantity,
+      minAvailable,
+      bookable: minAvailable >= input.quantity,
+      items,
+    },
+  };
+}
+
+/**
+ * Per-day availability for one equipment over a month, for the booking date picker.
+ * Days are walked one at a time: 31 days x 3 grouped queries fired together would
+ * swamp the connection pool for a screen that only needs a few hundred milliseconds.
+ */
+export async function getEquipmentCalendar(equipmentId: string, month: string) {
+  const [yearText, monthText] = month.split("-");
+  const year = Number(yearText);
+  const monthIndex = Number(monthText);
+
+  if (year < 2000 || year > 2100) {
+    throw badRequest("month must be a year between 2000 and 2100", { month });
+  }
+
+  const equipment = await db.equipment.findFirst({
+    where: { id: equipmentId, isActive: true },
+    select: { id: true, name: true, inventory: { select: { total: true } } },
+  });
+
+  if (!equipment) {
+    throw notFound(`Equipment "${equipmentId}" was not found`);
+  }
+
+  const total = equipment.inventory[0]?.total ?? 0;
+  const daysInMonth = new Date(Date.UTC(year, monthIndex, 0)).getUTCDate();
+  const days: CalendarDay[] = [];
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const date = new Date(Date.UTC(year, monthIndex - 1, day));
+    const reserved = await getReservedQuantities({
+      equipmentIds: [equipmentId],
+      startDate: date,
+      endDate: date,
+    });
+
+    days.push({
+      date: formatCalendarDate(date),
+      available: Math.max(0, total - (reserved.get(equipmentId) ?? 0)),
+    });
+  }
+
+  return {
+    data: days,
+    meta: { equipmentId: equipment.id, name: equipment.name, total, month },
+  };
 }
 
 export type DemandLine = { equipmentId: string; quantity: number };
