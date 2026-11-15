@@ -7,6 +7,7 @@ import { money } from "../lib/money";
 import type { EquipmentListQuery } from "../schemas/catalogue";
 import type { CreateEquipmentInput, UpdateEquipmentInput } from "../schemas/equipment";
 import { getAvailability } from "./availability";
+import { expireOverdueBookings } from "./hold-expiry";
 
 /**
  * `imagePublicId` is deliberately absent: it is a Cloudinary handle for deletion, not
@@ -151,6 +152,8 @@ async function availabilityForQuery(
   if (startDate.getTime() > endDate.getTime()) {
     throw badRequest("endDate must be on or after startDate");
   }
+
+  await expireOverdueBookings({ equipmentIds });
 
   const rows = await getAvailability({ equipmentIds, startDate, endDate });
   return new Map(rows.map((row) => [row.equipmentId, row.available]));

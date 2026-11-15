@@ -4,6 +4,7 @@ import { db } from "../config/db";
 import { badRequest, notFound } from "../lib/api-error";
 import { formatCalendarDate, isPastDate, parseCalendarDate, todayInNairobi } from "../lib/dates";
 import { money } from "../lib/money";
+import { expireOverdueBookings } from "./hold-expiry";
 
 // ---------------------------------------------------------------------------
 // Inventory availability (Phase 2.2, rules A and C)
@@ -207,6 +208,9 @@ export async function getPublicAvailability(input: { equipmentIds: string[] } & 
     throw notFound("Some equipment items were not found", { missingEquipmentIds });
   }
 
+  // Bounded lazy expiry: only bookings holding one of the items being asked about.
+  await expireOverdueBookings({ equipmentIds: input.equipmentIds });
+
   const rows = await getAvailability({ equipmentIds: input.equipmentIds, ...range });
 
   // Answer in the order the caller asked, not whatever order the database returned.
@@ -285,8 +289,11 @@ export async function getPackageAvailability(
     };
   }
 
+  const packageEquipmentIds = pkg.items.map((item) => item.equipmentId);
+  await expireOverdueBookings({ equipmentIds: packageEquipmentIds });
+
   const availability = await getAvailability({
-    equipmentIds: pkg.items.map((item) => item.equipmentId),
+    equipmentIds: packageEquipmentIds,
     ...range,
   });
   const byEquipmentId = new Map(availability.map((row) => [row.equipmentId, row]));
@@ -347,6 +354,8 @@ export async function getEquipmentCalendar(equipmentId: string, month: string) {
   if (!equipment) {
     throw notFound(`Equipment "${equipmentId}" was not found`);
   }
+
+  await expireOverdueBookings({ equipmentIds: [equipment.id] });
 
   const total = equipment.inventory[0]?.total ?? 0;
   const daysInMonth = new Date(Date.UTC(year, monthIndex, 0)).getUTCDate();
