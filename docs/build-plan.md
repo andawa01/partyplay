@@ -707,7 +707,7 @@ the last unit and assert `[201, 409]`.
 | F7 | Hold expiry + sweeper | ✅ | — | `feat/f7-hold-expiry` |
 | F8 | Admin booking operations | ✅ | — | `feat/f8-booking-operations` |
 | F9 | Payments | ✅ | — | `feat/f9-payments` |
-| F10 | Dashboard summaries | ☐ | — | `feat/f10-dashboard` |
+| F10 | Dashboard summaries | ✅ | — | `feat/f10-dashboard` |
 | C1–C11 | Client slices | — | ☐ | `feat/c<n>-<slug>` |
 
 ---

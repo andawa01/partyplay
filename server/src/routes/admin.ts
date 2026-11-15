@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import * as bookings from "../controllers/bookings";
 import * as categories from "../controllers/categories";
+import * as dashboard from "../controllers/dashboard";
 import * as equipment from "../controllers/equipment";
 import * as offers from "../controllers/offers";
 import * as packages from "../controllers/packages";
@@ -55,6 +56,8 @@ router.post("/bookings/:id/payments", asyncHandler(payments.createPayment));
 router.get("/bookings/:id/payments", asyncHandler(payments.listPayments));
 router.patch("/payments/:id", asyncHandler(payments.updatePayment));
 router.delete("/payments/:id", asyncHandler(payments.deletePayment));
+
+router.get("/dashboard", asyncHandler(dashboard.getDashboard));
 
 router.get("/settings", asyncHandler(site.getSettings));
 router.put("/settings", asyncHandler(site.updateSettings));
