@@ -113,3 +113,40 @@ export const bookingCodeParamsSchema = z.object({
 });
 
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
+
+// ---------------------------------------------------------------------------
+// Admin operations (F8)
+// ---------------------------------------------------------------------------
+
+/**
+ * `from`/`to` are the requested rental window and are matched by overlap, the same rule
+ * availability uses. The service parses them as calendar dates and rejects an inversion.
+ */
+export const adminBookingListQuerySchema = z.object({
+  status: z
+    .enum(["PENDING", "CONFIRMED", "REJECTED", "CANCELLED", "COMPLETED", "EXPIRED"])
+    .optional(),
+  from: z.string().trim().min(1).max(32).optional(),
+  to: z.string().trim().min(1).max(32).optional(),
+  q: z.string().trim().min(1).max(100).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+/**
+ * Every status is accepted by the schema so an illegal target (EXPIRED, PENDING) gets the
+ * documented 409 INVALID_TRANSITION from the guard, not a generic 400.
+ */
+export const updateBookingStatusSchema = z.object({
+  status: z.enum(["PENDING", "CONFIRMED", "REJECTED", "CANCELLED", "COMPLETED", "EXPIRED"]),
+  reason: z.string().trim().max(500).optional(),
+  note: z.string().trim().max(1000).optional(),
+});
+
+export const updateBookingTransportSchema = z.object({
+  transportCharge: z.number().min(0).max(99_999_999.99),
+});
+
+export type AdminBookingListQuery = z.infer<typeof adminBookingListQuerySchema>;
+export type UpdateBookingStatusInput = z.infer<typeof updateBookingStatusSchema>;
+export type UpdateBookingTransportInput = z.infer<typeof updateBookingTransportSchema>;

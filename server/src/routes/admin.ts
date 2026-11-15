@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import * as bookings from "../controllers/bookings";
 import * as categories from "../controllers/categories";
 import * as equipment from "../controllers/equipment";
 import * as offers from "../controllers/offers";
@@ -42,6 +43,12 @@ router.get("/transport-providers", asyncHandler(providers.listTransportProviders
 router.post("/transport-providers", asyncHandler(providers.createTransportProvider));
 router.patch("/transport-providers/:id", asyncHandler(providers.updateTransportProvider));
 router.delete("/transport-providers/:id", asyncHandler(providers.deleteTransportProvider));
+
+router.get("/bookings", asyncHandler(bookings.listAdminBookings));
+router.get("/bookings/:id", asyncHandler(bookings.getAdminBooking));
+router.patch("/bookings/:id/status", asyncHandler(bookings.updateBookingStatus));
+router.patch("/bookings/:id/transport", asyncHandler(bookings.updateBookingTransport));
+router.post("/bookings/:id/availability", asyncHandler(bookings.checkBookingAvailability));
 
 router.get("/settings", asyncHandler(site.getSettings));
 router.put("/settings", asyncHandler(site.updateSettings));

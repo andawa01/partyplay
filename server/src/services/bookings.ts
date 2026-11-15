@@ -4,6 +4,7 @@ import type { BookingStatus, FulfilmentMethod } from "@prisma/client";
 import { db } from "../config/db";
 import { ApiError, badRequest, conflict, notFound } from "../lib/api-error";
 import { generateBookingCode, isBookingCode } from "../lib/booking-code";
+import { money } from "../lib/money";
 import {
   formatCalendarDate,
   isPastDate,
@@ -11,8 +12,14 @@ import {
   rentalDays,
   todayInNairobi,
 } from "../lib/dates";
-import type { CreateBookingInput } from "../schemas/bookings";
-import { findShortages } from "./availability";
+import type {
+  AdminBookingListQuery,
+  CreateBookingInput,
+  UpdateBookingStatusInput,
+  UpdateBookingTransportInput,
+} from "../schemas/bookings";
+import { findShortages, type DemandLine } from "./availability";
+import { assertTransition } from "./booking-status";
 import { expireOverdueBookings } from "./hold-expiry";
 import {
   expandPackages,
@@ -604,6 +611,540 @@ function maskPhone(phone: string | null): string | null {
   }
 
   return `${digits.slice(0, 2)}•• ••• ${digits.slice(-3)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Admin operations (F8). Reads return snapshots and totals as strings; the only status
+// writer is changeBookingStatus, guarded by services/booking-status.ts.
+// ---------------------------------------------------------------------------
+
+type AdminBookingClient = Prisma.TransactionClient | typeof db;
+
+const adminBookingSummarySelect = {
+  id: true,
+  code: true,
+  status: true,
+  startDate: true,
+  endDate: true,
+  fulfilmentMethod: true,
+  holdExpiresAt: true,
+  totalAmount: true,
+  paidAmount: true,
+  currency: true,
+  createdAt: true,
+  customer: { select: { id: true, name: true, phone: true } },
+} satisfies Prisma.BookingSelect;
+
+type AdminBookingSummaryRow = Prisma.BookingGetPayload<{ select: typeof adminBookingSummarySelect }>;
+
+const adminBookingDetailSelect = {
+  id: true,
+  code: true,
+  status: true,
+  startDate: true,
+  endDate: true,
+  fulfilmentMethod: true,
+  holdExpiresAt: true,
+  totalAmount: true,
+  transportCharge: true,
+  discountAmount: true,
+  paidAmount: true,
+  currency: true,
+  notes: true,
+  specialRequests: true,
+  approvedAt: true,
+  cancelledAt: true,
+  fulfilmentDate: true,
+  dropoffAddress: true,
+  dropoffNotes: true,
+  pickupAddress: true,
+  pickupNotes: true,
+  createdAt: true,
+  updatedAt: true,
+  customer: { select: { id: true, name: true, email: true, phone: true } },
+  createdBy: { select: { id: true, name: true, email: true } },
+  items: {
+    select: {
+      id: true,
+      equipmentId: true,
+      quantity: true,
+      unitPrice: true,
+      priceForPeriod: true,
+      days: true,
+      equipment: { select: { name: true, slug: true } },
+    },
+    orderBy: { equipmentId: "asc" },
+  },
+  packages: {
+    select: {
+      id: true,
+      packageId: true,
+      quantity: true,
+      packageName: true,
+      packagePrice: true,
+      items: { select: { equipmentId: true, equipmentName: true, quantity: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  },
+  stockHolds: {
+    select: {
+      id: true,
+      equipmentId: true,
+      quantity: true,
+      status: true,
+      expiresAt: true,
+      releasedAt: true,
+    },
+    orderBy: { equipmentId: "asc" },
+  },
+  statusHistories: {
+    select: {
+      fromStatus: true,
+      toStatus: true,
+      reason: true,
+      note: true,
+      createdAt: true,
+      admin: { select: { id: true, name: true, email: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  },
+  payments: {
+    select: {
+      id: true,
+      amount: true,
+      method: true,
+      status: true,
+      providerRef: true,
+      description: true,
+      paidAt: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: "asc" },
+  },
+} satisfies Prisma.BookingSelect;
+
+type AdminBookingDetailRow = Prisma.BookingGetPayload<{ select: typeof adminBookingDetailSelect }>;
+
+function holdExpired(status: BookingStatus, holdExpiresAt: Date | null): boolean {
+  return status === "PENDING" && holdExpiresAt !== null && holdExpiresAt.getTime() <= Date.now();
+}
+
+/**
+ * A pending hold has lapsed when either the booking's deadline or any surviving ACTIVE
+ * hold has passed — availability ignores lapsed holds by exactly this rule, so approval
+ * must use the same one or it would confirm stock nobody is holding.
+ */
+function holdLapsed(holdExpiresAt: Date | null, activeHolds: Array<{ expiresAt: Date }>): boolean {
+  const now = Date.now();
+  return (
+    (holdExpiresAt !== null && holdExpiresAt.getTime() <= now) ||
+    activeHolds.some((hold) => hold.expiresAt.getTime() <= now)
+  );
+}
+
+function toAdminBookingSummary(row: AdminBookingSummaryRow) {
+  return {
+    id: row.id,
+    code: row.code,
+    status: row.status,
+    customer: row.customer,
+    startDate: formatCalendarDate(row.startDate),
+    endDate: formatCalendarDate(row.endDate),
+    rentalDays: rentalDays(row.startDate, row.endDate),
+    fulfilmentMethod: row.fulfilmentMethod,
+    totalAmount: money(row.totalAmount),
+    paidAmount: money(row.paidAmount),
+    currency: row.currency,
+    holdExpiresAt: row.holdExpiresAt?.toISOString() ?? null,
+    holdExpired: holdExpired(row.status, row.holdExpiresAt),
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+function toAdminBookingDetail(row: AdminBookingDetailRow) {
+  // Matches the public lookup: total = subtotal - discount + transport, inverted here.
+  const subtotal = row.totalAmount.plus(row.discountAmount).minus(row.transportCharge);
+  const outstanding = row.totalAmount.minus(row.paidAmount);
+  const amountDue = outstanding.isNegative() ? new Prisma.Decimal(0) : outstanding;
+
+  return {
+    id: row.id,
+    code: row.code,
+    status: row.status,
+    customer: row.customer,
+    createdBy: row.createdBy,
+    startDate: formatCalendarDate(row.startDate),
+    endDate: formatCalendarDate(row.endDate),
+    rentalDays: rentalDays(row.startDate, row.endDate),
+    fulfilmentMethod: row.fulfilmentMethod,
+    holdExpiresAt: row.holdExpiresAt?.toISOString() ?? null,
+    holdExpired:
+      holdExpired(row.status, row.holdExpiresAt) ||
+      (row.status === "PENDING" &&
+        holdLapsed(
+          null,
+          row.stockHolds.filter((hold) => hold.status === "ACTIVE"),
+        )),
+    items: row.items.map((line) => ({
+      id: line.id,
+      equipmentId: line.equipmentId,
+      equipmentName: line.equipment.name,
+      equipmentSlug: line.equipment.slug,
+      quantity: line.quantity,
+      days: line.days,
+      unitPrice: money(line.unitPrice),
+      priceForPeriod: money(line.priceForPeriod),
+    })),
+    packages: row.packages.map((pkg) => ({
+      id: pkg.id,
+      packageId: pkg.packageId,
+      packageName: pkg.packageName,
+      packagePrice: money(pkg.packagePrice),
+      quantity: pkg.quantity,
+      lineTotal: money(pkg.packagePrice.mul(pkg.quantity)),
+      items: pkg.items,
+    })),
+    stockHolds: row.stockHolds.map((hold) => ({
+      ...hold,
+      expiresAt: hold.expiresAt.toISOString(),
+      releasedAt: hold.releasedAt?.toISOString() ?? null,
+    })),
+    payments: row.payments.map((payment) => ({
+      ...payment,
+      amount: money(payment.amount),
+      paidAt: payment.paidAt?.toISOString() ?? null,
+      createdAt: payment.createdAt.toISOString(),
+    })),
+    statusHistory: row.statusHistories.map((entry) => ({
+      ...entry,
+      createdAt: entry.createdAt.toISOString(),
+    })),
+    totals: {
+      subtotal: money(subtotal),
+      discountAmount: money(row.discountAmount),
+      transportCharge: money(row.transportCharge),
+      totalAmount: money(row.totalAmount),
+      paidAmount: money(row.paidAmount),
+      amountDue: money(amountDue),
+    },
+    currency: row.currency,
+    notes: row.notes,
+    specialRequests: row.specialRequests,
+    dropoffAddress: row.dropoffAddress,
+    dropoffNotes: row.dropoffNotes,
+    pickupAddress: row.pickupAddress,
+    pickupNotes: row.pickupNotes,
+    approvedAt: row.approvedAt?.toISOString() ?? null,
+    cancelledAt: row.cancelledAt?.toISOString() ?? null,
+    fulfilmentDate: row.fulfilmentDate?.toISOString() ?? null,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+/** Units this booking physically occupies, from its frozen snapshots. */
+async function bookingDemand(client: AdminBookingClient, bookingId: string): Promise<DemandLine[]> {
+  const [items, packageItems] = await Promise.all([
+    client.bookingItem.findMany({
+      where: { bookingId },
+      select: { equipmentId: true, quantity: true },
+    }),
+    client.bookingPackageItem.findMany({
+      where: { packageBooking: { bookingId } },
+      select: { equipmentId: true, quantity: true },
+    }),
+  ]);
+
+  const demand = new Map<string, number>();
+  for (const line of [...items, ...packageItems]) {
+    if (!line.equipmentId) {
+      continue;
+    }
+    demand.set(line.equipmentId, (demand.get(line.equipmentId) ?? 0) + line.quantity);
+  }
+
+  return [...demand.entries()].map(([equipmentId, quantity]) => ({ equipmentId, quantity }));
+}
+
+/** Detail without side effects, for the write endpoints that just changed the row. */
+async function loadAdminBooking(id: string) {
+  const row = await db.booking.findUnique({ where: { id }, select: adminBookingDetailSelect });
+  if (!row) {
+    throw notFound(`Booking "${id}" was not found`);
+  }
+  return toAdminBookingDetail(row);
+}
+
+/** Admin detail runs lazy expiry first, so the page never presents a lapsed hold as live. */
+export async function getAdminBookingById(id: string) {
+  await expireOverdueBookings({ bookingId: id });
+  return loadAdminBooking(id);
+}
+
+/**
+ * Board filters: `status`, an overlapping rental window (`from`/`to`), and free text over
+ * code, customer name and phone. Expiry is swept (bounded) so the board is never stale.
+ */
+export async function listAdminBookings(query: AdminBookingListQuery) {
+  await expireOverdueBookings({ take: 200 });
+
+  const fromDate = query.from ? parseCalendarDate(query.from) : null;
+  const toDate = query.to ? parseCalendarDate(query.to) : null;
+  if (fromDate && toDate && fromDate.getTime() > toDate.getTime()) {
+    throw badRequest("to must be on or after from", {
+      from: formatCalendarDate(fromDate),
+      to: formatCalendarDate(toDate),
+    });
+  }
+
+  const where: Prisma.BookingWhereInput = {
+    ...(query.status ? { status: query.status } : {}),
+    ...(toDate ? { startDate: { lte: toDate } } : {}),
+    ...(fromDate ? { endDate: { gte: fromDate } } : {}),
+    ...(query.q
+      ? {
+          OR: [
+            { code: { contains: query.q, mode: "insensitive" } },
+            { customer: { name: { contains: query.q, mode: "insensitive" } } },
+            { customer: { phone: { contains: query.q } } },
+          ],
+        }
+      : {}),
+  };
+
+  const [total, rows] = await db.$transaction([
+    db.booking.count({ where }),
+    db.booking.findMany({
+      where,
+      select: adminBookingSummarySelect,
+      orderBy: { createdAt: "desc" },
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+    }),
+  ]);
+
+  return {
+    data: rows.map(toAdminBookingSummary),
+    meta: { total, page: query.page, pageSize: query.pageSize },
+  };
+}
+
+/**
+ * The only status writer. Stock effects follow the transition table: confirming consumes
+ * the holds (item rows take over), rejecting or cancelling releases them, completing just
+ * records the date.
+ *
+ * An approval whose hold window lapsed is re-checked here, because that is exactly the
+ * case the owner may still rescue: enough stock confirms, too little is HOLD_EXPIRED. A
+ * booking the sweeper already moved to EXPIRED stays blocked by the transition guard.
+ */
+export async function changeBookingStatus(
+  id: string,
+  input: UpdateBookingStatusInput,
+  adminId: string,
+) {
+  const changedId = await db.$transaction(
+    async (tx) => {
+      const booking = await tx.booking.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          status: true,
+          startDate: true,
+          endDate: true,
+          holdExpiresAt: true,
+          fulfilmentDate: true,
+          stockHolds: { where: { status: "ACTIVE" }, select: { expiresAt: true } },
+        },
+      });
+
+      if (!booking) {
+        throw notFound(`Booking "${id}" was not found`);
+      }
+
+      assertTransition(booking.status, input.status);
+
+      const now = new Date();
+      const demand = await bookingDemand(tx, id);
+      const equipmentIds = demand.map((line) => line.equipmentId).sort();
+      const lapsed = booking.status === "PENDING" && holdLapsed(booking.holdExpiresAt, booking.stockHolds);
+
+      if (input.status === "CONFIRMED") {
+        if (equipmentIds.length > 0) {
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${equipmentIds.join(",")}))`;
+        }
+
+        if (lapsed) {
+          const shortages = await findShortages({
+            equipmentIds,
+            startDate: booking.startDate,
+            endDate: booking.endDate,
+            excludeBookingId: booking.id,
+            client: tx,
+            demand,
+          });
+
+          if (shortages.length > 0) {
+            throw new ApiError(
+              409,
+              "HOLD_EXPIRED",
+              "The hold has expired and the stock is no longer available. Ask the customer to rebook.",
+              {
+                shortages,
+                holdExpiresAt: booking.holdExpiresAt?.toISOString() ?? null,
+              },
+            );
+          }
+        }
+      }
+
+      const guard = await tx.booking.updateMany({
+        where: { id, status: booking.status },
+        data: {
+          status: input.status,
+          ...(input.status === "CONFIRMED" ? { approvedAt: now } : {}),
+          ...(input.status === "CANCELLED" ? { cancelledAt: now } : {}),
+          ...(input.status === "COMPLETED"
+            ? { fulfilmentDate: booking.fulfilmentDate ?? now }
+            : {}),
+        },
+      });
+
+      if (guard.count === 0) {
+        throw new ApiError(409, "INVALID_TRANSITION", "The booking changed while it was being updated", {
+          from: booking.status,
+          to: input.status,
+        });
+      }
+
+      if (input.status === "CONFIRMED") {
+        await tx.stockHold.updateMany({
+          where: { bookingId: id, status: "ACTIVE" },
+          data: { status: "CONSUMED", releasedAt: now },
+        });
+      } else if (input.status === "REJECTED" || input.status === "CANCELLED") {
+        await tx.stockHold.updateMany({
+          where: { bookingId: id, status: "ACTIVE" },
+          data: { status: "RELEASED", releasedAt: now },
+        });
+      }
+
+      await tx.bookingStatusHistory.create({
+        data: {
+          bookingId: id,
+          fromStatus: booking.status,
+          toStatus: input.status,
+          reason: input.reason ?? null,
+          note: input.note ?? null,
+          adminId,
+        },
+      });
+
+      return id;
+    },
+    { isolationLevel: "Serializable", timeout: 10_000 },
+  );
+
+  return loadAdminBooking(changedId);
+}
+
+/**
+ * Recomputes the total instead of adding a delta to it: total = subtotal - discount +
+ * transport, so only the transport component moves. Allowed while the booking is still
+ * open, and the response tells the caller whether the customer must be told.
+ */
+export async function updateBookingTransportCharge(
+  id: string,
+  input: UpdateBookingTransportInput,
+  adminId: string,
+) {
+  const booking = await db.booking.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      status: true,
+      fulfilmentMethod: true,
+      dropoffAddress: true,
+      transportCharge: true,
+      totalAmount: true,
+    },
+  });
+
+  if (!booking) {
+    throw notFound(`Booking "${id}" was not found`);
+  }
+
+  if (booking.status !== "PENDING" && booking.status !== "CONFIRMED") {
+    throw conflict("The transport charge can only change before the booking is completed or closed", {
+      status: booking.status,
+    });
+  }
+
+  if (booking.fulfilmentMethod === "DELIVERY" && !booking.dropoffAddress) {
+    throw badRequest("A delivery booking needs a dropoff address before transport can be charged");
+  }
+
+  const nextTransport = new Prisma.Decimal(input.transportCharge.toFixed(2));
+  const nextTotal = booking.totalAmount.minus(booking.transportCharge).plus(nextTransport);
+
+  const guard = await db.booking.updateMany({
+    where: { id, status: booking.status },
+    data: { transportCharge: nextTransport, totalAmount: nextTotal },
+  });
+
+  if (guard.count === 0) {
+    throw conflict("The booking changed while the transport charge was being updated", {
+      status: booking.status,
+    });
+  }
+
+  const detail = await loadAdminBooking(id);
+
+  return {
+    ...detail,
+    totalChanged: !nextTotal.equals(booking.totalAmount),
+    changedBy: adminId,
+  };
+}
+
+/** Explicit re-check before approving a lapsed hold; read-only by design. */
+export async function checkAdminBookingAvailability(id: string) {
+  const booking = await db.booking.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      status: true,
+      startDate: true,
+      endDate: true,
+      holdExpiresAt: true,
+      stockHolds: { where: { status: "ACTIVE" }, select: { expiresAt: true } },
+    },
+  });
+
+  if (!booking) {
+    throw notFound(`Booking "${id}" was not found`);
+  }
+
+  const demand = await bookingDemand(db, id);
+  const shortages = await findShortages({
+    equipmentIds: demand.map((line) => line.equipmentId),
+    startDate: booking.startDate,
+    endDate: booking.endDate,
+    excludeBookingId: booking.id,
+    demand,
+  });
+
+  return {
+    bookingId: booking.id,
+    status: booking.status,
+    startDate: formatCalendarDate(booking.startDate),
+    endDate: formatCalendarDate(booking.endDate),
+    holdExpiresAt: booking.holdExpiresAt?.toISOString() ?? null,
+    holdExpired:
+      booking.status === "PENDING" && holdLapsed(booking.holdExpiresAt, booking.stockHolds),
+    available: shortages.length === 0,
+    shortages,
+  };
 }
 
 function isRetryableTransactionError(error: unknown): boolean {
