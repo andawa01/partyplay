@@ -72,6 +72,9 @@ model Equipment {
   pricePerWeek Decimal? @db.Decimal(10, 2)
   flatPrice    Decimal? @db.Decimal(10, 2) // flat price for the whole rental, regardless of days
 
+  // D3: which price field applies. pricePerWeek is deliberately unused in the MVP.
+  pricingMode PricingMode @default(PER_DAY)
+
   minQuantity Int      @default(1)
   maxQuantity Int      @default(10)
   isActive    Boolean  @default(true)
@@ -86,6 +89,11 @@ model Equipment {
 
   @@index([categoryId])
   @@index([slug])
+}
+
+enum PricingMode {
+  PER_DAY // pricePerDay × rental days × quantity
+  FLAT    // flatPrice × quantity, once per hire
 }
 
 model EquipmentInventory {
@@ -247,6 +255,7 @@ model Booking {
   startDate       DateTime      @db.Date // inclusive rental start (calendar date)
   endDate         DateTime      @db.Date // inclusive rental end (calendar date)
   status          BookingStatus @default(PENDING)
+  fulfilmentMethod FulfilmentMethod @default(COLLECTION) // D4; addresses are app-enforced
   notes           String?
   specialRequests String?
   totalAmount     Decimal       @db.Decimal(10, 2)
@@ -287,11 +296,16 @@ model Booking {
 
 enum BookingStatus {
   PENDING
-  APPROVED
+  CONFIRMED
   REJECTED
   CANCELLED
   COMPLETED
-  NO_SHOW
+  EXPIRED
+}
+
+enum FulfilmentMethod {
+  DELIVERY
+  COLLECTION
 }
 
 model BookingItem {

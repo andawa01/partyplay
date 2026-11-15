@@ -1,3 +1,5 @@
+import type { Prisma, PrismaClient } from "@prisma/client";
+
 import { db } from "../config/db";
 import { badRequest, notFound } from "../lib/api-error";
 import { formatCalendarDate, isPastDate, parseCalendarDate, todayInNairobi } from "../lib/dates";
@@ -12,17 +14,20 @@ import { money } from "../lib/money";
 //      a package consumes the equipment it includes, not just its own line.
 //   3. ACTIVE StockHold rows that have not expired, owned by pending bookings.
 //
-// Approved bookings deliberately do NOT rely on StockHold: their item rows are
+// Confirmed bookings deliberately do NOT rely on StockHold: their item rows are
 // the source of truth, so stock stays reserved after the hold window closes.
 // Pending holds and approved items are keyed off different statuses, so the
 // same units are never counted twice.
 // ---------------------------------------------------------------------------
 
 /** Booking statuses that consume inventory until cancelled or completed. */
-export const CONFIRMED_BOOKING_STATUSES = ["APPROVED"] as const;
+export const CONFIRMED_BOOKING_STATUSES = ["CONFIRMED"] as const;
 
 /** Booking statuses that reserve inventory through a temporary hold. */
 export const HOLDING_BOOKING_STATUSES = ["PENDING"] as const;
+
+/** The shared client, or a transaction so booking writes read a consistent snapshot. */
+export type AvailabilityClient = Prisma.TransactionClient | PrismaClient;
 
 export type AvailabilityInput = {
   equipmentIds: string[];
@@ -32,6 +37,8 @@ export type AvailabilityInput = {
   excludeBookingId?: string;
   /** Injectable clock so expiry logic is testable. */
   now?: Date;
+  /** Read through a transaction when called inside booking creation. */
+  client?: AvailabilityClient;
 };
 
 export type AvailabilityRow = {
@@ -61,6 +68,7 @@ export function isValidRange(startDate: Date, endDate: Date): boolean {
  */
 export async function getReservedQuantities(input: AvailabilityInput): Promise<Map<string, number>> {
   const { equipmentIds, excludeBookingId, now = new Date() } = input;
+  const client = input.client ?? db;
   const startDate = toDateOnly(input.startDate);
   const endDate = toDateOnly(input.endDate);
 
@@ -80,7 +88,7 @@ export async function getReservedQuantities(input: AvailabilityInput): Promise<M
   };
 
   const [standaloneItems, packageItems, activeHolds] = await Promise.all([
-    db.bookingItem.groupBy({
+    client.bookingItem.groupBy({
       by: ["equipmentId"],
       where: {
         equipmentId: { in: equipmentIds },
@@ -88,7 +96,7 @@ export async function getReservedQuantities(input: AvailabilityInput): Promise<M
       },
       _sum: { quantity: true },
     }),
-    db.bookingPackageItem.groupBy({
+    client.bookingPackageItem.groupBy({
       by: ["equipmentId"],
       where: {
         equipmentId: { in: equipmentIds },
@@ -96,7 +104,7 @@ export async function getReservedQuantities(input: AvailabilityInput): Promise<M
       },
       _sum: { quantity: true },
     }),
-    db.stockHold.groupBy({
+    client.stockHold.groupBy({
       by: ["equipmentId"],
       where: {
         equipmentId: { in: equipmentIds },
@@ -128,8 +136,9 @@ export async function getReservedQuantities(input: AvailabilityInput): Promise<M
 
 /** Availability per equipment for a date range. */
 export async function getAvailability(input: AvailabilityInput): Promise<AvailabilityRow[]> {
+  const client = input.client ?? db;
   const [equipment, reserved] = await Promise.all([
-    db.equipment.findMany({
+    client.equipment.findMany({
       where: { id: { in: input.equipmentIds } },
       select: { id: true, name: true, inventory: { select: { total: true } } },
     }),

@@ -22,6 +22,8 @@ const createFields = {
   pricePerDay: priceSchema.nullish(),
   pricePerWeek: priceSchema.nullish(),
   flatPrice: priceSchema.nullish(),
+  // D3: defaults to the daily rate, which is what most of the catalogue uses.
+  pricingMode: z.enum(["PER_DAY", "FLAT"]).default("PER_DAY"),
   minQuantity: z.number().int().min(1).max(10_000).default(1),
   maxQuantity: z.number().int().min(1).max(10_000).default(10),
   isActive: z.boolean().optional(),
@@ -45,6 +47,7 @@ export const updateEquipmentSchema = z
     pricePerDay: priceSchema.nullable(),
     pricePerWeek: priceSchema.nullable(),
     flatPrice: priceSchema.nullable(),
+    pricingMode: z.enum(["PER_DAY", "FLAT"]),
     minQuantity: createFields.minQuantity,
     maxQuantity: createFields.maxQuantity,
     isActive: z.boolean(),

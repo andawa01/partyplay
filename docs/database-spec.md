@@ -111,6 +111,7 @@ erDiagram
         decimal pricePerDay
         decimal pricePerWeek
         decimal flatPrice
+        string pricingMode
         int minQuantity
         int maxQuantity
         boolean isActive
@@ -148,6 +149,7 @@ erDiagram
         date startDate
         date endDate
         string status
+        string fulfilmentMethod
         decimal totalAmount
         decimal transportCharge
         decimal discountAmount
@@ -287,6 +289,7 @@ category (see `routes/categories.ts`).
 | `pricePerDay` | numeric(10,2) | yes | — | daily rate |
 | `pricePerWeek` | numeric(10,2) | yes | — | weekly rate |
 | `flatPrice` | numeric(10,2) | yes | — | flat per-unit price, ignores duration |
+| `pricingMode` | `PricingMode` | no | `PER_DAY` | D3: which price field applies |
 | `minQuantity` | int | no | `1` | per booking line |
 | `maxQuantity` | int | no | `10` | per booking line |
 | `isActive` | boolean | no | `true` | public visibility |
@@ -295,7 +298,9 @@ category (see `routes/categories.ts`).
 Indexes: `(categoryId)`, unique `(slug)`.
 
 **DB-enforced:** `minQuantity >= 1` and `maxQuantity >= minQuantity`.
-**App-enforced:** at least one of the three price fields must be set.
+**App-enforced:** `pricingMode` decides which field is used — `PER_DAY` needs
+`pricePerDay`, `FLAT` needs `flatPrice`. The pricing service rejects a missing price
+rather than charging zero. `pricePerWeek` is unused in the MVP (D3).
 
 ### 4.4 EquipmentInventory
 
@@ -370,6 +375,7 @@ Indexes: unique `(email)`, `(email)`.
 | `startDate` | date | no | — | inclusive rental start |
 | `endDate` | date | no | — | inclusive rental end |
 | `status` | `BookingStatus` | no | `PENDING` | see §6 |
+| `fulfilmentMethod` | `FulfilmentMethod` | no | `COLLECTION` | D4; app-enforced address requirement |
 | `notes` | text | yes | — | internal |
 | `specialRequests` | text | yes | — | customer-supplied |
 | `totalAmount` | numeric(10,2) | **no** | — | agreed total at submission |
@@ -562,7 +568,9 @@ require `appliesToId`; other scopes must leave it null.
 | `Role` | `OWNER`, `ADMIN`, `STAFF` |
 | `DiscountType` | `PERCENTAGE`, `FIXED_AMOUNT` |
 | `OfferAppliesTo` | `ALL_BOOKINGS`, `ALL_EQUIPMENT`, `ALL_PACKAGES`, `ONE_EQUIPMENT`, `ONE_PACKAGE` |
-| `BookingStatus` | `PENDING`, `APPROVED`, `REJECTED`, `CANCELLED`, `COMPLETED`, `NO_SHOW` |
+| `BookingStatus` | `PENDING`, `CONFIRMED`, `REJECTED`, `CANCELLED`, `COMPLETED`, `EXPIRED` |
+| `FulfilmentMethod` | `DELIVERY`, `COLLECTION` |
+| `PricingMode` | `PER_DAY`, `FLAT` |
 | `StockHoldStatus` | `ACTIVE`, `CONSUMED`, `RELEASED`, `EXPIRED` |
 | `PaymentMethod` | `MANUAL`, `MPESA`, `BANK_TRANSFER`, `CASH`, `OTHER` |
 | `PaymentStatus` | `PENDING`, `PAID`, `FAILED`, `REFUNDED` |
@@ -572,12 +580,12 @@ require `appliesToId`; other scopes must leave it null.
 ## 6. Booking lifecycle
 
 ```
-PENDING ──approve──▶ APPROVED ──fulfil───▶ COMPLETED
+PENDING ──confirm──▶ CONFIRMED ──fulfil───▶ COMPLETED
    │                    │
-   │                    └──no-show─────▶ NO_SHOW
    │                    └──cancel──────▶ CANCELLED
    ├──reject──────────────────────────▶ REJECTED
-   └──cancel──────────────────────────▶ CANCELLED
+   ├──cancel──────────────────────────▶ CANCELLED
+   └──hold lapses (system)────────────▶ EXPIRED
 ```
 
 Every transition writes a `BookingStatusHistory` row (`fromStatus` → `toStatus`,
@@ -588,7 +596,7 @@ optional `adminId`).
 | Trigger | `StockHold.status` | Effect on availability |
 |---|---|---|
 | Booking submitted (`PENDING`) | `ACTIVE` rows created, `expiresAt = now + holdMinutes` | units subtracted |
-| Approved (`APPROVED`) | all rows → `CONSUMED`, `releasedAt = now` | units still subtracted, now via item rows |
+| Confirmed (`CONFIRMED`) | all rows → `CONSUMED`, `releasedAt = now` | units still subtracted, now via item rows |
 | Rejected / cancelled before approval | rows → `RELEASED`, `releasedAt = now` | units returned |
 | Window lapses (`expiresAt` passed) | rows → `EXPIRED` (lazy sweep) | units returned once `expiresAt` is in the past |
 
@@ -606,8 +614,8 @@ Availability of an equipment item over a date range is:
 ```
 available = total - reserved
 
-reserved = Σ BookingItem.quantity          (APPROVED, overlapping)
-         + Σ BookingPackageItem.quantity   (APPROVED, overlapping)
+reserved = Σ BookingItem.quantity          (CONFIRMED, overlapping)
+         + Σ BookingPackageItem.quantity   (CONFIRMED, overlapping)
          + Σ StockHold.quantity            (ACTIVE, unexpired, PENDING, overlapping)
 ```
 
@@ -639,13 +647,13 @@ Requesting more than 3 chairs for those dates must be rejected.
 | `BookingStatus` | Counts against stock? | Via |
 |---|---|---|
 | `PENDING` | yes, until hold expiry | `StockHold` (`ACTIVE`) |
-| `APPROVED` | yes | `BookingItem` + `BookingPackageItem` |
+| `CONFIRMED` | yes | `BookingItem` + `BookingPackageItem` |
 | `COMPLETED` | no (rental window has passed) | — |
 | `REJECTED` | no | — |
 | `CANCELLED` | no | — |
-| `NO_SHOW` | no | — |
+| `EXPIRED` | no | — |
 
-Only `APPROVED` is queried as confirmed; a `COMPLETED` booking cannot overlap a
+Only `CONFIRMED` is queried as reserving; a `COMPLETED` booking cannot overlap a
 future range, so it needs no special case. If a booking can be completed *before*
 its `endDate`, it must be moved to `CANCELLED` instead.
 
@@ -658,7 +666,7 @@ Catalogue edits must never rewrite an agreed booking. Frozen fields:
 
 | Frozen value | Stored on | Source |
 |---|---|---|
-| Equipment price used | `BookingItem.unitPrice` | `Equipment.pricePerDay` / `pricePerWeek` / `flatPrice` |
+| Equipment price used | `BookingItem.unitPrice` | `Equipment.pricePerDay` / `flatPrice`, per `pricingMode` |
 | Line total for the period | `BookingItem.priceForPeriod` | computed at submit |
 | Billable days | `BookingItem.days` | `startDate`–`endDate` |
 | Package name | `PackageBooking.packageName` | `Package.name` |
@@ -727,11 +735,11 @@ days, inverted dates and negative stock are rejected with SQLSTATE `23514`.
 
 ### 8.2 Remaining gaps
 
-1. **No atomicity for stock checks.** `findShortages()` then insert is a
-   read-then-write race: two concurrent requests can both pass. Wrap booking
-   creation in `db.$transaction(..., { isolationLevel: 'Serializable' })` (retry
-   on `40001`) or take a per-equipment advisory lock. CHECK constraints do not
-   help here — they cannot express "sum of overlapping reservations ≤ total".
+1. **Stock checks are atomic only inside booking creation.** F6b wraps the check and
+   every write in one `Serializable` transaction and takes a per-equipment
+   `pg_advisory_xact_lock`, so two requests for the last unit cannot both pass.
+   `GET /api/availability` remains advisory; CHECK constraints cannot express
+   "sum of overlapping reservations ≤ total".
 2. **Hold expiry is lazy.** Nothing sweeps `StockHold`; a `PENDING` booking never
    moves to a terminal state and `Booking.holdExpiresAt` drifts. Add a periodic
    job that marks expired holds `EXPIRED` and cancels abandoned bookings.
@@ -743,12 +751,12 @@ days, inverted dates and negative stock are rejected with SQLSTATE `23514`.
 5. **`Offer.discountValue` bounds are app-enforced.** `PERCENTAGE` must be
    0–100 and `FIXED_AMOUNT` must be positive; this is a conditional rule, so it
    needs either a `CHECK` with `discountType` or service validation.
-6. **`Equipment` pricing method is ambiguous.** If `pricePerDay` and `flatPrice`
-   are both set, precedence is undefined. Document and enforce one method per
-   item (e.g. a `pricingMode` enum).
-7. **`Booking.code` default is a `cuid()`.** The intended `PP-XXXXXX` public
-   code must be generated before insert; the default only exists to keep the
-   column non-null.
+6. **`Equipment` pricing method — resolved in migration 5.** `pricingMode`
+   (`PER_DAY` | `FLAT`) decides which price field applies; `pricePerWeek` is
+   unused in the MVP.
+7. **`Booking.code` — resolved in F6b.** `lib/booking-code.ts` generates
+   `PP-` + six base32 characters before insert; the `cuid()` default only keeps
+   the column non-null.
 8. **`Booking.paidAmount <= totalAmount` is app-enforced** and deliberately not a
    `CHECK`: editing `totalAmount` after taking payment would otherwise make
    legitimate rows unwritable. Recompute `paidAmount` from `Payment` rows.
@@ -767,6 +775,7 @@ days, inverted dates and negative stock are rejected with SQLSTATE `23514`.
 | 2 | `20261027133627_full_schema_revised` | Category tree, equipment pricing rework, `Customer.email` optional, booking delivery/transport fields, `PackageBooking` snapshots, drop `UserSession` |
 | 3 | `20261113194014_phase_2_2_stock_holds_and_package_snapshots` | Add `StockHold` + `StockHoldStatus`, add `BookingPackageItem`, add `PackageBooking.quantity`, drop JSON `PackageBooking.itemsSnapshot` |
 | 4 | `20261113194645_harden_booking_index_and_check_constraints` | `(status, startDate, endDate)` index; `CHECK` constraints for quantities and date ranges |
+| 5 | `20261115180000_booking_domain_fixes` | `BookingStatus` rebuilt (`CONFIRMED`, `EXPIRED`; `APPROVED`, `NO_SHOW` removed); `Equipment.pricingMode`; `Booking.fulfilmentMethod` |
 
 Apply with `npm run db:migrate --workspace server` (`prisma migrate dev`).
 Check state with `npx prisma migrate status` from `server/`.
