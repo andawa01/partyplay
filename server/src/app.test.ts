@@ -291,6 +291,18 @@ describe.skipIf(!databaseUrl)("API smoke tests", () => {
     expect(Number(cached.paidAmount)).toBe(1500);
   }, 30_000);
 
+  it("throttles public booking lookups", async () => {
+    // 60 lookups per window are allowed; the next one is refused.
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      const { status } = await api("GET", "/api/bookings/PP-AAAAAA");
+      expect(status).toBe(404);
+    }
+
+    const blocked = await api("GET", "/api/bookings/PP-AAAAAA");
+    expect(blocked.status).toBe(429);
+    expect(blocked.body).toMatchObject({ code: "RATE_LIMITED" });
+  }, 30_000);
+
   it("reflects the written booking and money on the dashboard", async () => {
     const { status, body } = await api("GET", "/api/admin/dashboard", { cookie });
     expect(status).toBe(200);

@@ -22,6 +22,13 @@ import siteRouter from "./routes/site";
 export function createApp(): Express {
   const app = express();
 
+  // Behind Caddy the socket is the proxy, so limiter keys and logs would all read as one
+  // address unless Express is told how many hops to trust. Direct dev traffic stays as is.
+  const proxyHops = Number(process.env.TRUST_PROXY_HOPS ?? 0);
+  if (Number.isInteger(proxyHops) && proxyHops > 0) {
+    app.set("trust proxy", proxyHops);
+  }
+
   app.use(requestId);
   // `credentials` lets the client send the session cookie when it calls the API on a
   // different origin (it is same-origin behind the Vite proxy and Caddy in production).
