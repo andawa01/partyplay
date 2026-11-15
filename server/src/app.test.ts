@@ -19,12 +19,13 @@ import { formatCalendarDate, todayInNairobi } from "./lib/dates";
  * Fixtures are created here and removed afterwards, so the suite is repeatable against a
  * seeded database and never depends on seed ids.
  *
- * Skipped when DATABASE_URL is absent; if the database is unreachable the hook fails with
- * the connection error rather than a misleading assertion.
+ * Whether the suite runs is decided before any test loads: the global setup probes the
+ * database and sets PARTYPLAY_SMOKE_DB. CI supplies a DATABASE_URL even when no database
+ * is running, so the variable alone cannot gate this.
  */
-const databaseUrl = process.env.DATABASE_URL;
+const smokeDbAvailable = process.env.PARTYPLAY_SMOKE_DB === "run";
 
-describe.skipIf(!databaseUrl)("API smoke tests", () => {
+describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
   const password = "smoke-test-password";
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 10_000)}`;
   const email = `smoke-${suffix}@example.test`;
@@ -148,10 +149,10 @@ describe.skipIf(!databaseUrl)("API smoke tests", () => {
   }, 30_000);
 
   afterAll(async () => {
-    if (!databaseUrl) return;
-
     if (!server) {
-      await db.$disconnect();
+      if (db) {
+        await db.$disconnect().catch(() => undefined);
+      }
       return;
     }
 
