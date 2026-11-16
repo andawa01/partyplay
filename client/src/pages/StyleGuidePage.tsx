@@ -1,7 +1,9 @@
 import { useState, type ReactNode } from "react";
 
+import { ApiError } from "../lib/api";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
+import { ErrorState } from "../components/ui/error-state";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import {
@@ -11,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
+import { Skeleton } from "../components/ui/skeleton";
 import { Textarea } from "../components/ui/textarea";
 
 const brandSteps = [
@@ -88,6 +91,13 @@ export default function StyleGuidePage() {
   // Starts empty on purpose: Radix only knows an item's label once that item has
   // mounted, so a preset value would render a blank trigger until first opened.
   const [packageChoice, setPackageChoice] = useState("");
+  const [retrying, setRetrying] = useState(false);
+
+  // Demo only: show the retry's busy state for a moment, then return to the failure.
+  const handleDemoRetry = () => {
+    setRetrying(true);
+    setTimeout(() => setRetrying(false), 1200);
+  };
 
   return (
     <section className="mx-auto max-w-5xl px-4 py-10">
@@ -207,6 +217,67 @@ export default function StyleGuidePage() {
             <p className="text-xs text-slate-500">
               Selected: {packageChoice === "" ? "nothing yet" : packageChoice}
             </p>
+          </div>
+        </div>
+      </Section>
+
+      <Section
+        title="Loading"
+        description="Skeletons mirror the shape of the content that is arriving, so the page does not jump when data lands."
+      >
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div className="rounded-lg border border-slate-200 bg-white p-6">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="mt-4 h-8 w-2/3" />
+            <Skeleton className="mt-3 h-4 w-full" />
+            <Skeleton className="mt-2 h-4 w-5/6" />
+          </div>
+
+          <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-6">
+            {[0, 1, 2].map((row) => (
+              <div key={row} className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-3 w-1/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      <Section
+        title="Errors"
+        description="One surface for every failed request: server wording, the error code, and a retry only when retrying can help."
+      >
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-slate-900">With retry</h3>
+            <ErrorState
+              error={
+                new ApiError(
+                  409,
+                  "INVALID_TRANSITION",
+                  "A completed booking cannot be cancelled.",
+                )
+              }
+              onRetry={handleDemoRetry}
+              isRetrying={retrying}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-slate-900">Retry cannot help</h3>
+            <ErrorState
+              title="Equipment not found"
+              error={new ApiError(404, "NOT_FOUND", "That equipment listing no longer exists.")}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-slate-900">Unexpected failure</h3>
+            <ErrorState error={new Error("We could not reach the server.")} />
           </div>
         </div>
       </Section>
