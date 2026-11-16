@@ -1,1 +1,40 @@
 @import "tailwindcss";
+
+/*
+ * PartyPlay palette: sky blue, baby pink and white.
+ * Structural surfaces stay white; sky blue carries primary actions, links and focus;
+ * baby pink is the accent only, never the colour of a primary action.
+ */
+@theme {
+  --color-brand-50: #f0f9ff;
+  --color-brand-100: #e0f2fe;
+  --color-brand-200: #bae6fd;
+  --color-brand-300: #7dd3fc;
+  --color-brand-400: #38bdf8;
+  --color-brand-500: #0ea5e9;
+  --color-brand-600: #0284c7;
+  --color-brand-700: #0369a1;
+  --color-brand-800: #075985;
+  --color-brand-900: #0c4a6e;
+
+  --color-blush-50: #fdf2f7;
+  --color-blush-100: #fbe4ee;
+  --color-blush-200: #f7c9db;
+  --color-blush-300: #f1a3c1;
+  --color-blush-400: #e97aa5;
+  --color-blush-500: #de5588;
+  --color-blush-600: #c73e70;
+  --color-blush-700: #a52f5c;
+  --color-blush-800: #86274c;
+  --color-blush-900: #6e2240;
+}
+
+@layer base {
+  body {
+    @apply bg-white text-slate-800 antialiased;
+  }
+
+  ::selection {
+    @apply bg-blush-200 text-blush-900;
+  }
+}

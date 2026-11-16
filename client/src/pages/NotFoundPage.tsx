@@ -5,7 +5,7 @@ export default function NotFoundPage() {
     <section className="mx-auto max-w-6xl px-4 py-24 text-center">
       <h1 className="text-4xl font-bold text-slate-900">404</h1>
       <p className="mt-2 text-slate-600">This page does not exist.</p>
-      <Link to="/" className="mt-6 inline-block text-indigo-600 hover:underline">
+      <Link to="/" className="mt-6 inline-block font-medium text-brand-700 hover:text-brand-800 hover:underline">
         Back to home
       </Link>
     </section>

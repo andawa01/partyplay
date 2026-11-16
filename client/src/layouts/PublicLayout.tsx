@@ -12,9 +12,9 @@ const links = [
 export default function PublicLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-white text-slate-800">
-      <header className="border-b border-slate-200">
+      <header className="border-b border-blush-100">
         <nav className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
-          <NavLink to="/" className="text-xl font-bold text-indigo-600">
+          <NavLink to="/" className="text-xl font-bold text-brand-600">
             PartyPlay
           </NavLink>
           <ul className="flex gap-4 text-sm font-medium">
@@ -23,7 +23,7 @@ export default function PublicLayout() {
                 <NavLink
                   to={link.to}
                   className={({ isActive }) =>
-                    isActive ? 'text-indigo-600' : 'text-slate-600 hover:text-indigo-600'
+                    isActive ? 'text-brand-700 underline decoration-blush-300 decoration-2 underline-offset-4' : 'text-slate-600 hover:text-brand-700'
                   }
                 >
                   {link.label}
@@ -38,7 +38,7 @@ export default function PublicLayout() {
         <Outlet />
       </main>
 
-      <footer className="border-t border-slate-200 bg-slate-50">
+      <footer className="border-t border-blush-100 bg-blush-50">
         <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-slate-500">
           © {new Date().getFullYear()} PartyPlay. Party equipment hire.
         </div>

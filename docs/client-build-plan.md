@@ -225,8 +225,11 @@ balance client-side for display of record — show the server's `paidAmount`/`am
   shifts a day), no `toISOString().slice(0,10)` on a local Date.
 - **Async UI:** every data view has loading, empty, error-with-retry and success states. A
   failed admin action keeps the form values and shows the server message.
+- **Palette:** sky blue (`brand-*`), baby pink (`blush-*`) and white, defined once in
+  `src/index.css`. Sky blue carries primary actions, links and focus; baby pink is an accent
+  only. Use the tokens, never raw hex or the old indigo classes.
 - **Accessibility:** labels tied to inputs, focus visible, dialogs trap focus, status
-  changes announced. Existing colour classes stay.
+  changes announced.
 - **No new global state library:** React Query owns server state; local state covers the rest.
 
 ---
