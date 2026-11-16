@@ -15,7 +15,7 @@ export default function AdminLayout() {
       <header className="bg-slate-900 text-white">
         <nav className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
           <NavLink to="/admin/dashboard" className="text-lg font-bold">
-            PartyPlay Admin
+            PartyPlay <span className="text-brand-300">Admin</span>
           </NavLink>
           <ul className="flex gap-4 text-sm">
             {links.map((link) => (
@@ -23,7 +23,7 @@ export default function AdminLayout() {
                 <NavLink
                   to={link.to}
                   className={({ isActive }) =>
-                    isActive ? 'text-indigo-300' : 'text-slate-300 hover:text-white'
+                    isActive ? 'text-brand-300' : 'text-slate-300 hover:text-white'
                   }
                 >
                   {link.label}

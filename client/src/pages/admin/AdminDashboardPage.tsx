@@ -5,7 +5,7 @@ export default function AdminDashboardPage() {
       <p className="mt-2 text-slate-600">Business overview coming soon.</p>
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         {['Bookings', 'Equipment', 'Revenue'].map((label) => (
-          <div key={label} className="rounded-xl bg-white p-6 shadow">
+          <div key={label} className="rounded-xl border border-blush-100 bg-white p-6 shadow-sm">
             <p className="text-sm text-slate-500">{label}</p>
             <p className="mt-2 text-2xl font-semibold text-slate-900">—</p>
           </div>
