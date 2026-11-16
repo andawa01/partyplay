@@ -246,23 +246,19 @@ to every slice. Until then, the manual pass above is the acceptance evidence.
 
 ---
 
-## 7. Open questions for the owner
+## 7. Product decisions (settled 15 November 2026)
 
-These affect UI promises, not just implementation:
+These were open questions; they are now decided so the UI copy and navigation can be
+finalised. Each can still be revisited, but the client work proceeds on these defaults.
 
-1. **Guest count** is not captured by the API (deferred D5). Package cards cannot enforce
-   minimum/maximum party size — should the form ask for it without enforcing, or omit it?
-2. **Offers cannot be redeemed.** Should the offers page stay promotional-only, or hold
-   until a discount engine exists?
-3. **No online payment.** The booking success screen must say a request is pending and the
-   owner will confirm — no "pay now" affordance.
-4. **Booking code is the only credential.** The status page shows the customer's own
-   details, so it must not be linked with the code in a URL that gets shared carelessly.
-   Confirm whether the code is entered by hand only.
-5. **Images are URLs** supplied in the admin forms; there is no upload. Confirm where the
-   photos will be hosted.
-6. **Two menu items may be premature:** "Offers" and package detail depend on decisions
-   above. Confirm the public navigation for launch.
+| # | Question | Decision | Consequence for the client |
+|---|---|---|---|
+| 1 | Guest count is not captured by the API (deferred D5) | **Omit it.** Do not ask for or validate a party size anywhere in the booking flow. | Package cards show name, included items and price only; no "suits X–Y guests" badge, even if the catalogue stores `minQuantity`/`maxQuantity`. |
+| 2 | Offers cannot be redeemed | **Promotional-only.** The offers page stays, but every offer is labelled as a promotion with its validity dates and has no redeem/apply/discount CTA. | No coupon field on the booking form; no price line that implies a discount was applied. |
+| 3 | No online payment | **Pending-request wording only.** The success screen says the request was received and is pending owner confirmation; no "pay now" or payment method selector. | Booking success copy: reference code, hold expiry, "we will confirm by phone or WhatsApp". |
+| 4 | Booking code is the only credential | **Manual entry only.** The status page is reached by typing the code; the code is never put in a shareable URL or query string. | Route is `/booking/status` with a code field; no `/booking/status/:code` route and no code in links. |
+| 5 | Images are URLs with no upload | **Owner hosts externally** (any public URL, e.g. Cloudinary or a shared drive); the admin form accepts a URL and the public page renders it with a neutral fallback when it fails to load. | Admin equipment/package forms have an `imageUrl` text field plus help text "paste a public image URL"; public cards use `onError` fallback. |
+| 6 | Are "Offers" and package detail premature? | **Keep both.** Offers page ships as a promotions list; package detail page ships showing included items and price. | Full navigation (`Home, Equipment, Packages, Offers, Booking, Contact`) ships at launch. |
 
 ---
 
