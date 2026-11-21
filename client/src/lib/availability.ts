@@ -29,60 +29,16 @@ export interface AvailabilityMeta {
   note?: string;
 }
 
-export interface PackageAvailabilityItem {
-  equipmentId: string;
-  name: string;
-  total: number;
-  reserved: number;
-  available: number;
-  quantityPerPackage: number;
-  required: number;
-  shortfall: number;
-}
-
-export interface PackageAvailabilityResponse {
-  package: {
-    id: string;
-    slug: string;
-    name: string;
-    price: string;
-  };
-  startDate: string;
-  endDate: string;
-  requestedQuantity: number;
-  minAvailable: number;
-  bookable: boolean;
-  items: PackageAvailabilityItem[];
-}
-
-/** One included item and how many units one package consumes. */
+/** One equipment item and the units one complete selection consumes. */
 export interface EquipmentDemand {
   equipmentId: string;
   name: string;
-  quantityPerPackage: number;
+  requiredUnits: number;
 }
 
-export type AvailabilityTarget =
-  | {
-      kind: "equipment";
-      slug: string;
-      id: string;
-      name: string;
-      imageUrl: string | null;
-    }
-  | {
-      kind: "package";
-      slug: string;
-      name: string;
-      imageUrl: string | null;
-      /** Equipment id to per-package quantity for the package month grid. */
-      demands: EquipmentDemand[];
-      packageDuration: number | null;
-    };
-
 /**
- * A package is only available on a day when every included item is. Combine each item's
- * month calendar into the number of whole packages that fit on that day.
+ * A selection is only available on a day when every included item is. Combine each item's
+ * month calendar into the number of complete selections that fit on that day.
  */
 export function combineCalendars(
   calendars: CalendarDay[][],
@@ -98,15 +54,11 @@ export function combineCalendars(
   return calendars[0].map((day) => {
     const availablePackages = demands.map((demand, index) => {
       const units = availabilityByEquipment[index].get(day.date) ?? 0;
-      return Math.floor(units / demand.quantityPerPackage);
+      return Math.floor(units / demand.requiredUnits);
     });
     return {
       date: day.date,
       available: Math.max(0, Math.min(...availablePackages)),
     };
   });
-}
-
-export function isDayUnavailable(day: CalendarDay | undefined): boolean {
-  return day !== undefined && day.available <= 0;
 }

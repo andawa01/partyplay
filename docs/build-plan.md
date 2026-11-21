@@ -441,6 +441,9 @@ dropoffAddress?, pickupAddress?, packages: [{ packageId, quantity }], equipment:
 - Overbooking must be impossible under concurrency; the transaction is the only defence.
 - A request that cannot be met returns `409` with per-equipment shortfalls in `details`.
 - Prices come from the database, never from the request body.
+- `POST /api/bookings/quote` returns the same catalogue validation and `priceBooking`
+  result without writing anything. It exists so the form's live estimate has the same
+  source of truth as creation; it never checks or holds stock.
 - The response states explicitly that the request is pending and not confirmed
   (requirement §3.10) — the client renders that copy, the API just must not imply
   confirmation.
@@ -713,7 +716,8 @@ the last unit and assert `[201, 409]`.
 | C3 | Equipment catalogue and detail | — | ✅ | `feat/c3-equipment-catalogue` |
 | C4 | Packages and offers | — | ✅ | `feat/c4-packages-offers` |
 | C5 | Availability calendar | — | ✅ | `feat/c5-availability-calendar` |
-| C6–C11 | Client slices | — | ☐ | `feat/c<n>-<slug>` |
+| C6 | Booking form | — | ✅ | `feat/c6-booking-form` |
+| C7–C11 | Client slices | — | ☐ | `feat/c<n>-<slug>` |
 
 ---
 

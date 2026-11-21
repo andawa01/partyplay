@@ -10,14 +10,6 @@ export const queryKeys = {
 
   packages: (slug?: string) =>
     slug ? (["packages", slug] as const) : (["packages"] as const),
-  packageAvailability: (
-    slug: string,
-    startDate: string,
-    endDate: string,
-    quantity: number,
-  ) =>
-    (["packages", slug, "availability", startDate, endDate, quantity] as const),
-
   offers: () => ["offers"] as const,
 
   availability: (equipmentIds: string[], startDate: string, endDate: string) =>
@@ -27,6 +19,12 @@ export const queryKeys = {
     (["calendar", equipmentId, month] as const),
 
   booking: (code: string) => ["booking", code] as const,
+  bookingQuote: (request: {
+    startDate: string;
+    endDate: string;
+    packages: Array<{ packageId: string; quantity: number }>;
+    equipment: Array<{ equipmentId: string; quantity: number }>;
+  }) => ["bookings", "quote", request] as const,
 
   admin: {
     me: () => ["admin", "me"] as const,

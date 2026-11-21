@@ -1,147 +1,259 @@
-import { ArrowRight, Boxes, CalendarDays, LifeBuoy, Package, Sparkles } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowRight, LifeBuoy, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { AvailabilityCalendar } from "../../components/availability/AvailabilityCalendar";
-import { AvailabilitySummary } from "../../components/availability/AvailabilitySummary";
-import { Badge } from "../../components/ui/badge";
+import { BookingDetailsStep } from "../../components/booking/BookingDetailsStep";
+import { BookingEstimate } from "../../components/booking/BookingEstimate";
+import { BookingItemsStep, StepHeading } from "../../components/booking/BookingItemsStep";
+import { BookingSuccess } from "../../components/booking/BookingSuccess";
 import { Button } from "../../components/ui/button";
 import { ErrorState } from "../../components/ui/error-state";
 import { Skeleton } from "../../components/ui/skeleton";
+import { useCalendarForDemands, useSelectionAvailability } from "../../hooks/use-availability";
 import {
-  useCalendarForDemands,
-  useEquipmentAvailability,
-  usePackageAvailability,
-} from "../../hooks/use-availability";
-import { useEquipmentDetail, useEquipmentList } from "../../hooks/use-catalogue";
-import { usePackageDetail } from "../../hooks/use-packages";
+  useBookingQuote,
+  useCreateBooking,
+} from "../../hooks/use-bookings";
+import { useEquipmentList } from "../../hooks/use-catalogue";
+import { usePackages } from "../../hooks/use-packages";
+import { useSite } from "../../hooks/use-site";
 import { isApiError } from "../../lib/api";
+import {
+  BookingValidationError,
+  bookingDetailsSchema,
+  hasValidRentalDates,
+  serverFieldErrors,
+  type BookingDetails,
+  type BookingQuoteRequest,
+} from "../../lib/bookings";
 import { currentMonth, todayCalendarDate } from "../../lib/dates";
+
+const EMPTY_DETAILS: BookingDetails = {
+  name: "",
+  phone: "",
+  email: "",
+  fulfilmentMethod: "DELIVERY",
+  dropoffAddress: "",
+  pickupAddress: "",
+  notes: "",
+};
 
 export default function BookingPage() {
   const [searchParams] = useSearchParams();
+  const packageSlug = searchParams.get("package")?.trim() ?? "";
   const equipmentSlug = searchParams.get("equipment")?.trim() ?? "";
-  const packageSlug =
-    equipmentSlug === "" ? (searchParams.get("package")?.trim() ?? "") : "";
-  const isEquipment = equipmentSlug !== "";
-  const isPackage = packageSlug !== "";
-  const targetKey = isEquipment
-    ? `equipment:${equipmentSlug}`
-    : isPackage
-      ? `package:${packageSlug}`
-      : "none";
+  const seedKey = `${packageSlug}|${equipmentSlug}`;
 
+  const packagesQuery = usePackages();
+  const catalogueQuery = useEquipmentList({ page: 1, pageSize: 100 });
+  const site = useSite();
+  const currency = site.data?.currency ?? "KES";
+
+  const [selectedPackageId, setSelectedPackageId] = useState("");
+  const [packageQuantity, setPackageQuantity] = useState(1);
+  const [equipmentQuantities, setEquipmentQuantities] = useState<Record<string, number>>({});
   const [month, setMonth] = useState(currentMonth());
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [details, setDetails] = useState<BookingDetails>(EMPTY_DETAILS);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<keyof BookingDetails, string>>
+  >({});
+  const [submitError, setSubmitError] = useState<unknown>(null);
+  const [seedNote, setSeedNote] = useState("");
+  const seededKey = useRef("");
+
+  const packages = packagesQuery.data ?? [];
+  const equipment = catalogueQuery.data?.items ?? [];
+  const selectedPackage = packages.find((pkg) => pkg.id === selectedPackageId);
+
+  const equipmentById = useMemo(
+    () => new Map(equipment.map((item) => [item.id, item])),
+    [equipment],
+  );
+  const equipmentBySlug = useMemo(
+    () => new Map(equipment.map((item) => [item.slug, item])),
+    [equipment],
+  );
+
+  const includedUnits = useMemo(() => {
+    const included: Record<string, number> = {};
+    if (!selectedPackage) {
+      return included;
+    }
+    for (const item of selectedPackage.items) {
+      const match = equipmentBySlug.get(item.equipment.slug);
+      if (match) {
+        included[match.id] = (included[match.id] ?? 0) + item.quantity * packageQuantity;
+      }
+    }
+    return included;
+  }, [equipmentBySlug, packageQuantity, selectedPackage]);
+
+  const unresolvedPackageItems = useMemo(() => {
+    if (!selectedPackage) {
+      return [];
+    }
+    return selectedPackage.items
+      .filter((item) => !equipmentBySlug.has(item.equipment.slug))
+      .map((item) => item.equipment.name);
+  }, [equipmentBySlug, selectedPackage]);
+
+  const requiredUnits = useMemo(() => {
+    const required: Record<string, number> = { ...includedUnits };
+    for (const [equipmentId, quantity] of Object.entries(equipmentQuantities)) {
+      if (quantity > 0) {
+        required[equipmentId] = Math.max(required[equipmentId] ?? 0, quantity);
+      }
+    }
+    return required;
+  }, [equipmentQuantities, includedUnits]);
+
+  const demands = useMemo(
+    () =>
+      Object.entries(requiredUnits)
+        .filter(([, quantity]) => quantity > 0)
+        .map(([equipmentId, quantity]) => ({
+          equipmentId,
+          name: equipmentById.get(equipmentId)?.name ?? "Equipment item",
+          requiredUnits: quantity,
+        })),
+    [equipmentById, requiredUnits],
+  );
+
+  const hasExtras = Object.values(equipmentQuantities).some((quantity) => quantity > 0);
+  const hasItems = selectedPackageId !== "" || hasExtras;
+  const validDates = hasValidRentalDates(startDate, endDate);
 
   useEffect(() => {
-    setStartDate("");
-    setEndDate("");
-    setMonth(currentMonth());
-  }, [targetKey]);
-
-  const today = todayCalendarDate();
-  const equipmentQuery = useEquipmentDetail(equipmentSlug);
-  const packageQuery = usePackageDetail(packageSlug);
-  const catalogueQuery = useEquipmentList(
-    { page: 1, pageSize: 100 },
-    { enabled: isPackage },
-  );
-
-  const equipment = equipmentQuery.data;
-  const pkg = packageQuery.data;
-
-  const packageDemands = useMemo(() => {
-    if (!pkg || !catalogueQuery.data) {
-      return [];
+    if (!packagesQuery.data || !catalogueQuery.data) {
+      return;
     }
-    const bySlug = new Map(catalogueQuery.data.items.map((item) => [item.slug, item]));
-    return pkg.items.flatMap((item) => {
-      const match = bySlug.get(item.equipment.slug);
-      return match
-        ? [
-            {
-              equipmentId: match.id,
-              name: match.name,
-              quantityPerPackage: item.quantity,
-            },
-          ]
-        : [];
-    });
-  }, [pkg, catalogueQuery.data]);
-
-  const missingPackageItems = useMemo(() => {
-    if (!pkg || !catalogueQuery.data) {
-      return [];
+    if (seededKey.current === seedKey) {
+      return;
     }
-    const slugs = new Set(catalogueQuery.data.items.map((item) => item.slug));
-    return pkg.items.filter((item) => !slugs.has(item.equipment.slug));
-  }, [pkg, catalogueQuery.data]);
+    seededKey.current = seedKey;
 
-  const demands = useMemo(() => {
-    if (isEquipment && equipment) {
-      return [
-        {
-          equipmentId: equipment.id,
-          name: equipment.name,
-          quantityPerPackage: 1,
-        },
-      ];
+    const matchedPackage = packageSlug
+      ? packagesQuery.data.find((pkg) => pkg.slug === packageSlug)
+      : undefined;
+    const matchedEquipment = equipmentSlug
+      ? catalogueQuery.data.items.find((item) => item.slug === equipmentSlug)
+      : undefined;
+
+    setSelectedPackageId(matchedPackage?.id ?? "");
+    setPackageQuantity(1);
+    const seedQuantity = matchedEquipment
+      ? Math.min(
+          Math.max(1, matchedEquipment.minQuantity),
+          matchedEquipment.maxQuantity,
+        )
+      : 0;
+    setEquipmentQuantities(
+      matchedEquipment && seedQuantity > 0 ? { [matchedEquipment.id]: seedQuantity } : {},
+    );
+
+    const missing: string[] = [];
+    if (packageSlug && !matchedPackage) {
+      missing.push("package");
     }
-    return isPackage ? packageDemands : [];
-  }, [equipment, isEquipment, isPackage, packageDemands]);
+    if (equipmentSlug && !matchedEquipment) {
+      missing.push("equipment item");
+    }
+    setSeedNote(
+      missing.length > 0
+        ? `The ${missing.join(" and ")} from that link is no longer available. Choose a current option below.`
+        : "",
+    );
+  }, [catalogueQuery.data, equipmentSlug, packageSlug, packagesQuery.data, seedKey]);
+
+  const unitLabel =
+    selectedPackage && !hasExtras ? "package" : demands.length > 1 ? "setup" : "unit";
 
   const calendar = useCalendarForDemands(demands, month);
-  const equipmentAvailability = useEquipmentAvailability(
-    isEquipment ? (equipment?.id ?? "") : "",
-    startDate,
-    endDate,
-  );
-  const packageAvailability = usePackageAvailability(
-    isPackage ? packageSlug : "",
-    startDate,
-    endDate,
-  );
 
-  const targetPending = isEquipment
-    ? equipmentQuery.isPending
-    : isPackage
-      ? packageQuery.isPending || catalogueQuery.isPending
-      : false;
-
-  const targetError = isEquipment
-    ? equipmentQuery.error
-    : isPackage
-      ? packageQuery.error ?? catalogueQuery.error
-      : null;
-  const notFound =
-    (isEquipment &&
-      isApiError(equipmentQuery.error) &&
-      equipmentQuery.error.status === 404) ||
-    (isPackage &&
-      isApiError(packageQuery.error) &&
-      packageQuery.error.status === 404);
-
-  const hasRange = startDate !== "" && endDate !== "";
-  const summaryPending =
-    hasRange &&
-    (isEquipment ? equipmentAvailability.isPending : packageAvailability.isPending);
-  const summaryError = isEquipment
-    ? equipmentAvailability.error
-    : packageAvailability.error;
-  const summaryRetry = () => {
-    if (isEquipment) {
-      void equipmentAvailability.refetch();
-    } else {
-      void packageAvailability.refetch();
+  const quoteRequest = useMemo<BookingQuoteRequest | null>(() => {
+    if (!hasItems || !validDates) {
+      return null;
     }
-  };
-  const summaryRetrying = isEquipment
-    ? equipmentAvailability.isFetching
-    : packageAvailability.isFetching;
+    return {
+      startDate,
+      endDate,
+      packages:
+        selectedPackageId !== ""
+          ? [{ packageId: selectedPackageId, quantity: packageQuantity }]
+          : [],
+      equipment: Object.entries(equipmentQuantities)
+        .filter(([, quantity]) => quantity > 0)
+        .map(([equipmentId, quantity]) => ({ equipmentId, quantity })),
+    };
+  }, [
+    endDate,
+    equipmentQuantities,
+    hasItems,
+    packageQuantity,
+    selectedPackageId,
+    startDate,
+    validDates,
+  ]);
+
+  const quote = useBookingQuote(quoteRequest);
+  const availability = useSelectionAvailability(
+    demands.map((demand) => demand.equipmentId),
+    startDate,
+    endDate,
+  );
+  const createBooking = useCreateBooking();
+
+  useEffect(() => {
+    if (createBooking.data) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [createBooking.data]);
+
+  const isCataloguePending = packagesQuery.isPending || catalogueQuery.isPending;
+  const catalogueError = packagesQuery.error ?? catalogueQuery.error;
+  const isCatalogueError =
+    Boolean(catalogueError) && (!packagesQuery.data || !catalogueQuery.data);
+
+  function choosePackage(packageId: string) {
+    setSelectedPackageId(packageId);
+    setPackageQuantity(1);
+    setSeedNote("");
+    setSubmitError(null);
+  }
+
+  function changePackageQuantity(quantity: number) {
+    setPackageQuantity(quantity);
+    setSubmitError(null);
+  }
+
+  function setEquipmentQuantity(equipmentId: string, quantity: number) {
+    setSeedNote("");
+    setSubmitError(null);
+    setEquipmentQuantities((current) => {
+      const next = { ...current };
+      if (quantity <= 0) {
+        delete next[equipmentId];
+      } else {
+        next[equipmentId] = quantity;
+      }
+      return next;
+    });
+  }
+
+  function updateDetail<K extends keyof BookingDetails>(
+    field: K,
+    value: BookingDetails[K],
+  ) {
+    setDetails((current) => ({ ...current, [field]: value }));
+    setFieldErrors((current) => ({ ...current, [field]: undefined }));
+    setSubmitError(null);
+  }
 
   function selectDate(date: string) {
+    setSubmitError(null);
     if (startDate === "" || endDate !== "") {
       setStartDate(date);
       setEndDate("");
@@ -154,12 +266,89 @@ export default function BookingPage() {
     setEndDate(date);
   }
 
-  const title = isEquipment ? equipment?.name : isPackage ? pkg?.name : null;
-  const detailHref = isEquipment
-    ? `/equipment/${equipmentSlug}`
-    : isPackage
-      ? `/packages/${packageSlug}`
-      : "/equipment";
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmitError(null);
+
+    if (!hasItems) {
+      setSubmitError(
+        new BookingValidationError("Add at least one package or equipment item before sending."),
+      );
+      return;
+    }
+    if (!validDates) {
+      setSubmitError(new BookingValidationError("Choose a start and end date for your hire."));
+      return;
+    }
+
+    const parsed = bookingDetailsSchema.safeParse(details);
+    if (!parsed.success) {
+      const nextErrors: Partial<Record<keyof BookingDetails, string>> = {};
+      for (const [field, messages] of Object.entries(
+        parsed.error.flatten().fieldErrors,
+      )) {
+        if (messages?.[0]) {
+          nextErrors[field as keyof BookingDetails] = messages[0];
+        }
+      }
+      setFieldErrors(nextErrors);
+      setSubmitError(
+        new BookingValidationError("Check the highlighted fields and try again."),
+      );
+      return;
+    }
+
+    const email = parsed.data.email.trim();
+    createBooking.mutate(
+      {
+        startDate,
+        endDate,
+        packages:
+          selectedPackageId !== ""
+            ? [{ packageId: selectedPackageId, quantity: packageQuantity }]
+            : [],
+        equipment: Object.entries(equipmentQuantities)
+          .filter(([, quantity]) => quantity > 0)
+          .map(([equipmentId, quantity]) => ({ equipmentId, quantity })),
+        customer: {
+          name: parsed.data.name,
+          phone: parsed.data.phone,
+          ...(email === "" ? {} : { email }),
+        },
+        fulfilmentMethod: parsed.data.fulfilmentMethod,
+        ...(parsed.data.fulfilmentMethod === "DELIVERY"
+          ? { dropoffAddress: parsed.data.dropoffAddress }
+          : { pickupAddress: parsed.data.pickupAddress }),
+        ...(parsed.data.notes === "" ? {} : { notes: parsed.data.notes }),
+      },
+      {
+        onError: (error) => {
+          setSubmitError(error);
+          if (isApiError(error) && error.code === "VALIDATION_ERROR") {
+            setFieldErrors(serverFieldErrors(error.details));
+          }
+          if (isApiError(error) && error.code === "CONFLICT") {
+            void availability.refetch();
+            void quote.refetch();
+          }
+        },
+      },
+    );
+  }
+
+  function resetAfterSuccess() {
+    createBooking.reset();
+    setSubmitError(null);
+    setFieldErrors({});
+    setSeedNote("");
+    setSelectedPackageId("");
+    setPackageQuantity(1);
+    setEquipmentQuantities({});
+    setStartDate("");
+    setEndDate("");
+    setMonth(currentMonth());
+    setDetails(EMPTY_DETAILS);
+  }
 
   return (
     <div className="pb-16">
@@ -176,129 +365,151 @@ export default function BookingPage() {
           <div className="relative max-w-2xl">
             <p className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 ring-1 ring-brand-100">
               <Sparkles aria-hidden="true" className="size-3.5" />
-              Check availability
+              Booking request
             </p>
             <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-              Find dates that work
+              Build your party booking
             </h1>
             <p className="mt-3 max-w-xl text-lg leading-relaxed text-slate-600">
-              Pick your hire dates and we will check the live diary before you send a
-              request. One short booking, no back-and-forth about what is free.
+              Pick what you need, choose your dates, and send one request. The owner confirms
+              availability, transport and the final total.
             </p>
           </div>
         </div>
       </section>
 
-      {!isEquipment && !isPackage ? (
-        <NoTarget />
-      ) : targetPending ? (
-        <BookingSkeleton />
-      ) : notFound ? (
-        <TargetNotFound />
-      ) : targetError ? (
+      {createBooking.data ? (
+        <BookingSuccess booking={createBooking.data} onReset={resetAfterSuccess} />
+      ) : isCataloguePending ? (
+        <BookingFormSkeleton />
+      ) : isCatalogueError ? (
         <section className="mx-auto mt-8 max-w-6xl px-4">
           <ErrorState
-            title="We could not load this item"
-            error={targetError}
+            title="The catalogue could not load"
+            error={catalogueError}
             onRetry={() => {
-              if (isEquipment) {
-                void equipmentQuery.refetch();
-              } else {
-                void packageQuery.refetch();
-                void catalogueQuery.refetch();
-              }
+              void packagesQuery.refetch();
+              void catalogueQuery.refetch();
             }}
-            isRetrying={
-              isEquipment ? equipmentQuery.isFetching : packageQuery.isFetching
-            }
+            isRetrying={packagesQuery.isFetching || catalogueQuery.isFetching}
           />
         </section>
       ) : (
-        <section className="mx-auto mt-8 max-w-6xl px-4">
-          <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-blush-100 bg-blush-50/70 p-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <span
-                aria-hidden="true"
-                className="grid size-11 shrink-0 place-items-center rounded-xl bg-white text-brand-700 ring-1 ring-blush-100"
-              >
-                {isPackage ? <Package className="size-5" /> : <Boxes className="size-5" />}
-              </span>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-blush-700">
-                  {isPackage ? "Checking a package" : "Checking equipment"}
-                </p>
-                <p className="mt-0.5 truncate text-lg font-semibold text-slate-900">
-                  {title}
-                </p>
-              </div>
-              {isPackage ? (
-                <Badge variant="outline" className="hidden shrink-0 sm:inline-flex">
-                  {pkg?.items.length ?? 0} items included
-                </Badge>
-              ) : null}
-            </div>
-            <Button asChild variant="outline" size="sm" className="shrink-0">
-              <Link to={detailHref}>View details</Link>
-            </Button>
-          </div>
+        <form
+          onSubmit={handleSubmit}
+          onKeyDown={(event) => {
+            // Enter in a single-line field should not send a long request by accident.
+            if (event.key === "Enter" && event.target instanceof HTMLInputElement) {
+              event.preventDefault();
+            }
+          }}
+          noValidate
+          className="mx-auto mt-8 max-w-6xl px-4"
+          aria-label="Booking request form"
+        >
+          {seedNote ? (
+            <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              {seedNote}
+            </p>
+          ) : null}
+          {unresolvedPackageItems.length > 0 ? (
+            <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              This package includes {unresolvedPackageItems.join(", ")}, which is not in the
+              current catalogue. We can still price the rest, but mention it in your notes
+              so the owner can check.
+            </p>
+          ) : null}
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+            <div className="space-y-5">
+              <BookingItemsStep
+                packages={packages}
+                equipment={equipment}
+                selectedPackageId={selectedPackageId}
+                packageQuantity={packageQuantity}
+                onPackageChange={choosePackage}
+                onPackageQuantityChange={changePackageQuantity}
+                equipmentQuantities={equipmentQuantities}
+                onEquipmentQuantityChange={setEquipmentQuantity}
+                includedUnits={includedUnits}
+                currency={currency}
+              />
 
-          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                {calendar.isError ? (
+              <section
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+                aria-labelledby="booking-dates-heading"
+              >
+                <StepHeading
+                  number={2}
+                  id="booking-dates-heading"
+                  title="Pick your rental dates"
+                  description="The calendar reflects everything currently in your selection."
+                />
+
+                {!hasItems ? (
+                  <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-600">
+                    Add a package or some equipment above and the calendar will appear here.
+                  </div>
+                ) : calendar.isError ? (
                   <ErrorState
+                    className="mt-6"
                     title="The calendar could not load"
                     error={calendar.error}
                     onRetry={() => void calendar.refetch()}
                     isRetrying={calendar.isFetching}
                   />
                 ) : (
-                  <AvailabilityCalendar
-                    month={month}
-                    today={today}
-                    days={calendar.days}
-                    isPending={calendar.isPending}
-                    startDate={startDate}
-                    endDate={endDate}
-                    unitLabel={isPackage ? "package" : "unit"}
-                    onMonthChange={setMonth}
-                    onSelectDate={selectDate}
-                  />
+                  <div className="mt-6">
+                    <AvailabilityCalendar
+                      month={month}
+                      today={todayCalendarDate()}
+                      days={calendar.days}
+                      isPending={calendar.isPending}
+                      startDate={startDate}
+                      endDate={endDate}
+                      unitLabel={unitLabel}
+                      onMonthChange={setMonth}
+                      onSelectDate={selectDate}
+                    />
+                  </div>
                 )}
+              </section>
 
-                {missingPackageItems.length > 0 ? (
-                  <p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-relaxed text-amber-900 ring-1 ring-amber-100">
-                    Part of this package is no longer listed, so the month view may be
-                    incomplete. Choose your dates to check the package itself.
-                  </p>
-                ) : null}
-              </div>
-
-              <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                <CalendarDays aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-brand-700" />
-                <p>
-                  Dates are confirmed by the owner after your request. The diary shown here
-                  is the same stock the request will be checked against.
-                </p>
-              </div>
+              <BookingDetailsStep
+                details={details}
+                errors={fieldErrors}
+                onChange={updateDetail}
+              />
             </div>
 
             <div className="space-y-4 lg:sticky lg:top-6">
-              <AvailabilitySummary
+              <BookingEstimate
                 startDate={startDate}
                 endDate={endDate}
-                isPending={summaryPending}
-                isError={hasRange && Boolean(summaryError)}
-                error={summaryError}
-                rows={equipmentAvailability.data?.rows}
-                meta={equipmentAvailability.data?.meta}
-                packageAvailability={packageAvailability.data}
-                onRetry={summaryRetry}
-                isRetrying={summaryRetrying}
-                onClear={() => {
-                  setStartDate("");
-                  setEndDate("");
-                }}
+                quote={quote.data}
+                quotePending={quoteRequest !== null && quote.isPending}
+                quoteError={quote.error}
+                onRetryQuote={() => void quote.refetch()}
+                isRetryingQuote={quote.isFetching}
+                availability={availability.data}
+                availabilityPending={
+                  validDates && hasItems && availability.isPending
+                }
+                availabilityError={availability.error}
+                requiredUnits={requiredUnits}
+                onRetryAvailability={() => void availability.refetch()}
+                isRetryingAvailability={availability.isFetching}
+                currency={currency}
+                canSubmit={
+                  Boolean(quote.data) &&
+                  !quote.isError &&
+                  !quote.isFetching &&
+                  !createBooking.isPending &&
+                  hasItems &&
+                  validDates
+                }
+                isSubmitting={createBooking.isPending}
+                submitError={submitError}
+                hasItems={hasItems}
               />
 
               <div className="rounded-2xl border border-blush-100 bg-blush-50/60 p-5">
@@ -306,11 +517,11 @@ export default function BookingPage() {
                   <LifeBuoy aria-hidden="true" className="size-5" />
                 </span>
                 <h2 className="mt-3 text-sm font-semibold text-slate-900">
-                  Planning something bigger?
+                  Not sure what fits?
                 </h2>
                 <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                  Tell us the venue and what the day needs — we can check a combination of
-                  items and suggest a setup.
+                  Tell us about the venue and the day — we can suggest a setup or check a
+                  combination that is not listed.
                 </p>
                 <Button asChild variant="outline" size="sm" className="mt-3">
                   <Link to="/contact">
@@ -321,106 +532,24 @@ export default function BookingPage() {
               </div>
             </div>
           </div>
-        </section>
+        </form>
       )}
     </div>
   );
 }
 
-function NoTarget() {
-  return (
-    <section className="mx-auto mt-8 max-w-6xl px-4">
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm sm:p-12">
-          <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-brand-50 text-brand-700 ring-1 ring-brand-100">
-            <CalendarDays aria-hidden="true" className="size-6" />
-          </span>
-          <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
-            First, choose what you are hiring
-          </h2>
-          <p className="mx-auto mt-2 max-w-md leading-relaxed text-slate-600">
-            Pick a party package or a single piece of equipment. We will bring you back here
-            with the calendar ready.
-          </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-2">
-            <Button asChild>
-              <Link to="/packages">
-                Browse packages
-                <ArrowRight aria-hidden="true" className="size-4" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/equipment">Browse equipment</Link>
-            </Button>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-blush-100 bg-blush-50/60 p-6">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.15em] text-blush-700">
-            How it works
-          </h2>
-          <ol className="mt-4 space-y-4 text-sm text-slate-700">
-            <li className="flex gap-3">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-white font-semibold text-brand-700 ring-1 ring-blush-100">
-                1
-              </span>
-              Choose a package or equipment item.
-            </li>
-            <li className="flex gap-3">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-white font-semibold text-brand-700 ring-1 ring-blush-100">
-                2
-              </span>
-              Select your dates and see what is free.
-            </li>
-            <li className="flex gap-3">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-white font-semibold text-brand-700 ring-1 ring-blush-100">
-                3
-              </span>
-              Send the request — the owner confirms the details.
-            </li>
-          </ol>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function TargetNotFound() {
-  return (
-    <section className="mx-auto mt-8 max-w-6xl px-4">
-      <div className="mx-auto max-w-xl rounded-3xl border border-dashed border-blush-300 bg-blush-50 px-6 py-12 text-center">
-        <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-white text-blush-700 ring-1 ring-blush-200">
-          <CalendarDays aria-hidden="true" className="size-5" />
-        </span>
-        <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">
-          We could not find that item
-        </h2>
-        <p className="mt-2 text-slate-600">
-          It may have been renamed, taken down, or the link is incomplete. The calendar
-          needs a current item to check.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <Button asChild>
-            <Link to="/equipment">Browse equipment</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link to="/packages">Browse packages</Link>
-          </Button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function BookingSkeleton() {
+function BookingFormSkeleton() {
   return (
     <section className="mx-auto mt-8 max-w-6xl px-4" aria-busy="true">
-      <Skeleton className="h-20 w-full rounded-2xl" />
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <Skeleton className="h-[430px] w-full rounded-2xl" />
-        <Skeleton className="h-72 w-full rounded-2xl" />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="space-y-5">
+          <Skeleton className="h-64 w-full rounded-2xl" />
+          <Skeleton className="h-[430px] w-full rounded-2xl" />
+          <Skeleton className="h-72 w-full rounded-2xl" />
+        </div>
+        <Skeleton className="h-96 w-full rounded-2xl" />
       </div>
-      <span className="sr-only">Loading availability…</span>
+      <span className="sr-only">Loading the booking form…</span>
     </section>
   );
 }

@@ -199,6 +199,32 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
     expect(body).toMatchObject({ code: "VALIDATION_ERROR" });
   });
 
+  it("quotes a booking without creating one", async () => {
+    const quoted = await api("POST", "/api/bookings/quote", {
+      body: {
+        ...futureDates,
+        packages: [],
+        equipment: [{ equipmentId, quantity: 2 }],
+      },
+    });
+
+    expect(quoted.status).toBe(200);
+    expect(quoted.body.data).toMatchObject({
+      startDate: futureDates.startDate,
+      endDate: futureDates.endDate,
+      rentalDays: 2,
+      subtotal: "4000.00",
+      discountAmount: "0.00",
+      transportCharge: "0.00",
+      totalAmount: "4000.00",
+    });
+    expect((quoted.body.data as { items: unknown[] }).items).toHaveLength(1);
+
+    // A quote must never create a customer or booking.
+    expect(await db.booking.count({ where: { customer: { phone } } })).toBe(0);
+    expect(await db.customer.count({ where: { phone } })).toBe(0);
+  });
+
   it("moves a hold through confirmation and cancellation without leaking stock", async () => {
     const created = await api("POST", "/api/bookings", {
       body: {
