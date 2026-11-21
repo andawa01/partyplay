@@ -6,6 +6,7 @@ import HomePage from './pages/public/HomePage'
 import EquipmentPage from './pages/public/EquipmentPage'
 import EquipmentDetailPage from './pages/public/EquipmentDetailPage'
 import PackagesPage from './pages/public/PackagesPage'
+import PackageDetailPage from './pages/public/PackageDetailPage'
 import OffersPage from './pages/public/OffersPage'
 import BookingPage from './pages/public/BookingPage'
 import ContactPage from './pages/public/ContactPage'
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="/equipment" element={<EquipmentPage />} />
         <Route path="/equipment/:slug" element={<EquipmentDetailPage />} />
         <Route path="/packages" element={<PackagesPage />} />
+        <Route path="/packages/:slug" element={<PackageDetailPage />} />
         <Route path="/offers" element={<OffersPage />} />
         <Route path="/booking" element={<BookingPage />} />
         <Route path="/contact" element={<ContactPage />} />
