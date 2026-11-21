@@ -717,7 +717,8 @@ the last unit and assert `[201, 409]`.
 | C4 | Packages and offers | — | ✅ | `feat/c4-packages-offers` |
 | C5 | Availability calendar | — | ✅ | `feat/c5-availability-calendar` |
 | C6 | Booking form | — | ✅ | `feat/c6-booking-form` |
-| C7–C11 | Client slices | — | ☐ | `feat/c<n>-<slug>` |
+| C7 | Booking status page | — | ✅ | `feat/c7-booking-status` |
+| C8–C11 | Client slices | — | ☐ | `feat/c<n>-<slug>` |
 
 ---
 

@@ -17,6 +17,7 @@ import NotFoundPage from './pages/NotFoundPage'
 const StyleGuidePage = lazy(() => import('./pages/StyleGuidePage'))
 // The booking form pulls zod and the full form/calendar surface; load it on demand.
 const BookingPage = lazy(() => import('./pages/public/BookingPage'))
+const BookingStatusPage = lazy(() => import('./pages/public/BookingStatusPage'))
 
 export default function App() {
   return (
@@ -40,6 +41,21 @@ export default function App() {
               }
             >
               <BookingPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/booking/status"
+          element={
+            <Suspense
+              fallback={
+                <div className="mx-auto max-w-6xl px-4 py-10">
+                  <div className="h-40 animate-pulse rounded-3xl bg-slate-100" />
+                  <span className="sr-only">Loading booking status…</span>
+                </div>
+              }
+            >
+              <BookingStatusPage />
             </Suspense>
           }
         />

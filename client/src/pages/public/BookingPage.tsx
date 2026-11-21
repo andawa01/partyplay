@@ -1,4 +1,4 @@
-import { ArrowRight, LifeBuoy, Sparkles } from "lucide-react";
+import { ArrowRight, ClipboardCheck, LifeBuoy, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -374,6 +374,14 @@ export default function BookingPage() {
               Pick what you need, choose your dates, and send one request. The owner confirms
               availability, transport and the final total.
             </p>
+            <Link
+              to="/booking/status"
+              className="mt-4 inline-flex items-center gap-2 rounded-sm text-sm font-semibold text-brand-700 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+            >
+              <ClipboardCheck aria-hidden="true" className="size-4" />
+              Already have a code? Check your booking status
+              <ArrowRight aria-hidden="true" className="size-3.5" />
+            </Link>
           </div>
         </div>
       </section>
