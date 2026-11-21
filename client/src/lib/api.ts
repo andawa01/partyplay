@@ -9,9 +9,9 @@ export interface ApiMeta {
   pageSize: number;
 }
 
-export interface ApiResult<T> {
+export interface ApiResult<T, M = ApiMeta> {
   data: T;
-  meta?: ApiMeta;
+  meta?: M;
 }
 
 export class ApiError extends Error {
@@ -47,10 +47,10 @@ async function parseBody(response: Response): Promise<unknown> {
   }
 }
 
-export async function apiFetch<T>(
+export async function apiFetch<T, M = ApiMeta>(
   path: string,
   init?: RequestInit,
-): Promise<ApiResult<T>> {
+): Promise<ApiResult<T, M>> {
   const headers = new Headers(init?.headers);
   if (init?.body !== undefined && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
@@ -89,9 +89,7 @@ export async function apiFetch<T>(
   }
 
   if (isRecord(body) && "data" in body) {
-    const meta = isRecord(body.meta)
-      ? (body.meta as unknown as ApiMeta)
-      : undefined;
+    const meta = isRecord(body.meta) ? (body.meta as unknown as M) : undefined;
     return { data: body.data as T, meta };
   }
 
