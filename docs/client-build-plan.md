@@ -292,6 +292,31 @@ Logout clears the query cache. Password change available from the admin area.
 **Done when** a hard reload on `/admin/dashboard` with no cookie lands on login, and
 logging in returns to the intended page.
 
+**Shipped (`feat/c8-admin-auth`):**
+
+- `/admin/login` sits outside the admin shell. It validates with a local zod schema,
+  normalises the email, offers password visibility, and shows inline 401 (invalid
+  credentials) and 429 (login throttled) messages without exposing a raw error code.
+- `GET /api/auth/me` is the boot query for guarded routes. `RequireAdmin` shows a session
+  loader while it resolves, redirects any 401 to login with the attempted location in
+  router state, and shows a retry state for network/server failures instead of treating
+  them as a sign-out.
+- Successful login seeds the `admin/me` query from the login response, so the guard does
+  not refetch or flash a redirect. The login page returns to the guarded admin URL stored
+  by the guard, with an allow-list limited to `/admin` paths.
+- `AdminLayout` is now the authenticated shell: responsive Dashboard and Settings nav,
+  current operator, role, public-site link and sign-out. Sign-out calls the API, clears the
+  whole React Query cache through `clearSession`, and lands on login. A 401 during sign-out
+  still clears the client state.
+- `/admin/settings` shows the signed-in account and changes the password. Local validation
+  enforces the 10-character minimum and confirmation match; a wrong current password uses
+  the server message; success clears the fields and confirms with a toast. A 401 clears the
+  session and returns to login.
+- Login and settings are lazy-loaded so the public bundle does not pay for the admin form
+  code. The dashboard is now an authenticated placeholder with account/settings shortcuts.
+- Added four component tests covering inline 401, inline 429, return-to-attempted-page and
+  the unauthenticated guard redirect.
+
 ### C9 — Admin catalogue CRUD — `/api/admin/categories`, `/api/admin/equipment`, `/api/admin/packages`, `/api/admin/offers`, `/api/admin/transport-providers`
 
 Table + create/edit forms for each entity, inventory setter, package item editor, offer
@@ -351,7 +376,8 @@ Minimum, matching how the backend was done:
 
 1. `npm run typecheck` (root, covers client + server).
 2. `npm test --workspace client` (Vitest + jsdom). Current coverage is the C7 lookup
-   `429` state; add focused component tests where a state is hard to reproduce manually.
+   `429` state plus the C8 login and guard flows; add focused component tests where a
+   state is hard to reproduce manually.
 3. `npm run build` for the client.
 4. Manual pass of the slice's happy path and its documented error states against the local
    API (`docker compose up -d db`, `npm run dev:server`, `npm run dev:client`).
