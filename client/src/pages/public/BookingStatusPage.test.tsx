@@ -57,6 +57,9 @@ describe("BookingStatusPage", () => {
     expect(
       screen.getByText(/please wait a few minutes before checking again/i),
     ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: /too many lookups/i }),
+    ).toBeDisabled();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/bookings/PP-4ITSLZ");

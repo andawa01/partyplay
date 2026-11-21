@@ -25,12 +25,14 @@ import { isApiError } from "../../lib/api";
 export default function BookingStatusPage() {
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState("");
+  const [rateLimitedUntil, setRateLimitedUntil] = useState(0);
   const lookup = useBookingLookup();
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
   const isNotFound = isApiError(lookup.error) && lookup.error.status === 404;
   const isRateLimited = isApiError(lookup.error) && lookup.error.status === 429;
+  const isRateLimitActive = rateLimitedUntil > Date.now();
   const liveMessage = lookup.isPending
     ? "Looking up your booking…"
     : isNotFound
@@ -40,6 +42,26 @@ export default function BookingStatusPage() {
         : lookup.data
           ? `Booking ${lookup.data.code}: ${bookingStatusLabel(lookup.data.status)}.`
           : "";
+
+  useEffect(() => {
+    if (!isRateLimited) {
+      return;
+    }
+    setRateLimitedUntil(Date.now() + retryAfterMs(lookup.error));
+  }, [isRateLimited, lookup.error]);
+
+  useEffect(() => {
+    if (rateLimitedUntil === 0) {
+      return;
+    }
+    const remaining = rateLimitedUntil - Date.now();
+    if (remaining <= 0) {
+      setRateLimitedUntil(0);
+      return;
+    }
+    const timer = window.setTimeout(() => setRateLimitedUntil(0), remaining);
+    return () => window.clearTimeout(timer);
+  }, [rateLimitedUntil]);
 
   useEffect(() => {
     if (lookup.isPending || lookup.submittedAt === 0) {
@@ -186,7 +208,7 @@ export default function BookingStatusPage() {
                   type="submit"
                   size="lg"
                   className="mt-4 w-full"
-                  disabled={lookup.isPending}
+                  disabled={lookup.isPending || isRateLimitActive}
                   aria-busy={lookup.isPending}
                 >
                   {lookup.isPending ? (
@@ -194,6 +216,8 @@ export default function BookingStatusPage() {
                       <Loader2 aria-hidden="true" className="size-4 animate-spin" />
                       Looking up your booking…
                     </>
+                  ) : isRateLimitActive ? (
+                    <>Too many lookups — try again shortly</>
                   ) : (
                     <>
                       <Search aria-hidden="true" className="size-4" />
@@ -202,6 +226,12 @@ export default function BookingStatusPage() {
                   )}
                 </Button>
               </form>
+
+              {isRateLimitActive && !isRateLimited ? (
+                <p className="mt-3 text-center text-xs text-red-600">
+                  Too many lookups. Please wait a few minutes before checking again.
+                </p>
+              ) : null}
 
               <p className="mt-3 text-center text-xs text-slate-500">
                 Codes are not case-sensitive. Spaces around the code are ignored.
@@ -248,6 +278,21 @@ export default function BookingStatusPage() {
       </div>
     </div>
   );
+}
+
+function retryAfterMs(error: unknown): number {
+  if (
+    isApiError(error) &&
+    error.details &&
+    typeof error.details === "object" &&
+    "retryAfterSeconds" in error.details
+  ) {
+    const seconds = (error.details as { retryAfterSeconds?: unknown }).retryAfterSeconds;
+    if (typeof seconds === "number" && Number.isFinite(seconds) && seconds > 0) {
+      return Math.min(seconds, 15 * 60) * 1000;
+    }
+  }
+  return 15 * 60 * 1000;
 }
 
 function BookingStatusSkeleton() {

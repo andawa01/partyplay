@@ -281,8 +281,8 @@ refresh is enough. **Done when** an expired pending booking shows `EXPIRED` afte
 - `GET /api/bookings/:code` performs lazy expiry, so forcing a pending hold into the past
   and refreshing moves the booking to `EXPIRED` without a separate job.
 - Added Vitest + jsdom and Testing Library to the client. The first component test forces a
-  `429 RATE_LIMITED` lookup, asserts the wait copy and error code, and confirms the request
-  is not retried.
+  `429 RATE_LIMITED` lookup, asserts the wait copy and error code, confirms the request is
+  not retried, and verifies submit stays disabled for the retry window.
 
 ### C8 — Admin login and guard — `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`, `POST /api/auth/password`
 
