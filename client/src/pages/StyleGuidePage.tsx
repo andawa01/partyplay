@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 
 import { ApiError } from "../lib/api";
+import { toast, toastError } from "../lib/toast";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { ErrorState } from "../components/ui/error-state";
@@ -280,6 +281,57 @@ export default function StyleGuidePage() {
             <ErrorState error={new Error("We could not reach the server.")} />
           </div>
         </div>
+      </Section>
+
+      <Section
+        title="Toasts"
+        description="Confirms an action that finished. Failures name the result in the title and put the server's explanation beside it."
+      >
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() =>
+              toast.success("Booking request sent", {
+                description: "We will confirm by phone or WhatsApp.",
+              })
+            }
+          >
+            Success
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() =>
+              toastError(
+                new ApiError(
+                  409,
+                  "INVALID_TRANSITION",
+                  "A completed booking cannot be cancelled.",
+                ),
+              )
+            }
+          >
+            Server error
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() =>
+              toast.promise(new Promise<void>((resolve) => setTimeout(() => resolve(), 900)), {
+                loading: "Saving package…",
+                success: "Package saved",
+                error: "Could not save the package",
+              })
+            }
+          >
+            Async action
+          </Button>
+          <Button variant="outline" onClick={() => toast("Draft restored")}>
+            Neutral
+          </Button>
+        </div>
+        <p className="mt-4 text-xs text-slate-500">
+          Toasts sit top-right and are announced, not just shown. A toast never replaces an
+          inline field error, and a page that failed to load uses ErrorState instead.
+        </p>
       </Section>
     </section>
   );
