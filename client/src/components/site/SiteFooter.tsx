@@ -85,6 +85,11 @@ export function SiteFooter({ site = SITE_FALLBACK }: { site?: SiteSettings }) {
                   </Link>
                 </li>
               ))}
+              <li>
+                <Link to="/booking/status" className={linkClass}>
+                  Booking status
+                </Link>
+              </li>
             </ul>
           </nav>
 

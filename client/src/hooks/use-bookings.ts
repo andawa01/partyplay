@@ -6,6 +6,7 @@ import type {
   BookingQuoteRequest,
   CreateBookingRequest,
   CreatedBooking,
+  PublicBooking,
 } from "../lib/bookings";
 import { queryKeys } from "../lib/query-keys";
 
@@ -30,6 +31,21 @@ export function useBookingQuote(request: BookingQuoteRequest | null) {
     enabled: request !== null,
     retry: false,
     staleTime: 15_000,
+  });
+}
+
+/**
+ * Code lookup is an explicit action, not a background query: the code is the only
+ * credential and the owner may change the status at any time, so every result comes from
+ * a submit or the visible refresh button. No polling and no cached stale status.
+ */
+export function useBookingLookup() {
+  return useMutation({
+    mutationFn: async (code: string) =>
+      (
+        await apiFetch<PublicBooking>(`/api/bookings/${encodeURIComponent(code)}`)
+      ).data,
+    retry: false,
   });
 }
 

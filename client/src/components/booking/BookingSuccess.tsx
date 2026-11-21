@@ -1,4 +1,4 @@
-import { Check, Clipboard, Home, Timer } from "lucide-react";
+import { Check, Clipboard, ClipboardCheck, Home, Timer } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -161,6 +161,12 @@ export function BookingSuccess({
       </div>
 
       <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <Button asChild variant="outline">
+          <Link to="/booking/status">
+            <ClipboardCheck aria-hidden="true" className="size-4" />
+            Check booking status
+          </Link>
+        </Button>
         <Button type="button" variant="outline" onClick={onReset}>
           Send another request
         </Button>

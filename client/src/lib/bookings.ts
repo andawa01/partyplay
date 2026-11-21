@@ -59,6 +59,57 @@ export interface CreatedBooking extends BookingQuote {
   holdExpiresAt: string;
 }
 
+export type BookingStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "REJECTED"
+  | "CANCELLED"
+  | "COMPLETED"
+  | "EXPIRED";
+
+export type PaymentStatus = "UNPAID" | "PARTIALLY_PAID" | "PAID";
+
+/** The public lookup response. Contact details arrive masked, and internal ids never do. */
+export interface PublicBooking {
+  code: string;
+  status: BookingStatus;
+  startDate: string;
+  endDate: string;
+  rentalDays: number;
+  fulfilmentMethod: "DELIVERY" | "COLLECTION";
+  customer: { name: string; phone: string | null };
+  items: Array<{
+    equipmentName: string;
+    quantity: number;
+    days: number;
+    unitPrice: string;
+    priceForPeriod: string;
+  }>;
+  packages: Array<{
+    packageName: string;
+    packagePrice: string;
+    quantity: number;
+    lineTotal: string;
+    items: Array<{ equipmentName: string; quantity: number }>;
+  }>;
+  subtotal: string;
+  discountAmount: string;
+  transportCharge: string;
+  totalAmount: string;
+  amountDue: string;
+  paymentDue: boolean;
+  paymentStatus: PaymentStatus;
+  currency: string;
+  notes: string | null;
+  specialRequests: string | null;
+  dropoffAddress: string | null;
+  pickupAddress: string | null;
+  holdExpiresAt: string | null;
+  holdExpired: boolean;
+  createdAt: string;
+  notice: string | null;
+}
+
 export interface CreateBookingRequest extends BookingQuoteRequest {
   customer: { name: string; phone: string; email?: string };
   fulfilmentMethod: "DELIVERY" | "COLLECTION";

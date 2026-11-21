@@ -255,13 +255,31 @@ two bookings.
   "nothing was submitted" message and re-enables the button. The create mutation is never
   retried automatically.
 - No guest count is introduced; packages remain priced per package.
-- C7 still owns a status page for a saved code.
+- C7 adds the status page for a saved code.
 
 ### C7 — Booking status page — `GET /api/bookings/:code`
 
 Code entry + status view for a known code: status, dates, items, amounts, hold expiry.
 Unknown/malformed code gives the same friendly "not found". No auto-polling; a manual
 refresh is enough. **Done when** an expired pending booking shows `EXPIRED` after refresh.
+
+**Shipped (`feat/c7-booking-status`):**
+
+- `/booking/status` is a manual code-entry page. The code lives only in component state;
+  it is never added to the address, a route param or a link. Links from the booking page,
+  success screen and footer open the empty lookup form rather than pre-filling a code.
+- A lookup is an explicit action: submit or "Refresh status". There is no polling and no
+  cached status query. The route is lazy-loaded like `/booking`.
+- The result shows the server's code, status, rental dates and day count, delivery or
+  collection address, package lines with included items, extra equipment, notes, server
+  totals, hold expiry and the masked customer phone. No money is recalculated client-side.
+- Status copy and badge cover `PENDING`, `CONFIRMED`, `REJECTED`, `CANCELLED`, `COMPLETED`
+  and `EXPIRED`. A pending request shows its hold deadline; an expired request shows the
+  expired notice and no amount due.
+- Unknown and malformed codes share one friendly not-found panel. `429` explains the wait,
+  other failures use the shared retry surface, and a failed refresh leaves the form usable.
+- `GET /api/bookings/:code` performs lazy expiry, so forcing a pending hold into the past
+  and refreshing moves the booking to `EXPIRED` without a separate job.
 
 ### C8 — Admin login and guard — `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`, `POST /api/auth/password`
 
