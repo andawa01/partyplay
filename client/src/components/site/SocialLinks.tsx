@@ -24,7 +24,7 @@ export function SocialLinks({
             href={link.href}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 rounded-full border border-blush-200 bg-white px-3 py-1 text-sm font-medium text-blush-800 hover:bg-blush-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+            className="inline-flex items-center gap-1 rounded-full border border-blush-200 bg-white/80 px-3.5 py-1.5 text-sm font-medium text-blush-800 shadow-sm transition hover:-translate-y-0.5 hover:border-blush-300 hover:bg-white hover:text-blush-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
           >
             {link.label}
             <ArrowUpRight aria-hidden="true" className="size-3.5" />

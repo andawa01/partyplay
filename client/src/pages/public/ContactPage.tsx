@@ -1,13 +1,35 @@
-import { Mail, MapPin, MessageCircle, Phone } from 'lucide-react'
+import {
+  ArrowUpRight,
+  CalendarDays,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Phone,
+  Sparkles,
+  Truck,
+} from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 import { SocialLinks } from '../../components/site/SocialLinks'
+import { Button } from '../../components/ui/button'
 import { ErrorState } from '../../components/ui/error-state'
 import { Skeleton } from '../../components/ui/skeleton'
 import { useSite } from '../../hooks/use-site'
-import { mailtoHref, telHref, whatsAppHref } from '../../lib/site'
+import { mailtoHref, siteSocialLinks, telHref, whatsAppHref } from '../../lib/site'
+
+const cardClass =
+  'group relative flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300'
+
+function IconBadge({ icon: Icon }: { icon: typeof Phone }) {
+  return (
+    <span className="grid size-11 place-items-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-100 transition group-hover:bg-brand-100">
+      <Icon aria-hidden="true" className="size-5" />
+    </span>
+  )
+}
 
 function ContactCard({
-  icon: Icon,
+  icon,
   label,
   value,
   href,
@@ -23,31 +45,41 @@ function ContactCard({
     <a
       href={href}
       {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
-      className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-5 hover:border-brand-300 hover:bg-brand-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+      className={cardClass}
     >
-      <span className="rounded-full bg-brand-50 p-2 text-brand-700">
-        <Icon aria-hidden="true" className="size-5" />
+      <IconBadge icon={icon} />
+      <span className="mt-5 text-sm font-medium text-slate-500">{label}</span>
+      <span className="mt-1 flex items-center justify-between gap-3">
+        <span className="break-words text-lg font-semibold text-slate-900">{value}</span>
+        <ArrowUpRight
+          aria-hidden="true"
+          className="size-4 shrink-0 text-slate-400 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-brand-700"
+        />
       </span>
-      <span className="min-w-0">
-        <span className="block text-sm font-medium text-slate-500">{label}</span>
-        <span className="mt-0.5 block break-words font-medium text-slate-900">{value}</span>
-        {external ? <span className="sr-only">(opens in a new tab)</span> : null}
-      </span>
+      {external ? <span className="sr-only">(opens in a new tab)</span> : null}
     </a>
   )
 }
 
 function ContactPageSkeleton() {
   return (
-    <section className="mx-auto max-w-4xl px-4 py-12" aria-busy="true">
-      <Skeleton className="h-9 w-48" />
-      <Skeleton className="mt-4 h-4 w-full max-w-xl" />
-      <Skeleton className="mt-2 h-4 w-2/3 max-w-md" />
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+    <section className="mx-auto max-w-6xl px-4 py-10" aria-busy="true">
+      <div className="rounded-3xl bg-linear-to-br from-brand-50 via-white to-blush-100 p-8 ring-1 ring-blush-100 sm:p-12">
+        <Skeleton className="h-6 w-28 rounded-full" />
+        <Skeleton className="mt-5 h-11 w-full max-w-md" />
+        <Skeleton className="mt-3 h-4 w-full max-w-lg" />
+        <Skeleton className="mt-2 h-4 w-2/3 max-w-sm" />
+        <div className="mt-7 flex gap-3">
+          <Skeleton className="h-11 w-40" />
+          <Skeleton className="h-11 w-36" />
+        </div>
+      </div>
+      <Skeleton className="mt-10 h-6 w-44" />
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
         {[0, 1, 2, 3].map((card) => (
-          <div key={card} className="rounded-lg border border-slate-200 bg-white p-5">
-            <Skeleton className="h-9 w-9 rounded-full" />
-            <Skeleton className="mt-3 h-3 w-16" />
+          <div key={card} className="rounded-2xl border border-slate-200 bg-white p-6">
+            <Skeleton className="size-11 rounded-xl" />
+            <Skeleton className="mt-5 h-3 w-16" />
             <Skeleton className="mt-2 h-5 w-2/3" />
           </div>
         ))}
@@ -66,8 +98,19 @@ export default function ContactPage() {
 
   if (isError && !site) {
     return (
-      <section className="mx-auto max-w-4xl px-4 py-12">
-        <h1 className="text-3xl font-bold text-slate-900">Contact</h1>
+      <section className="mx-auto max-w-6xl px-4 py-10">
+        <div className="rounded-3xl bg-linear-to-br from-brand-50 via-white to-blush-100 p-8 ring-1 ring-blush-100 sm:p-12">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">
+            Contact
+          </p>
+          <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-900">
+            We are almost reachable
+          </h1>
+          <p className="mt-3 max-w-xl text-lg text-slate-600">
+            We could not load the contact details just now. Try again in a moment, or use the
+            booking page to send a request.
+          </p>
+        </div>
         <ErrorState
           className="mt-6"
           title="Contact details are unavailable"
@@ -83,97 +126,172 @@ export default function ContactPage() {
     return null
   }
 
-  return (
-    <section className="mx-auto max-w-4xl px-4 py-12">
-      <h1 className="text-3xl font-bold text-slate-900">Contact {site.businessName}</h1>
-      {site.aboutText ? (
-        <p className="mt-3 max-w-2xl whitespace-pre-line text-slate-600">{site.aboutText}</p>
-      ) : (
-        <p className="mt-3 max-w-2xl text-slate-600">
-          Party equipment hire in Kenya. Call, message or email us and we will help you plan
-          the setup.
-        </p>
-      )}
+  const hasDetails = Boolean(
+    site.contactPhone || site.contactWhatsApp || site.contactEmail || site.address,
+  )
+  const hasSocials = siteSocialLinks(site).length > 0
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        {site.contactPhone ? (
-          <ContactCard
-            icon={Phone}
-            label="Phone"
-            value={site.contactPhone}
-            href={telHref(site.contactPhone)}
-          />
-        ) : null}
-        {site.contactWhatsApp ? (
-          <ContactCard
-            icon={MessageCircle}
-            label="WhatsApp"
-            value={site.contactWhatsApp}
-            href={whatsAppHref(site.contactWhatsApp)}
-            external
-          />
-        ) : null}
-        {site.contactEmail ? (
-          <ContactCard
-            icon={Mail}
-            label="Email"
-            value={site.contactEmail}
-            href={mailtoHref(site.contactEmail)}
-          />
-        ) : null}
-        {site.address ? (
-          <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-5">
-            <span className="rounded-full bg-brand-50 p-2 text-brand-700">
-              <MapPin aria-hidden="true" className="size-5" />
-            </span>
-            <span>
-              <span className="block text-sm font-medium text-slate-500">Address</span>
-              <span className="mt-0.5 block font-medium text-slate-900">{site.address}</span>
-            </span>
+  return (
+    <section className="mx-auto max-w-6xl px-4 py-10">
+      <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-brand-50 via-white to-blush-100 px-6 py-12 ring-1 ring-blush-100 sm:px-12 sm:py-16">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-16 -top-20 size-64 rounded-full bg-blush-200/60 blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-24 left-1/3 size-64 rounded-full bg-brand-100/70 blur-3xl"
+        />
+
+        <div className="relative max-w-2xl">
+          <p className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 ring-1 ring-brand-100">
+            <Sparkles aria-hidden="true" className="size-3.5" />
+            Contact
+          </p>
+          <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            Let&apos;s plan your party
+          </h1>
+          <p className="mt-4 max-w-xl text-lg leading-relaxed text-slate-600">
+            {site.aboutText ??
+              'Bouncy castles, sound systems, tables and chairs — tell us what the day needs and we will help you build it.'}
+          </p>
+
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Button asChild size="lg">
+              <Link to="/booking">
+                <CalendarDays aria-hidden="true" className="size-4" />
+                Start a booking
+              </Link>
+            </Button>
+            {site.contactWhatsApp ? (
+              <Button asChild variant="secondary" size="lg">
+                <a href={whatsAppHref(site.contactWhatsApp)} target="_blank" rel="noreferrer">
+                  <MessageCircle aria-hidden="true" className="size-4" />
+                  WhatsApp us
+                  <span className="sr-only">(opens in a new tab)</span>
+                </a>
+              </Button>
+            ) : null}
+            {site.contactPhone ? (
+              <Button asChild variant="outline" size="lg">
+                <a href={telHref(site.contactPhone)}>
+                  <Phone aria-hidden="true" className="size-4" />
+                  Call us
+                </a>
+              </Button>
+            ) : null}
           </div>
-        ) : null}
+        </div>
       </div>
 
-      {!site.contactPhone && !site.contactWhatsApp && !site.contactEmail && !site.address ? (
-        <p className="mt-8 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-          Phone, WhatsApp, email and address are being updated. Please check back shortly.
-        </p>
-      ) : null}
+      <div className="mt-12 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+            Ways to reach us
+          </h2>
+          <p className="mt-1 text-slate-600">
+            Pick whichever is easiest — we answer calls, WhatsApp and email through the day.
+          </p>
+        </div>
+      </div>
+
+      {hasDetails ? (
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          {site.contactPhone ? (
+            <ContactCard
+              icon={Phone}
+              label="Phone"
+              value={site.contactPhone}
+              href={telHref(site.contactPhone)}
+            />
+          ) : null}
+          {site.contactWhatsApp ? (
+            <ContactCard
+              icon={MessageCircle}
+              label="WhatsApp"
+              value={site.contactWhatsApp}
+              href={whatsAppHref(site.contactWhatsApp)}
+              external
+            />
+          ) : null}
+          {site.contactEmail ? (
+            <ContactCard
+              icon={Mail}
+              label="Email"
+              value={site.contactEmail}
+              href={mailtoHref(site.contactEmail)}
+            />
+          ) : null}
+          {site.address ? (
+            <div className={cardClass}>
+              <IconBadge icon={MapPin} />
+              <span className="mt-5 text-sm font-medium text-slate-500">Address</span>
+              <span className="mt-1 text-lg font-semibold text-slate-900">{site.address}</span>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <div className="mt-6 flex items-start gap-4 rounded-2xl border border-dashed border-blush-300 bg-blush-50 p-6">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white text-blush-700 ring-1 ring-blush-200">
+            <MessageCircle aria-hidden="true" className="size-5" />
+          </span>
+          <div>
+            <p className="font-semibold text-slate-900">Contact details are on the way</p>
+            <p className="mt-1 text-sm text-slate-600">
+              Phone, WhatsApp, email and address are being updated. Send a booking request in
+              the meantime and we will reply with the details.
+            </p>
+            <Button asChild variant="link" className="mt-2 h-auto px-0">
+              <Link to="/booking">Start a booking</Link>
+            </Button>
+          </div>
+        </div>
+      )}
 
       {site.transportProviders.length > 0 ? (
-        <section className="mt-10" aria-labelledby="transport-heading">
-          <h2 id="transport-heading" className="text-xl font-semibold text-slate-900">
+        <section className="mt-12" aria-labelledby="transport-heading">
+          <h2 id="transport-heading" className="text-2xl font-semibold tracking-tight text-slate-900">
             Transport partners
           </h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-slate-600">
             Independent providers who can move equipment to your venue.
           </p>
-          <ul className="mt-4 divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
             {site.transportProviders.map((provider) => (
-              <li
+              <div
                 key={provider.phone}
-                className="flex flex-wrap items-center justify-between gap-3 p-4"
+                className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-brand-300 hover:shadow-md"
               >
-                <div>
-                  <p className="font-medium text-slate-900">{provider.name}</p>
-                  {provider.serviceArea ? (
-                    <p className="text-sm text-slate-600">{provider.serviceArea}</p>
-                  ) : null}
-                </div>
-                <a
-                  href={telHref(provider.phone)}
-                  className="inline-flex items-center gap-2 rounded-md text-sm font-medium text-brand-700 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-                >
-                  <Phone aria-hidden="true" className="size-4" />
-                  {provider.phone}
-                </a>
-              </li>
+                <span className="grid size-11 place-items-center rounded-xl bg-blush-50 text-blush-700 ring-1 ring-blush-100">
+                  <Truck aria-hidden="true" className="size-5" />
+                </span>
+                <p className="mt-5 text-lg font-semibold text-slate-900">{provider.name}</p>
+                {provider.serviceArea ? (
+                  <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-600">
+                    <MapPin aria-hidden="true" className="size-4 text-slate-400" />
+                    {provider.serviceArea}
+                  </p>
+                ) : null}
+                <Button asChild variant="outline" size="sm" className="mt-5 self-start">
+                  <a href={telHref(provider.phone)}>
+                    <Phone aria-hidden="true" className="size-3.5" />
+                    {provider.phone}
+                  </a>
+                </Button>
+              </div>
             ))}
-          </ul>
+          </div>
         </section>
       ) : null}
 
-      <SocialLinks site={site} className="mt-10" />
+      {hasSocials ? (
+        <section className="mt-12 border-t border-blush-100 pt-8" aria-labelledby="social-heading">
+          <h2 id="social-heading" className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Follow the setup
+          </h2>
+          <SocialLinks site={site} className="mt-3" />
+        </section>
+      ) : null}
     </section>
   )
 }
