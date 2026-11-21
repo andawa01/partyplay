@@ -280,6 +280,9 @@ refresh is enough. **Done when** an expired pending booking shows `EXPIRED` afte
   other failures use the shared retry surface, and a failed refresh leaves the form usable.
 - `GET /api/bookings/:code` performs lazy expiry, so forcing a pending hold into the past
   and refreshing moves the booking to `EXPIRED` without a separate job.
+- Added Vitest + jsdom and Testing Library to the client. The first component test forces a
+  `429 RATE_LIMITED` lookup, asserts the wait copy and error code, and confirms the request
+  is not retried.
 
 ### C8 — Admin login and guard — `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`, `POST /api/auth/password`
 
@@ -347,13 +350,14 @@ balance client-side for display of record — show the server's `paidAmount`/`am
 Minimum, matching how the backend was done:
 
 1. `npm run typecheck` (root, covers client + server).
-2. `npm run build` for the client.
-3. Manual pass of the slice's happy path and its documented error states against the local
+2. `npm test --workspace client` (Vitest + jsdom). Current coverage is the C7 lookup
+   `429` state; add focused component tests where a state is hard to reproduce manually.
+3. `npm run build` for the client.
+4. Manual pass of the slice's happy path and its documented error states against the local
    API (`docker compose up -d db`, `npm run dev:server`, `npm run dev:client`).
 
-There is no client test runner installed. If the owner wants component or flow tests, that
-is a decision for C1 (choose Vitest + Testing Library) rather than something to add later
-to every slice. Until then, the manual pass above is the acceptance evidence.
+Broader client flow or end-to-end coverage remains a separate decision; the client runner
+is for focused component tests, not a requirement to test every routine edit.
 
 ---
 
