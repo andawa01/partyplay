@@ -144,6 +144,8 @@ async function main() {
       slug: "fun-bounce-combo-castle",
       name: "Fun Bounce Combo Castle",
       categoryId: comboCastles.id,
+      imageUrl:
+        "https://images.pexels.com/photos/35532067/pexels-photo-35532067.jpeg?auto=compress&cs=tinysrgb&w=1200",
       description:
         "Two-level bounce castle with a small slide. Suitable for ages 3–10. Requires a flat, dry surface and a power source nearby if using blowers.",
       note: "Recommend an adult attendant during use.",
@@ -166,6 +168,8 @@ async function main() {
       slug: "happy-kids-castle",
       name: "Happy Kids Castle",
       categoryId: smallCastles.id,
+      imageUrl:
+        "https://images.pexels.com/photos/296308/pexels-photo-296308.jpeg?auto=compress&cs=tinysrgb&w=1200",
       description: "Single-unit bounce castle, 3m x 3m. Great for birthdays.",
       minQuantity: 1,
       maxQuantity: 6,
@@ -186,6 +190,8 @@ async function main() {
       slug: "stacking-chair-set",
       name: "Stacking Chair Set",
       categoryId: chairs.id,
+      imageUrl:
+        "https://images.pexels.com/photos/26832125/pexels-photo-26832125.jpeg?auto=compress&cs=tinysrgb&w=1200",
       description: "A set of 20 stacking plastic chairs. Ideal for party seating.",
       note: "Include legs and stacking straps.",
       minQuantity: 1,
@@ -206,6 +212,8 @@ async function main() {
       slug: "six-foot-folding-table",
       name: "6ft Folding Table",
       categoryId: foldingTables.id,
+      imageUrl:
+        "https://images.pexels.com/photos/1209776/pexels-photo-1209776.jpeg?auto=compress&cs=tinysrgb&w=1200",
       description: "Rectangular 6ft folding table. Used for food, gifts, cake displays.",
       minQuantity: 1,
       maxQuantity: 20,
@@ -225,6 +233,8 @@ async function main() {
       slug: "party-speaker-pair",
       name: "Party Speaker Pair",
       categoryId: sound.id,
+      imageUrl:
+        "https://images.pexels.com/photos/39204570/pexels-photo-39204570.jpeg?auto=compress&cs=tinysrgb&w=1200",
       description:
         "Two powered speakers with stands and microphones. Suitable for indoor and outdoor parties with up to 80 guests.",
       note: "Power cables included. Customer responsible for safe setup.",
