@@ -7,7 +7,6 @@ import type {
   CalendarDay,
   CalendarMeta,
   EquipmentDemand,
-  PackageAvailabilityResponse,
 } from "../lib/availability";
 import { combineCalendars } from "../lib/availability";
 import { queryKeys } from "../lib/query-keys";
@@ -18,9 +17,9 @@ function calendarPath(equipmentId: string, month: string): string {
 }
 
 /**
- * Month availability for one or more equipment items. A package passes every included item
- * and gets back the number of whole packages that fit on each day; a single item is simply
- * its remaining unit count.
+ * Month availability for one or more equipment items. A selection passes every item it needs
+ * and gets back the number of complete selections that fit on each day; a single item is
+ * simply its remaining unit count.
  */
 export function useCalendarForDemands(demands: EquipmentDemand[], month: string) {
   const results = useQueries({
@@ -58,17 +57,19 @@ export function useCalendarForDemands(demands: EquipmentDemand[], month: string)
   };
 }
 
-/** Range check for a single equipment item. */
-export function useEquipmentAvailability(
-  equipmentId: string,
+/** Availability for every equipment item in the current booking selection. */
+export function useSelectionAvailability(
+  equipmentIds: string[],
   startDate: string,
   endDate: string,
 ) {
+  const ids = [...new Set(equipmentIds)].sort();
+
   return useQuery({
-    queryKey: queryKeys.availability([equipmentId], startDate, endDate),
+    queryKey: queryKeys.availability(ids, startDate, endDate),
     queryFn: async () => {
       const search = new URLSearchParams({
-        equipmentIds: equipmentId,
+        equipmentIds: ids.join(","),
         startDate,
         endDate,
       });
@@ -77,35 +78,7 @@ export function useEquipmentAvailability(
       );
       return { rows: result.data, meta: result.meta };
     },
-    enabled: equipmentId !== "" && startDate !== "" && endDate !== "",
-    retry: false,
-  });
-}
-
-/**
- * Range check for a package at quantity one. C6 owns quantity selection; this slice only
- * answers whether the dates work for a single package.
- */
-export function usePackageAvailability(
-  slug: string,
-  startDate: string,
-  endDate: string,
-) {
-  return useQuery({
-    queryKey: queryKeys.packageAvailability(slug, startDate, endDate, 1),
-    queryFn: async () => {
-      const search = new URLSearchParams({
-        startDate,
-        endDate,
-        quantity: "1",
-      });
-      return (
-        await apiFetch<PackageAvailabilityResponse>(
-          `/api/packages/${encodeURIComponent(slug)}/availability?${search.toString()}`,
-        )
-      ).data;
-    },
-    enabled: slug !== "" && startDate !== "" && endDate !== "",
+    enabled: ids.length > 0 && startDate !== "" && endDate !== "",
     retry: false,
   });
 }

@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { createBooking, getBooking } from "../controllers/bookings";
+import { createBooking, getBooking, quoteBooking } from "../controllers/bookings";
 import { asyncHandler } from "../lib/async";
 import { createRateLimiter } from "../middleware/rate-limit";
 
@@ -23,7 +23,17 @@ const lookupRateLimiter = createRateLimiter({
   message: "Too many booking lookups. Please wait a few minutes and try again.",
 });
 
+const quoteRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  message: "Too many price checks. Please wait a few minutes and try again.",
+});
+
 router.post("/", createBookingRateLimiter, asyncHandler(createBooking));
+
+// Read-only estimate used while the customer fills the form. Must come before `/:code`
+// so the literal path is not mistaken for a booking reference.
+router.post("/quote", quoteRateLimiter, asyncHandler(quoteBooking));
 
 // Public: the code itself is the capability, no session required.
 router.get("/:code", lookupRateLimiter, asyncHandler(getBooking));

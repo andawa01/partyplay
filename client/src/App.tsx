@@ -8,7 +8,6 @@ import EquipmentDetailPage from './pages/public/EquipmentDetailPage'
 import PackagesPage from './pages/public/PackagesPage'
 import PackageDetailPage from './pages/public/PackageDetailPage'
 import OffersPage from './pages/public/OffersPage'
-import BookingPage from './pages/public/BookingPage'
 import ContactPage from './pages/public/ContactPage'
 import AdminLoginPage from './pages/admin/AdminLoginPage'
 import AdminDashboardPage from './pages/admin/AdminDashboardPage'
@@ -16,6 +15,8 @@ import NotFoundPage from './pages/NotFoundPage'
 
 // Reference page, kept out of the main bundle because it pulls the full select primitive.
 const StyleGuidePage = lazy(() => import('./pages/StyleGuidePage'))
+// The booking form pulls zod and the full form/calendar surface; load it on demand.
+const BookingPage = lazy(() => import('./pages/public/BookingPage'))
 
 export default function App() {
   return (
@@ -27,7 +28,21 @@ export default function App() {
         <Route path="/packages" element={<PackagesPage />} />
         <Route path="/packages/:slug" element={<PackageDetailPage />} />
         <Route path="/offers" element={<OffersPage />} />
-        <Route path="/booking" element={<BookingPage />} />
+        <Route
+          path="/booking"
+          element={
+            <Suspense
+              fallback={
+                <div className="mx-auto max-w-6xl px-4 py-10">
+                  <div className="h-40 animate-pulse rounded-3xl bg-slate-100" />
+                  <span className="sr-only">Loading the booking form…</span>
+                </div>
+              }
+            >
+              <BookingPage />
+            </Suspense>
+          }
+        />
         <Route path="/contact" element={<ContactPage />} />
         <Route
           path="/style-guide"

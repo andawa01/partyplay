@@ -15,6 +15,7 @@ import {
 import type {
   AdminBookingListQuery,
   CreateBookingInput,
+  QuoteBookingInput,
   UpdateBookingStatusInput,
   UpdateBookingTransportInput,
 } from "../schemas/bookings";
@@ -37,8 +38,10 @@ import {
  */
 
 type BookingTx = Prisma.TransactionClient;
+type CatalogueClient = BookingTx | typeof db;
 
 type BookableEquipment = PricedEquipment & { maxQuantity: number };
+type BookingSelection = Pick<CreateBookingInput, "equipment" | "packages">;
 
 type Catalogue = {
   equipment: Map<string, BookableEquipment>;
@@ -48,7 +51,10 @@ type Catalogue = {
 const SERIALIZATION_ATTEMPTS = 3;
 const CODE_ATTEMPTS = 5;
 
-async function loadCatalogue(tx: BookingTx, input: CreateBookingInput): Promise<Catalogue> {
+async function loadCatalogue(
+  tx: CatalogueClient,
+  input: BookingSelection,
+): Promise<Catalogue> {
   const equipmentIds = [...new Set(input.equipment.map((line) => line.equipmentId))];
   const packageIds = [...new Set(input.packages.map((line) => line.packageId))];
 
@@ -159,7 +165,7 @@ async function loadCatalogue(tx: BookingTx, input: CreateBookingInput): Promise<
  * already includes is the same physical unit, so demand is the larger of the two rather
  * than their sum — charging for 2 units while holding 3 would be a lie about stock.
  */
-function buildDemand(input: CreateBookingInput, catalogue: Catalogue): Map<string, number> {
+function buildDemand(input: BookingSelection, catalogue: Catalogue): Map<string, number> {
   const demand = new Map<string, number>();
 
   for (const line of expandPackages(input.packages, catalogue.packages)) {
@@ -247,8 +253,86 @@ type BookingCreationResult = {
  * or a booking-code collision, because a failed statement cannot be retried in place.
  */
 export async function createBookingRequest(input: CreateBookingInput) {
-  const startDate = parseCalendarDate(input.startDate);
-  const endDate = parseCalendarDate(input.endDate);
+  const { startDate, endDate, days } = parseBookingRange(input.startDate, input.endDate);
+
+  for (let attempt = 1; attempt <= SERIALIZATION_ATTEMPTS; attempt += 1) {
+    try {
+      const result = await createInTransaction(input, startDate, endDate, days);
+      return toPublicBooking(result);
+    } catch (error) {
+      const retryable = isRetryableTransactionError(error) || isBookingCodeCollision(error);
+      if (!retryable || attempt === SERIALIZATION_ATTEMPTS) {
+        throw error;
+      }
+    }
+  }
+
+  throw new ApiError(500, "BOOKING_CREATE_FAILED", "The booking could not be created");
+}
+
+/**
+ * Read-only estimate for the form. It runs the same catalogue checks and `priceBooking`
+ * call as creation, so the preview cannot drift from the amount a request will store.
+ * Availability is deliberately not part of this answer: creation re-checks stock, and the
+ * calendar reports it separately.
+ */
+export async function quoteBookingRequest(input: QuoteBookingInput) {
+  const { startDate, endDate, days } = parseBookingRange(input.startDate, input.endDate);
+  const catalogue = await loadCatalogue(db, input);
+  const price = priceBooking({
+    days,
+    equipment: input.equipment.map((line) => ({
+      equipment: catalogue.equipment.get(line.equipmentId) as BookableEquipment,
+      quantity: line.quantity,
+    })),
+    packages: input.packages,
+    packageCatalogue: catalogue.packages,
+  });
+  const settings = await db.siteSetting.findFirst({ select: { currency: true } });
+
+  return {
+    startDate: formatCalendarDate(startDate),
+    endDate: formatCalendarDate(endDate),
+    rentalDays: days,
+    currency: settings?.currency ?? "KES",
+    ...serializePrice(price),
+    notice:
+      "This is an estimate. Transport and any discount are confirmed by PartyPlay before the booking is final.",
+  };
+}
+
+/** Money leaves the API as decimal strings; quote and creation share this shape. */
+function serializePrice(price: BookingPrice) {
+  return {
+    items: price.items.map((line) => ({
+      equipmentId: line.equipmentId,
+      equipmentName: line.equipmentName,
+      quantity: line.quantity,
+      days: line.days,
+      unitPrice: line.unitPrice.toFixed(2),
+      priceForPeriod: line.priceForPeriod.toFixed(2),
+    })),
+    packages: price.packages.map((pkg) => ({
+      packageId: pkg.packageId,
+      packageName: pkg.packageName,
+      packagePrice: pkg.packagePrice.toFixed(2),
+      quantity: pkg.quantity,
+      lineTotal: pkg.lineTotal.toFixed(2),
+      items: pkg.items,
+    })),
+    subtotal: price.subtotal.toFixed(2),
+    discountAmount: price.discountAmount.toFixed(2),
+    transportCharge: price.transportCharge.toFixed(2),
+    totalAmount: price.totalAmount.toFixed(2),
+  };
+}
+
+function parseBookingRange(
+  startInput: string,
+  endInput: string,
+): { startDate: Date; endDate: Date; days: number } {
+  const startDate = parseCalendarDate(startInput);
+  const endDate = parseCalendarDate(endInput);
 
   if (endDate.getTime() < startDate.getTime()) {
     throw badRequest("endDate must be on or after startDate", {
@@ -264,21 +348,7 @@ export async function createBookingRequest(input: CreateBookingInput) {
     });
   }
 
-  const days = rentalDays(startDate, endDate);
-
-  for (let attempt = 1; attempt <= SERIALIZATION_ATTEMPTS; attempt += 1) {
-    try {
-      const result = await createInTransaction(input, startDate, endDate, days);
-      return toPublicBooking(result);
-    } catch (error) {
-      const retryable = isRetryableTransactionError(error) || isBookingCodeCollision(error);
-      if (!retryable || attempt === SERIALIZATION_ATTEMPTS) {
-        throw error;
-      }
-    }
-  }
-
-  throw new ApiError(500, "BOOKING_CREATE_FAILED", "The booking could not be created");
+  return { startDate, endDate, days: rentalDays(startDate, endDate) };
 }
 
 async function createInTransaction(
@@ -450,26 +520,7 @@ function toPublicBooking(result: BookingCreationResult) {
     currency,
     holdMinutes,
     holdExpiresAt: expiresAt.toISOString(),
-    items: price.items.map((line) => ({
-      equipmentId: line.equipmentId,
-      equipmentName: line.equipmentName,
-      quantity: line.quantity,
-      days: line.days,
-      unitPrice: line.unitPrice.toFixed(2),
-      priceForPeriod: line.priceForPeriod.toFixed(2),
-    })),
-    packages: price.packages.map((pkg) => ({
-      packageId: pkg.packageId,
-      packageName: pkg.packageName,
-      packagePrice: pkg.packagePrice.toFixed(2),
-      quantity: pkg.quantity,
-      lineTotal: pkg.lineTotal.toFixed(2),
-      items: pkg.items,
-    })),
-    subtotal: price.subtotal.toFixed(2),
-    discountAmount: price.discountAmount.toFixed(2),
-    transportCharge: price.transportCharge.toFixed(2),
-    totalAmount: price.totalAmount.toFixed(2),
+    ...serializePrice(price),
     notice:
       "This is a booking request, not a confirmed booking. PartyPlay will contact you to confirm availability and delivery.",
   };

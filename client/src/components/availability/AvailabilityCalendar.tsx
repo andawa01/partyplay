@@ -28,7 +28,7 @@ export function AvailabilityCalendar({
   isPending: boolean;
   startDate: string;
   endDate: string;
-  unitLabel: "unit" | "package";
+  unitLabel: "unit" | "package" | "setup";
   onMonthChange: (month: string) => void;
   onSelectDate: (date: string) => void;
 }) {

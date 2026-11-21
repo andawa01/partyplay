@@ -220,7 +220,7 @@ matches a fresh server check.
   is no longer listed produces an inline warning instead of a silently optimistic grid.
 - C6 still owns customer details, quantities, pricing, submission and the success screen.
 
-### C6 — Booking form — `POST /api/bookings`, `GET /api/availability`
+### C6 — Booking form — `POST /api/bookings/quote`, `POST /api/bookings`, `GET /api/availability`
 
 Package + additional equipment selection, quantity steppers, delivery/collection with the
 address field the server requires, customer details, notes. **Live price preview must come
@@ -232,6 +232,30 @@ Submission shows the booking code, the pending notice and the hold expiry. Handl
 in flight, no automatic retry of a create). **Done when** the success screen shows the code
 and expiry from the server response, and a stopped backend produces one clear error, not
 two bookings.
+
+**Shipped (`feat/c6-booking-form`):**
+
+- `/booking` is now the full request form: package selector with its own quantity,
+  additional equipment steppers, the C5 calendar, delivery/collection, contact details and
+  notes. The existing `?package=` and `?equipment=` links seed the selection.
+- The calendar now reflects the **whole selection**. Package items are resolved through the
+  public catalogue, extra equipment is merged with package inclusions using the same
+  Rule B demand rule as creation, and the day count is how many complete selections fit.
+- Added `POST /api/bookings/quote` — a read-only endpoint that runs the same catalogue
+  checks and `priceBooking` call as creation. The form never calculates totals itself; it
+  renders the quote's line items, subtotal and estimate, and labels transport/discounts as
+  confirmed by the owner. The endpoint is documented in `docs/build-plan.md`.
+- The stock check uses `/api/availability` for every equipment item in the selection and
+  compares free units with the required units. A quantity change refreshes both the quote
+  and the stock check.
+- Submission sends only ids, quantities, dates, fulfilment/address and customer details.
+  Success replaces the form with the server's booking code, PENDING notice and hold expiry.
+- Failures: local zod validation and server `VALIDATION_ERROR` fields are mapped to inputs;
+  `409 CONFLICT` names the short items; `429` explains the wait; a network failure shows one
+  "nothing was submitted" message and re-enables the button. The create mutation is never
+  retried automatically.
+- No guest count is introduced; packages remain priced per package.
+- C7 still owns a status page for a saved code.
 
 ### C7 — Booking status page — `GET /api/bookings/:code`
 

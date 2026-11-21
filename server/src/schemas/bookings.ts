@@ -29,28 +29,50 @@ const packageLineSchema = z.object({
   quantity: z.number().int().min(1).max(50),
 });
 
+const bookingRangeSchema = {
+  startDate: z.string().trim().min(1).max(32),
+  endDate: z.string().trim().min(1).max(32),
+  packages: z.array(packageLineSchema).max(20).default([]),
+  equipment: z.array(equipmentLineSchema).max(50).default([]),
+};
+
+function addSelectionIssues(
+  input: { packages: Array<{ packageId: string }>; equipment: Array<{ equipmentId: string }> },
+  ctx: z.RefinementCtx,
+): void {
+  if (input.packages.length === 0 && input.equipment.length === 0) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Add at least one package or equipment item",
+      path: ["equipment"],
+    });
+  }
+
+  addDuplicateIssues(
+    input.packages.map((line) => line.packageId),
+    "packages",
+    ctx,
+  );
+  addDuplicateIssues(
+    input.equipment.map((line) => line.equipmentId),
+    "equipment",
+    ctx,
+  );
+}
+
 export const createBookingSchema = z
   .object({
     customer: customerSchema,
-    startDate: z.string().trim().min(1).max(32),
-    endDate: z.string().trim().min(1).max(32),
+    ...bookingRangeSchema,
     fulfilmentMethod: z.enum(["DELIVERY", "COLLECTION"]),
     // D4: delivery needs somewhere to deliver, collection needs somewhere to collect from.
     dropoffAddress: z.string().trim().min(1).max(500).nullish(),
     pickupAddress: z.string().trim().min(1).max(500).nullish(),
-    packages: z.array(packageLineSchema).max(20).default([]),
-    equipment: z.array(equipmentLineSchema).max(50).default([]),
     notes: z.string().trim().max(2000).nullish(),
     specialRequests: z.string().trim().max(2000).nullish(),
   })
   .superRefine((input, ctx) => {
-    if (input.packages.length === 0 && input.equipment.length === 0) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Add at least one package or equipment item",
-        path: ["equipment"],
-      });
-    }
+    addSelectionIssues(input, ctx);
 
     if (input.fulfilmentMethod === "DELIVERY" && !input.dropoffAddress) {
       ctx.addIssue({
@@ -67,18 +89,17 @@ export const createBookingSchema = z
         path: ["pickupAddress"],
       });
     }
-
-    addDuplicateIssues(
-      input.packages.map((line) => line.packageId),
-      "packages",
-      ctx,
-    );
-    addDuplicateIssues(
-      input.equipment.map((line) => line.equipmentId),
-      "equipment",
-      ctx,
-    );
   });
+
+/**
+ * A read-only estimate: the same dates and lines as a booking, without customer or
+ * fulfilment details. A customer should be able to see the price before typing any
+ * personal information, and the price must come from the same pricing service the
+ * create transaction uses.
+ */
+export const quoteBookingSchema = z
+  .object(bookingRangeSchema)
+  .superRefine(addSelectionIssues);
 
 function addDuplicateIssues(
   ids: string[],
@@ -113,6 +134,7 @@ export const bookingCodeParamsSchema = z.object({
 });
 
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
+export type QuoteBookingInput = z.infer<typeof quoteBookingSchema>;
 
 // ---------------------------------------------------------------------------
 // Admin operations (F8)
