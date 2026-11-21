@@ -711,7 +711,8 @@ the last unit and assert `[201, 409]`.
 | C1 | Client foundation | — | ✅ | `feat/c1-client-foundation` |
 | C2 | Public shell and site settings | — | ✅ | `feat/c2-public-shell` |
 | C3 | Equipment catalogue and detail | — | ✅ | `feat/c3-equipment-catalogue` |
-| C4–C11 | Client slices | — | ☐ | `feat/c<n>-<slug>` |
+| C4 | Packages and offers | — | ✅ | `feat/c4-packages-offers` |
+| C5–C11 | Client slices | — | ☐ | `feat/c<n>-<slug>` |
 
 ---
 

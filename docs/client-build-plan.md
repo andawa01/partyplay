@@ -171,6 +171,26 @@ minimum quantity; offers rendered as display-only promotions. No "redeem" or dis
 while the backend has no redemption path — an offer must not promise a discount the
 booking cannot apply. **Done when** the packages page content is entirely server-driven.
 
+**Shipped (`feat/c4-packages-offers`):**
+
+- `/packages` and `/packages/:slug` read `GET /api/packages` and
+  `GET /api/packages/:slug`. Cards show the package name, package price, duration and the
+  server-provided included items (first three, then "+N more"); the detail page lists every
+  item with a link back to that equipment.
+- No guest count appears anywhere, and `minQuantity`/`maxQuantity` are not rendered — the
+  package is priced per package, per product decision #1.
+- The home page shows up to three featured packages (`isFeatured`) with the same cards and
+  a link to the full package list. The section is omitted when nothing is featured or the
+  request fails, so the hero never waits on it.
+- `/offers` is display-only. Cards show the discount, the server description, what the
+  offer applies to and its validity window. There is no redeem/apply CTA and no promo code
+  is displayed; a page note says the online request does not apply discounts and the owner
+  confirms any offer by phone or WhatsApp.
+- The package CTA links to `/booking?package=<slug>`; C6 reads the preselection and owns
+  availability and pricing.
+- States: loading skeletons, error with retry, empty packages, empty offers, and a friendly
+  404 for an unknown package slug.
+
 ### C5 — Availability calendar — `GET /api/calendar`, `GET /api/availability`, `GET /api/packages/:slug/availability`
 
 Month grid from `/api/calendar?equipmentId=&month=` showing unavailable days; date-range
