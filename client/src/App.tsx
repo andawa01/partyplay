@@ -4,6 +4,7 @@ import PublicLayout from './layouts/PublicLayout'
 import AdminLayout from './layouts/AdminLayout'
 import HomePage from './pages/public/HomePage'
 import EquipmentPage from './pages/public/EquipmentPage'
+import EquipmentDetailPage from './pages/public/EquipmentDetailPage'
 import PackagesPage from './pages/public/PackagesPage'
 import OffersPage from './pages/public/OffersPage'
 import BookingPage from './pages/public/BookingPage'
@@ -21,6 +22,7 @@ export default function App() {
       <Route element={<PublicLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/equipment" element={<EquipmentPage />} />
+        <Route path="/equipment/:slug" element={<EquipmentDetailPage />} />
         <Route path="/packages" element={<PackagesPage />} />
         <Route path="/offers" element={<OffersPage />} />
         <Route path="/booking" element={<BookingPage />} />
