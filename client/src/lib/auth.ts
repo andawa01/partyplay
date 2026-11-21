@@ -1,0 +1,94 @@
+import { z } from "zod";
+
+export type AdminRole = "OWNER" | "STAFF";
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string | null;
+  role: AdminRole;
+}
+
+export interface LoginInput {
+  email: string;
+  password: string;
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export const loginFormSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(1, "Enter your email address")
+    .pipe(z.email("Enter a valid email address")),
+  password: z
+    .string()
+    .min(1, "Enter your password")
+    .max(200, "Password is too long"),
+});
+
+export type LoginFormValues = z.infer<typeof loginFormSchema>;
+
+export const changePasswordFormSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Enter your current password").max(200),
+    newPassword: z
+      .string()
+      .min(10, "Use at least 10 characters")
+      .max(200, "Use 200 characters or fewer"),
+    confirmPassword: z.string().min(1, "Confirm your new password"),
+  })
+  .superRefine((input, ctx) => {
+    if (input.newPassword !== input.confirmPassword) {
+      ctx.addIssue({
+        code: "custom",
+        message: "The new passwords do not match",
+        path: ["confirmPassword"],
+      });
+    }
+    if (input.currentPassword === input.newPassword) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Choose a password different from your current one",
+        path: ["newPassword"],
+      });
+    }
+  });
+
+export type ChangePasswordFormValues = z.infer<typeof changePasswordFormSchema>;
+
+/**
+ * Only return to an admin path supplied by the guard. The value comes from router state,
+ * but treating it as untrusted keeps a crafted `from` from turning login into an open
+ * redirect.
+ */
+export function adminReturnPath(from: unknown): string {
+  if (!from || typeof from !== "object") {
+    return "/admin/dashboard";
+  }
+
+  const pathname = "pathname" in from ? from.pathname : undefined;
+  if (
+    typeof pathname !== "string" ||
+    (pathname !== "/admin" && !pathname.startsWith("/admin/")) ||
+    pathname === "/admin/login"
+  ) {
+    return "/admin/dashboard";
+  }
+
+  const search =
+    "search" in from && typeof from.search === "string" && from.search.startsWith("?")
+      ? from.search
+      : "";
+  const hash =
+    "hash" in from && typeof from.hash === "string" && from.hash.startsWith("#")
+      ? from.hash
+      : "";
+
+  return `${pathname}${search}${hash}`;
+}

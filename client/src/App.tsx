@@ -9,15 +9,18 @@ import PackagesPage from './pages/public/PackagesPage'
 import PackageDetailPage from './pages/public/PackageDetailPage'
 import OffersPage from './pages/public/OffersPage'
 import ContactPage from './pages/public/ContactPage'
-import AdminLoginPage from './pages/admin/AdminLoginPage'
 import AdminDashboardPage from './pages/admin/AdminDashboardPage'
 import NotFoundPage from './pages/NotFoundPage'
+import { AdminSessionLoading } from './components/admin/AdminSessionLoading'
+import { RequireAdmin } from './components/admin/RequireAdmin'
 
 // Reference page, kept out of the main bundle because it pulls the full select primitive.
 const StyleGuidePage = lazy(() => import('./pages/StyleGuidePage'))
 // The booking form pulls zod and the full form/calendar surface; load it on demand.
 const BookingPage = lazy(() => import('./pages/public/BookingPage'))
 const BookingStatusPage = lazy(() => import('./pages/public/BookingStatusPage'))
+const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'))
+const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'))
 
 export default function App() {
   return (
@@ -78,9 +81,32 @@ export default function App() {
 
       <Route path="/admin">
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
-        <Route element={<AdminLayout />}>
-          <Route path="login" element={<AdminLoginPage />} />
-          <Route path="dashboard" element={<AdminDashboardPage />} />
+        <Route
+          path="login"
+          element={
+            <Suspense fallback={<AdminSessionLoading label="Loading sign in…" />}>
+              <AdminLoginPage />
+            </Suspense>
+          }
+        />
+        <Route element={<RequireAdmin />}>
+          <Route element={<AdminLayout />}>
+            <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route
+              path="settings"
+              element={
+                <Suspense
+                  fallback={
+                    <div className="h-64 animate-pulse rounded-2xl bg-white" aria-busy="true">
+                      <span className="sr-only">Loading settings…</span>
+                    </div>
+                  }
+                >
+                  <AdminSettingsPage />
+                </Suspense>
+              }
+            />
+          </Route>
         </Route>
       </Route>
 

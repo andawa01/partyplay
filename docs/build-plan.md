@@ -718,7 +718,8 @@ the last unit and assert `[201, 409]`.
 | C5 | Availability calendar | — | ✅ | `feat/c5-availability-calendar` |
 | C6 | Booking form | — | ✅ | `feat/c6-booking-form` |
 | C7 | Booking status page | — | ✅ | `feat/c7-booking-status` |
-| C8–C11 | Client slices | — | ☐ | `feat/c<n>-<slug>` |
+| C8 | Admin login and guard | — | ✅ | `feat/c8-admin-auth` |
+| C9–C11 | Client slices | — | ☐ | `feat/c<n>-<slug>` |
 
 ---
 
