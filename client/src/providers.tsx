@@ -11,7 +11,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
       {children}
       <Toaster />
       {import.meta.env.DEV ? (
-        <ReactQueryDevtools initialIsOpen={false} />
+        <ReactQueryDevtools initialIsOpen />
       ) : null}
     </QueryClientProvider>
   );
