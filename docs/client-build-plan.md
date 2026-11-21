@@ -179,6 +179,9 @@ booking cannot apply. **Done when** the packages page content is entirely server
   item with a link back to that equipment.
 - No guest count appears anywhere, and `minQuantity`/`maxQuantity` are not rendered — the
   package is priced per package, per product decision #1.
+- The home page shows up to three featured packages (`isFeatured`) with the same cards and
+  a link to the full package list. The section is omitted when nothing is featured or the
+  request fails, so the hero never waits on it.
 - `/offers` is display-only. Cards show the discount, the server description, what the
   offer applies to and its validity window. There is no redeem/apply CTA and no promo code
   is displayed; a page note says the online request does not apply discounts and the owner
