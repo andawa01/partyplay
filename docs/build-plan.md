@@ -709,7 +709,9 @@ the last unit and assert `[201, 409]`.
 | F9 | Payments | ✅ | — | `feat/f9-payments` |
 | F10 | Dashboard summaries | ✅ | — | `feat/f10-dashboard` |
 | C1 | Client foundation | — | ✅ | `feat/c1-client-foundation` |
-| C2–C11 | Client slices | — | ☐ | `feat/c<n>-<slug>` |
+| C2 | Public shell and site settings | — | ✅ | `feat/c2-public-shell` |
+| C3 | Equipment catalogue and detail | — | ✅ | `feat/c3-equipment-catalogue` |
+| C4–C11 | Client slices | — | ☐ | `feat/c<n>-<slug>` |
 
 ---
 

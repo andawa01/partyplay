@@ -136,6 +136,11 @@ States: loading (static shell), success, error (fall back to neutral defaults, n
 chrome). Contact page renders phone/WhatsApp/email as links. **Done when** changing settings
 in the admin changes the public footer without a code change.
 
+**Shipped (PR #19):** one cached `useSite()` query feeds the header, footer and contact page;
+the footer renders `SITE_FALLBACK` while loading and after a failure so the chrome is never
+blank. Social links and transport providers stay hidden until the owner fills them in.
+Redesigned in the same PR to the §5 visual bar.
+
 ### C3 — Equipment catalogue and detail — `GET /api/equipment`, `GET /api/equipment/:slug`
 
 Grid with card image, name, category, price and availability badge; category filter and
@@ -143,6 +148,21 @@ search (`category`, `q`) mirrored into the URL so a filtered view is shareable; 
 (`page`, `pageSize`) with the `meta.total` count. Detail page with image, description,
 inventory, price, "check dates" entry point. Empty and no-results states distinct.
 **Done when** filter + page survive a reload and back/forward.
+
+**Shipped (`feat/c3-equipment-catalogue`):**
+
+- `/equipment?q=&category=&page=` is the state. Search is debounced into the URL with
+  `replace`; category and page push history, so reload and back/forward restore the view.
+  Page size is 12.
+- Category pills come from public `GET /api/categories` (root categories only). A root
+  filter already includes its children on the server, and a URL using a child slug lights
+  its parent pill.
+- The card badge reports inventory (`total`): "N units in stock" / "Unavailable". It is
+  deliberately not labelled date availability — C5 owns dates and remaining quantity.
+- The detail CTA links to `/booking?equipment=<slug>`. Reading that preselection and the
+  server-side date check belong to C6.
+- Distinct states: catalogue empty, filters with no matches (clear filters), page past the
+  end (back to page one), and a friendly 404 for an unknown slug.
 
 ### C4 — Packages and offers — `GET /api/packages`, `GET /api/packages/:slug`, `GET /api/offers`
 
