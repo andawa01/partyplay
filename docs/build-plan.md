@@ -712,7 +712,8 @@ the last unit and assert `[201, 409]`.
 | C2 | Public shell and site settings | — | ✅ | `feat/c2-public-shell` |
 | C3 | Equipment catalogue and detail | — | ✅ | `feat/c3-equipment-catalogue` |
 | C4 | Packages and offers | — | ✅ | `feat/c4-packages-offers` |
-| C5–C11 | Client slices | — | ☐ | `feat/c<n>-<slug>` |
+| C5 | Availability calendar | — | ✅ | `feat/c5-availability-calendar` |
+| C6–C11 | Client slices | — | ☐ | `feat/c<n>-<slug>` |
 
 ---
 

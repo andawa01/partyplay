@@ -199,6 +199,27 @@ with remaining quantity. Handle 400 for past/inverted dates and 404 for unknown 
 **Done when** a date the calendar marks unavailable cannot be selected, and the state
 matches a fresh server check.
 
+**Shipped (`feat/c5-availability-calendar`):**
+
+- `/booking` is now the availability step. It accepts the existing `?equipment=<slug>`
+  and `?package=<slug>` links from C3/C4, with a chooser state when neither is present.
+- The month grid is built from `/api/calendar` and disables past days and days with zero
+  availability, so a fully booked day cannot be selected as either endpoint. The range
+  check remains the authority for every day in between.
+- A package contributes every included item to the grid: a day only counts as free when
+  all of its equipment is free, and the available count is the number of whole packages
+  that fit. The selected range is checked with `/api/packages/:slug/availability`, which
+  shows each item's required, free and shortfall quantities.
+- Selecting a start and end date fires `/api/availability` (equipment) or the package
+  endpoint, with loading, error/retry and an explicit "Check again" refresh. The server's
+  advisory note is shown with the result.
+- 400s (a date that passed while the page was open, or an inverted range from the API) use
+  the shared `ErrorState`; unknown slugs render the friendly not-found state.
+- Package month data needs equipment ids, which the public package payload does not carry,
+  so the page resolves its item slugs from the public catalogue list. A package item that
+  is no longer listed produces an inline warning instead of a silently optimistic grid.
+- C6 still owns customer details, quantities, pricing, submission and the success screen.
+
 ### C6 — Booking form — `POST /api/bookings`, `GET /api/availability`
 
 Package + additional equipment selection, quantity steppers, delivery/collection with the
