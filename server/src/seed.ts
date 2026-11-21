@@ -40,6 +40,22 @@ function upsertOffer(input: { data: Prisma.OfferUncheckedCreateInput }) {
   });
 }
 
+/** One row per equipment in a package; the unique key makes re-seeding a no-op. */
+async function upsertPackageItems(
+  packageId: string,
+  items: { equipmentId: string; quantity: number }[],
+) {
+  for (const item of items) {
+    await db.packageItem.upsert({
+      where: {
+        packageId_equipmentId: { packageId, equipmentId: item.equipmentId },
+      },
+      update: {},
+      create: { packageId, ...item },
+    });
+  }
+}
+
 async function main() {
   // `db` is only bound once ensureClient() has connected; touching it earlier throws.
   await ensureClient();
@@ -260,6 +276,8 @@ async function main() {
       name: "Birthday Party Starter",
       description:
         "A complete starter package for a kids' birthday party: one bounce castle, seating for 20 guests, a table, and a speaker pair.",
+      imageUrl:
+        "https://images.pexels.com/photos/16935999/pexels-photo-16935999.jpeg?auto=compress&cs=tinysrgb&w=1200",
       imagePublicId: "packages/birthday-starter",
       price: 14500,
       minQuantity: 10,
@@ -269,24 +287,80 @@ async function main() {
       isActive: true,
     },
   });
-  // One row per equipment in the package; the unique key makes re-seeding a no-op.
-  for (const item of [
+  await upsertPackageItems(birthdayPackage.id, [
     { equipmentId: castle2.id, quantity: 1 },
     { equipmentId: chairSet.id, quantity: 1 },
     { equipmentId: tableSet.id, quantity: 1 },
     { equipmentId: speakerPair.id, quantity: 1 },
-  ]) {
-    await db.packageItem.upsert({
-      where: {
-        packageId_equipmentId: { packageId: birthdayPackage.id, equipmentId: item.equipmentId },
-      },
-      update: {},
-      create: { packageId: birthdayPackage.id, ...item },
-    });
-  }
-  console.log("package ready");
+  ]);
 
-  // ---- Offer ----
+  const castleSoundPackage = await upsertPackage({
+    data: {
+      slug: "castle-sound-combo",
+      name: "Castle & Sound Combo",
+      description:
+        "One combo bounce castle plus a powered speaker pair with microphones. A straightforward setup for a garden or estate party of up to 60 guests.",
+      imageUrl:
+        "https://images.pexels.com/photos/39922917/pexels-photo-39922917.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      price: 8500,
+      minQuantity: 15,
+      maxQuantity: 60,
+      duration: 1,
+      isFeatured: true,
+      isActive: true,
+    },
+  });
+  await upsertPackageItems(castleSoundPackage.id, [
+    { equipmentId: castle1.id, quantity: 1 },
+    { equipmentId: speakerPair.id, quantity: 1 },
+  ]);
+
+  const gardenSetPackage = await upsertPackage({
+    data: {
+      slug: "garden-table-chairs",
+      name: "Garden Table & Chairs Set",
+      description:
+        "Two folding tables and a set of 20 stacking chairs — seating and serving for a relaxed garden gathering.",
+      imageUrl:
+        "https://images.pexels.com/photos/33029993/pexels-photo-33029993.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      price: 4400,
+      minQuantity: 20,
+      maxQuantity: 80,
+      duration: 1,
+      isFeatured: false,
+      isActive: true,
+    },
+  });
+  await upsertPackageItems(gardenSetPackage.id, [
+    { equipmentId: chairSet.id, quantity: 1 },
+    { equipmentId: tableSet.id, quantity: 2 },
+  ]);
+
+  const partyWeekendPackage = await upsertPackage({
+    data: {
+      slug: "premium-party-weekend",
+      name: "Premium Party Weekend",
+      description:
+        "The full setup for a weekend celebration: bounce castle, seating, tables and a speaker pair, delivered together for two days.",
+      imageUrl:
+        "https://images.pexels.com/photos/11522856/pexels-photo-11522856.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      price: 18900,
+      minQuantity: 20,
+      maxQuantity: 80,
+      duration: 2,
+      isFeatured: true,
+      isActive: true,
+    },
+  });
+  await upsertPackageItems(partyWeekendPackage.id, [
+    { equipmentId: castle2.id, quantity: 1 },
+    { equipmentId: chairSet.id, quantity: 1 },
+    { equipmentId: tableSet.id, quantity: 2 },
+    { equipmentId: speakerPair.id, quantity: 1 },
+  ]);
+  console.log("packages ready");
+
+  // ---- Offers (display-only in the MVP: none of these are redeemable in the client) ----
   await upsertOffer({
     data: {
       slug: "first-booking-discount",
@@ -300,7 +374,35 @@ async function main() {
       isActive: true,
     },
   });
-  console.log("offer ready");
+  await upsertOffer({
+    data: {
+      slug: "weekday-hire-offer",
+      name: "Weekday Hire Offer",
+      description:
+        "15% off equipment hire for events held Monday to Thursday. Ask the owner when you send your request.",
+      discountType: "PERCENTAGE",
+      discountValue: 15,
+      appliesTo: "ALL_EQUIPMENT",
+      startsAt: new Date(),
+      endsAt: new Date("2027-02-28T23:59:59+03:00"),
+      isActive: true,
+    },
+  });
+  await upsertOffer({
+    data: {
+      slug: "festive-package-offer",
+      name: "Festive Package Offer",
+      description:
+        "Save KES 2,000 on any package booked for December and January celebrations.",
+      discountType: "FIXED_AMOUNT",
+      discountValue: 2000,
+      appliesTo: "ALL_PACKAGES",
+      startsAt: new Date(),
+      endsAt: new Date("2027-01-31T23:59:59+03:00"),
+      isActive: true,
+    },
+  });
+  console.log("offers ready");
 
   console.log("seed complete");
 }
