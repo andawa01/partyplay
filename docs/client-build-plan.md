@@ -225,6 +225,11 @@ balance client-side for display of record — show the server's `paidAmount`/`am
   shifts a day), no `toISOString().slice(0,10)` on a local Date.
 - **Async UI:** every data view has loading, empty, error-with-retry and success states. A
   failed admin action keeps the form values and shows the server message.
+- **Toasts:** one surface, `toast` from `lib/toast`, mounted once in `AppProviders`. Use a
+  toast to confirm an action that finished (saved, sent, cancelled) and for failures that
+  happen outside a form. Field validation stays inline next to the input; a view that could
+  not load uses `ErrorState`. One toast per action: the title says what happened, the
+  description carries the server's wording, and no toast says only "Success!".
 - **Palette:** sky blue (`brand-*`), baby pink (`blush-*`) and white, defined once in
   `src/index.css`. Sky blue carries primary actions, links and focus; baby pink is an accent
   only. Use the tokens, never raw hex or the old indigo classes.
