@@ -384,6 +384,56 @@ charge editor; re-check availability before confirming. Only offer transitions t
 allows; show `409 INVALID_TRANSITION` when it disagrees. **Done when** every action's
 result is reflected without a manual reload and stock messages match the server.
 
+**Shipped (`feat/c10-admin-bookings`):**
+
+- Added `/admin/bookings` as a lazy-loaded board with status, rental-date overlap and free
+  text filters in the URL. Search is debounced into the URL; status and date changes reset
+  the page; reload, back/forward and shared links restore the same view.
+- Status pills show counts for every status using the current date and search filters, plus
+  an all-bookings total. The list shows the server's total with 20 bookings per page and
+  keeps the previous page visible while the next one loads.
+- The table shows code, customer, rental dates, days, status, payment status, total, paid
+  amount, fulfilment method, hold expiry and a direct detail link. Loading, empty, filtered
+  empty, page-past-the-end and error-with-retry states are distinct.
+- Added `/admin/bookings/:id` with customer contact, rental and fulfilment details, package
+  and equipment lines, notes, special requests, server totals, payment summary, hold state,
+  milestones and status history.
+- Status actions are limited to the server's transition table: pending can be confirmed,
+  rejected or cancelled; confirmed can be completed or cancelled. Closed states show no
+  actions. Rejecting or cancelling requires a reason; completion accepts an optional note.
+- Confirming runs `POST /api/admin/bookings/:id/availability` first. The dialog shows a
+  fresh available result or the server's shortage list; confirmation is disabled while the
+  stock is short. The server still re-checks inside the transaction.
+- A `409 INVALID_TRANSITION` from a concurrent update is shown in the action dialog with
+  the server's message and code; the dialog stays open and the page keeps its data.
+- Added a transport charge editor for pending and confirmed bookings. It sends only the
+  charge; the server recalculates the booking total, and the detail cache updates from the
+  response.
+- Successful status and transport changes update the detail query, invalidate the list,
+  status counts and dashboard cache, and confirm with a toast. No manual reload is needed.
+- Added three focused component tests covering a blocked confirmation with stock
+  shortfalls, the required cancellation reason, and the `409 INVALID_TRANSITION` state.
+
+**Verified:**
+
+- `npm run typecheck` passed for client and server.
+- `npm test --workspace client` passed: 12 tests, including the three C10 action tests.
+- `npm run build --workspace client` passed. The booking list is a 12.49 kB / 4.27 kB gzip
+  chunk and the detail page 24.91 kB / 6.64 kB gzip; the main bundle remains
+  473.41 kB / 138.66 kB gzip.
+- Seeded four real bookings through the public API: two pending, one confirmed and one
+  cancelled. Confirmed the count totals, the pending filter URL, the list rendering and
+  direct detail links.
+- Browser pass against the production build: confirmed a pending booking after the fresh
+  stock check, updated its transport charge and saw the server's new total, cancelled it
+  with a reason, and verified the history and actions updated without a reload.
+- Simulated a concurrent cancellation on a pending booking, then confirmed from the stale
+  page: the dialog showed `INVALID_TRANSITION` and the server message.
+- No console errors and no horizontal page overflow at 1440 px or 390 px. Wide tables scroll
+  inside their card on mobile.
+- Temporary bookings and customers were removed afterwards; the database returned to zero
+  bookings, customers, payments and stock holds.
+
 ### C11 — Payments and dashboard — `/api/admin/bookings/:id/payments`, `PATCH/DELETE /api/admin/payments/:id`, `GET /api/admin/dashboard`
 
 Payment list with running total and balance, record/edit/delete payment (method, reference,
