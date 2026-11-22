@@ -91,6 +91,12 @@ export function paymentMethodLabel(method: PaymentMethod): string {
   return paymentMethodMeta[method].label;
 }
 
+/** A stable, printable reference derived from the payment row's immutable id. */
+export function paymentReceiptNumber(payment: Pick<PaymentRow, "id">): string {
+  const suffix = payment.id.replace(/[^a-z0-9]/gi, "").slice(-8).toUpperCase();
+  return `RCPT-${suffix || "PAYMENT"}`;
+}
+
 export interface PaymentFormValues {
   amount: string;
   method: PaymentMethod;

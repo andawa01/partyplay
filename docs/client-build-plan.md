@@ -461,6 +461,11 @@ balance client-side for display of record — show the server's `paidAmount`/`am
 - Delete is offered only while the booking is pending, matching the server rule, and asks
   for confirmation. The dialog explains the amount being removed and shows server errors
   such as `409`.
+- Every paid payment has a receipt action, and recording a paid deposit opens its receipt
+  automatically. The receipt shows the business contact details, a stable receipt number,
+  customer, payment method/reference/date, rental period, booking total, paid-to-date and
+  balance due. Print / save PDF uses a body-level print copy and `@media print` so it
+  prints as a single A4 page with no admin chrome.
 - Successful record/edit/delete responses update the booking detail cache from the
   server's summary, then invalidate the payment list, booking lists, status counts and
   dashboard. The new balance appears without a manual reload and a toast confirms the
@@ -472,16 +477,16 @@ balance client-side for display of record — show the server's `paidAmount`/`am
 - The dashboard has refresh, loading, error-with-retry, empty-upcoming and healthy-stock
   states. Metric cards link to the filtered booking board, upcoming rows open the booking
   detail, and low stock links to catalogue management.
-- Added five focused component tests: three for server-owned payment totals, the record
-  POST payload and pending-only delete; two for the dashboard figures, empty states,
-  upcoming jobs and low stock.
+- Added six focused component tests: three for server-owned payment totals, the record
+  POST payload and pending-only delete; one for opening and printing a receipt; two for
+  the dashboard figures, empty states, upcoming jobs and low stock.
 
 **Verified:**
 
 - `npm run typecheck` passed for client and server.
-- `npm test --workspace client` passed: 17 tests, including the five C11 tests.
-- `npm run build --workspace client` passed. The booking detail chunk is 41.88 kB / 10.19 kB
-  gzip and the main bundle is 577.41 kB / 168.57 kB gzip. The existing zod comment warning
+- `npm test --workspace client` passed: 18 tests, including the six C11 tests.
+- `npm run build --workspace client` passed. The booking detail chunk is 49.61 kB / 11.73 kB
+  gzip and the main bundle is 577.52 kB / 168.63 kB gzip. The existing zod comment warning
   and the main-chunk size warning remain non-fatal.
 - Seeded two real bookings through the public API, confirmed one, and recorded two
   payments through the admin API. The dashboard rendered exactly the API's figures:
@@ -491,6 +496,10 @@ balance client-side for display of record — show the server's `paidAmount`/`am
   cash payment, saw paid-to-date and amount due update from the server, edited it to
   failed and saw the balance revert, then deleted it. Each change completed without a
   reload, with the server's summary reflected in the page.
+- Opened a paid receipt at 1440 px and 390 px and printed it through Chrome to PDF. The
+  PDF is one A4 page and contains only the receipt, with the business details, customer,
+  M-Pesa reference and server balance all visible. Mobile balance rows stack instead of
+  truncating, and the print action stays fixed at the bottom of the scrolling preview.
 - No application console errors; the only browser-log entry was the missing favicon
   `404`. No horizontal page overflow at 1440 px or 390 px. The desktop payment table fits
   its card without sideways scrolling, and the mobile card layout keeps every field and

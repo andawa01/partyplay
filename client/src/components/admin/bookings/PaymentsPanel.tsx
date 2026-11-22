@@ -4,6 +4,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  Printer,
   ReceiptText,
   Trash2,
 } from "lucide-react";
@@ -17,8 +18,10 @@ import {
 } from "../../../hooks/use-admin-payments";
 import type { AdminBookingDetail } from "../../../lib/admin-bookings";
 import type {
+  BookingPaymentSummary,
   PaymentEditFormValues,
   PaymentFormValues,
+  PaymentMutationResult,
   PaymentRow,
 } from "../../../lib/admin-payments";
 import {
@@ -57,6 +60,7 @@ import {
   TableHeader,
   TableRow,
 } from "../../ui/table";
+import { PaymentReceiptDialog } from "./PaymentReceiptDialog";
 import {
   PaymentRowStatusBadge,
   PaymentStatusBadge,
@@ -71,6 +75,10 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
   const [recording, setRecording] = useState(false);
   const [editing, setEditing] = useState<PaymentRow | null>(null);
   const [deleting, setDeleting] = useState<PaymentRow | null>(null);
+  const [receipt, setReceipt] = useState<{
+    payment: PaymentRow;
+    summary: BookingPaymentSummary;
+  } | null>(null);
 
   const rows = payments.data?.items ?? [];
   const summary = payments.data?.meta?.booking;
@@ -78,6 +86,22 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
   const amountDue = summary?.amountDue ?? booking.totals.amountDue;
   const paymentStatus = summary?.paymentStatus ?? booking.paymentStatus;
   const canDelete = booking.status === "PENDING";
+
+  function showReceipt(payment: PaymentRow) {
+    setReceipt({
+      payment,
+      summary: summary ?? {
+        id: booking.id,
+        code: booking.code,
+        status: booking.status,
+        totalAmount: booking.totals.totalAmount,
+        paidAmount: booking.totals.paidAmount,
+        amountDue: booking.totals.amountDue,
+        overpaidBy: booking.totals.overpaidBy,
+        paymentStatus: booking.paymentStatus,
+      },
+    });
+  }
 
   return (
     <section
@@ -217,28 +241,42 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <div className="flex justify-end gap-1">
+                      <div className="flex justify-end gap-0.5">
                         <Button
                           type="button"
-                          size="sm"
+                          size="icon"
                           variant="ghost"
+                          className="size-8"
                           onClick={() => setEditing(payment)}
+                          title="Update payment"
                           aria-label={`Update payment ${payment.id}`}
                         >
                           <Pencil aria-hidden="true" className="size-3.5" />
-                          Update
                         </Button>
+                        {payment.status === "PAID" ? (
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="size-8"
+                            onClick={() => showReceipt(payment)}
+                            title="Print receipt"
+                            aria-label={`Print receipt for payment ${payment.id}`}
+                          >
+                            <Printer aria-hidden="true" className="size-3.5" />
+                          </Button>
+                        ) : null}
                         {canDelete ? (
                           <Button
                             type="button"
-                            size="sm"
+                            size="icon"
                             variant="ghost"
-                            className="text-red-700 hover:bg-red-50"
+                            className="size-8 text-red-700 hover:bg-red-50"
                             onClick={() => setDeleting(payment)}
+                            title="Delete payment"
                             aria-label={`Delete payment ${payment.id}`}
                           >
                             <Trash2 aria-hidden="true" className="size-3.5" />
-                            Delete
                           </Button>
                         ) : null}
                       </div>
@@ -287,11 +325,24 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
                 </dl>
 
                 <div className="mt-3 flex gap-2">
+                  {payment.status === "PAID" ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 border-brand-200 px-2 text-brand-800"
+                      onClick={() => showReceipt(payment)}
+                      aria-label={`Print receipt for payment ${payment.id}`}
+                    >
+                      <Printer aria-hidden="true" className="size-3.5" />
+                      Receipt
+                    </Button>
+                  ) : null}
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="flex-1"
+                    className="flex-1 px-2"
                     onClick={() => setEditing(payment)}
                     aria-label={`Update payment ${payment.id}`}
                   >
@@ -303,7 +354,7 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="flex-1 border-red-200 text-red-700 hover:bg-red-50"
+                      className="flex-1 border-red-200 px-2 text-red-700 hover:bg-red-50"
                       onClick={() => setDeleting(payment)}
                       aria-label={`Delete payment ${payment.id}`}
                     >
@@ -329,6 +380,11 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
           bookingId={booking.id}
           bookingCode={booking.code}
           currency={booking.currency}
+          onRecorded={(result) => {
+            if (result.payment.status === "PAID") {
+              setReceipt({ payment: result.payment, summary: result.booking });
+            }
+          }}
           onClose={() => setRecording(false)}
         />
       ) : null}
@@ -338,6 +394,15 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
           payment={editing}
           currency={booking.currency}
           onClose={() => setEditing(null)}
+        />
+      ) : null}
+
+      {receipt ? (
+        <PaymentReceiptDialog
+          booking={booking}
+          payment={receipt.payment}
+          summary={receipt.summary}
+          onClose={() => setReceipt(null)}
         />
       ) : null}
 
@@ -423,11 +488,13 @@ function RecordPaymentDialog({
   bookingId,
   bookingCode,
   currency,
+  onRecorded,
   onClose,
 }: {
   bookingId: string;
   bookingCode: string;
   currency: string;
+  onRecorded: (result: PaymentMutationResult) => void;
   onClose: () => void;
 }) {
   const [values, setValues] = useState<PaymentFormValues>(emptyPaymentForm);
@@ -465,6 +532,7 @@ function RecordPaymentDialog({
               currency,
             )}.`,
           });
+          onRecorded(result);
           onClose();
         },
       },

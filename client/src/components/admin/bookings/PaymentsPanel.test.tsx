@@ -8,6 +8,7 @@ import type {
   BookingPaymentSummary,
   PaymentRow,
 } from "../../../lib/admin-payments";
+import { SITE_FALLBACK } from "../../../lib/site";
 import { PaymentsPanel } from "./PaymentsPanel";
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -24,6 +25,7 @@ function renderWithClient(children: React.ReactNode) {
       queries: { retry: false },
     },
   });
+  queryClient.setQueryData(["site"], SITE_FALLBACK);
   return render(
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
   );
@@ -183,6 +185,46 @@ describe("PaymentsPanel", () => {
     const body = JSON.parse(String(postCall?.[1]?.body)) as Record<string, unknown>;
     expect(body).toMatchObject({ amount: 300, method: "CASH" });
     expect(typeof body.paidAt).toBe("string");
+
+    const receipt = within(await screen.findByRole("dialog"));
+    expect(
+      receipt.getByRole("heading", { name: "Payment receipt" }),
+    ).toBeInTheDocument();
+    expect(receipt.getByText(/RCPT-PAYMENT2/)).toBeInTheDocument();
+  });
+
+  it("opens a printable receipt for a paid payment", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        jsonResponse(200, {
+          data: [payment],
+          meta: { total: 1, paidTotal: "500.00", booking: summary },
+        }),
+      ),
+    );
+    const printMock = vi.fn();
+    vi.stubGlobal("print", printMock);
+    const user = userEvent.setup();
+
+    renderWithClient(<PaymentsPanel booking={booking} />);
+    const table = within(await screen.findByRole("table"));
+    await user.click(
+      table.getByRole("button", { name: /Print receipt/ }),
+    );
+
+    const receipt = within(await screen.findByRole("dialog"));
+    expect(
+      receipt.getByRole("heading", { name: "Payment receipt" }),
+    ).toBeInTheDocument();
+    expect(receipt.getByText(/RCPT-PAYMENT1/)).toBeInTheDocument();
+    expect(receipt.getByText("Test Customer")).toBeInTheDocument();
+    expect(receipt.getByText("M-Pesa")).toBeInTheDocument();
+
+    await user.click(
+      receipt.getByRole("button", { name: /Print \/ save PDF/ }),
+    );
+    expect(printMock).toHaveBeenCalledTimes(1);
   });
 
   it("hides delete for bookings that are no longer pending", async () => {
