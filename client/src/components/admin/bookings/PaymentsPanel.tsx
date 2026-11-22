@@ -109,7 +109,7 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
         </Button>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid grid-cols-3 divide-x divide-slate-200 rounded-xl bg-slate-50 py-2.5 ring-1 ring-slate-100">
         <SummaryBox
           label="Booking total"
           value={summary?.totalAmount ?? booking.totals.totalAmount}
@@ -166,92 +166,155 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
         </div>
       ) : (
         <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-          <div className="overflow-x-auto">
-          <Table className="min-w-[760px]">
-            <TableHeader>
-              <TableRow className="bg-slate-50/70">
-                <TableHead>Date</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Reference</TableHead>
-                <TableHead>Recorded by</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((payment) => (
-                <TableRow key={payment.id}>
-                  <TableCell>
-                    <p className="text-sm text-slate-800">
-                      {formatDateTime(payment.paidAt ?? payment.createdAt)}
-                    </p>
-                    {payment.paidAt ? (
-                      <p className="text-xs text-slate-500">Paid date</p>
-                    ) : (
-                      <p className="text-xs text-slate-500">Recorded date</p>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <p className="font-medium text-slate-900">
-                      {formatMoney(payment.amount, booking.currency)}
-                    </p>
-                    {payment.description ? (
-                      <p className="max-w-48 truncate text-xs text-slate-500">
-                        {payment.description}
+          <div className="hidden lg:block">
+            <Table className="min-w-[760px]">
+              <TableHeader>
+                <TableRow className="bg-slate-50/70">
+                  <TableHead>Date</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Method</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Reference</TableHead>
+                  <TableHead>Recorded by</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((payment) => (
+                  <TableRow key={payment.id}>
+                    <TableCell>
+                      <PaymentDate
+                        value={payment.paidAt ?? payment.createdAt}
+                        paidAt={payment.paidAt}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <p className="font-medium text-slate-900">
+                        {formatMoney(payment.amount, booking.currency)}
                       </p>
-                    ) : null}
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-slate-800">
-                      {paymentMethodLabel(payment.method)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <PaymentRowStatusBadge status={payment.status} />
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-mono text-xs text-slate-600">
-                      {payment.providerRef ?? "—"}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-slate-700">
-                      {payment.paidBy?.name ?? payment.paidBy?.email ?? "—"}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-1">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setEditing(payment)}
-                        aria-label={`Update payment ${payment.id}`}
-                      >
-                        <Pencil aria-hidden="true" className="size-3.5" />
-                        Update
-                      </Button>
-                      {canDelete ? (
+                      {payment.description ? (
+                        <p className="max-w-48 truncate text-xs text-slate-500">
+                          {payment.description}
+                        </p>
+                      ) : null}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-slate-800">
+                        {paymentMethodLabel(payment.method)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <PaymentRowStatusBadge status={payment.status} />
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-mono text-xs text-slate-600">
+                        {payment.providerRef ?? "—"}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-slate-700">
+                        {payment.paidBy?.name ?? payment.paidBy?.email ?? "—"}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-1">
                         <Button
                           type="button"
                           size="sm"
                           variant="ghost"
-                          className="text-red-700 hover:bg-red-50"
-                          onClick={() => setDeleting(payment)}
-                          aria-label={`Delete payment ${payment.id}`}
+                          onClick={() => setEditing(payment)}
+                          aria-label={`Update payment ${payment.id}`}
                         >
-                          <Trash2 aria-hidden="true" className="size-3.5" />
-                          Delete
+                          <Pencil aria-hidden="true" className="size-3.5" />
+                          Update
                         </Button>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                        {canDelete ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-700 hover:bg-red-50"
+                            onClick={() => setDeleting(payment)}
+                            aria-label={`Delete payment ${payment.id}`}
+                          >
+                            <Trash2 aria-hidden="true" className="size-3.5" />
+                            Delete
+                          </Button>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
+
+          <ul className="divide-y divide-slate-100 lg:hidden" aria-label="Payments">
+            {rows.map((payment) => (
+              <li key={payment.id} className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-slate-900">
+                      {formatMoney(payment.amount, booking.currency)}
+                    </p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {paymentMethodLabel(payment.method)} ·{" "}
+                      {formatDateTime(payment.paidAt ?? payment.createdAt)}
+                    </p>
+                  </div>
+                  <PaymentRowStatusBadge status={payment.status} />
+                </div>
+
+                {payment.description ? (
+                  <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                    {payment.description}
+                  </p>
+                ) : null}
+
+                <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                  <div>
+                    <dt className="text-slate-500">Reference</dt>
+                    <dd className="mt-0.5 break-all font-mono text-slate-700">
+                      {payment.providerRef ?? "—"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-500">Recorded by</dt>
+                    <dd className="mt-0.5 text-slate-700">
+                      {payment.paidBy?.name ?? payment.paidBy?.email ?? "—"}
+                    </dd>
+                  </div>
+                </dl>
+
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setEditing(payment)}
+                    aria-label={`Update payment ${payment.id}`}
+                  >
+                    <Pencil aria-hidden="true" className="size-3.5" />
+                    Update
+                  </Button>
+                  {canDelete ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 border-red-200 text-red-700 hover:bg-red-50"
+                      onClick={() => setDeleting(payment)}
+                      aria-label={`Delete payment ${payment.id}`}
+                    >
+                      <Trash2 aria-hidden="true" className="size-3.5" />
+                      Delete
+                    </Button>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -307,6 +370,26 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
   );
 }
 
+function PaymentDate({
+  value,
+  paidAt,
+}: {
+  value: string;
+  paidAt: string | null;
+}) {
+  const [date, time] = formatDateTime(value).split(", ");
+
+  return (
+    <>
+      <p className="whitespace-nowrap text-sm text-slate-800">{date}</p>
+      <p className="text-xs text-slate-500">
+        {time ? `${time} · ` : ""}
+        {paidAt ? "Paid" : "Recorded"}
+      </p>
+    </>
+  );
+}
+
 function SummaryBox({
   label,
   value,
@@ -319,15 +402,15 @@ function SummaryBox({
   tone?: "neutral" | "paid" | "due";
 }) {
   return (
-    <div className="rounded-xl bg-slate-50 px-3 py-2.5 ring-1 ring-slate-100">
-      <p className="text-xs text-slate-500">{label}</p>
+    <div className="min-w-0 px-2 sm:px-3">
+      <p className="truncate text-[0.65rem] text-slate-500 sm:text-xs">{label}</p>
       <p
         className={
           tone === "due"
-            ? "mt-0.5 font-semibold text-amber-800"
+            ? "mt-0.5 truncate text-xs font-semibold text-amber-800 sm:text-base"
             : tone === "paid"
-              ? "mt-0.5 font-semibold text-emerald-700"
-              : "mt-0.5 font-semibold text-slate-900"
+              ? "mt-0.5 truncate text-xs font-semibold text-emerald-700 sm:text-base"
+              : "mt-0.5 truncate text-xs font-semibold text-slate-900 sm:text-base"
         }
       >
         {formatMoney(value, currency)}

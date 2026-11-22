@@ -127,7 +127,7 @@ export default function AdminDashboardPage() {
           </div>
           <Link
             to="/admin/bookings"
-            className="text-xs font-medium text-brand-700 hover:underline"
+            className="shrink-0 whitespace-nowrap text-xs font-medium text-brand-700 hover:underline"
           >
             View all
           </Link>
@@ -252,7 +252,9 @@ export default function AdminDashboardPage() {
                 Confirmed jobs from today onwards, soonest first.
               </p>
             </div>
-            <Badge variant="outline">{upcoming.length} shown</Badge>
+            <Badge variant="outline" className="shrink-0 whitespace-nowrap">
+              {upcoming.length} shown
+            </Badge>
           </div>
 
           {upcoming.length === 0 ? (

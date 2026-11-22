@@ -447,6 +447,9 @@ balance client-side for display of record — show the server's `paidAmount`/`am
   status, reference, recorded-by and paid/recorded date. The running total, amount due and
   payment status all come from the server's `meta.booking`; the panel never recalculates a
   balance locally.
+- The payment history is a table on wide screens and a stacked card list below `lg`, so
+  every reference, note and action stays visible on phones and tablets without sideways
+  scrolling. The balance summary is a compact three-column strip on mobile.
 - Recording a payment opens a focused dialog with amount, method, paid date, reference and
   note. Cash defaults with the current local date-time, so a cash payment records as paid.
   Cash, M-Pesa and bank transfers settle immediately when a paid date is supplied;
@@ -477,8 +480,8 @@ balance client-side for display of record — show the server's `paidAmount`/`am
 
 - `npm run typecheck` passed for client and server.
 - `npm test --workspace client` passed: 17 tests, including the five C11 tests.
-- `npm run build --workspace client` passed. The booking detail chunk is 39.99 kB / 9.90 kB
-  gzip and the main bundle is 577.34 kB / 168.56 kB gzip. The existing zod comment warning
+- `npm run build --workspace client` passed. The booking detail chunk is 41.88 kB / 10.19 kB
+  gzip and the main bundle is 577.41 kB / 168.57 kB gzip. The existing zod comment warning
   and the main-chunk size warning remain non-fatal.
 - Seeded two real bookings through the public API, confirmed one, and recorded two
   payments through the admin API. The dashboard rendered exactly the API's figures:
@@ -489,8 +492,9 @@ balance client-side for display of record — show the server's `paidAmount`/`am
   failed and saw the balance revert, then deleted it. Each change completed without a
   reload, with the server's summary reflected in the page.
 - No application console errors; the only browser-log entry was the missing favicon
-  `404`. No horizontal page overflow at 1440 px or 390 px, including the payment table,
-  which scrolls inside its card on narrow screens.
+  `404`. No horizontal page overflow at 1440 px or 390 px. The desktop payment table fits
+  its card without sideways scrolling, and the mobile card layout keeps every field and
+  action visible.
 - Temporary bookings, customers and payments were removed afterwards; the database
   returned to zero bookings, customers, payments, stock holds and status-history rows.
 

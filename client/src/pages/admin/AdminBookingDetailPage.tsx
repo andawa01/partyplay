@@ -177,7 +177,7 @@ export default function AdminBookingDetailPage() {
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px] xl:items-start">
         <div className="min-w-0 space-y-6">
           <section className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -611,7 +611,7 @@ function BookingDetailSkeleton() {
     <div className="space-y-6" aria-busy="true">
       <Skeleton className="h-4 w-32" />
       <Skeleton className="h-48 w-full rounded-3xl" />
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <Skeleton className="h-40 rounded-2xl" />

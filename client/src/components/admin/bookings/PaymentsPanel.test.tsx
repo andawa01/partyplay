@@ -120,8 +120,9 @@ describe("PaymentsPanel", () => {
 
     renderWithClient(<PaymentsPanel booking={booking} />);
 
-    expect(await screen.findByText("QJ72X8ABC")).toBeInTheDocument();
-    expect(screen.getByText("M-Pesa")).toBeInTheDocument();
+    const table = within(await screen.findByRole("table"));
+    expect(table.getByText("QJ72X8ABC")).toBeInTheDocument();
+    expect(table.getByText("M-Pesa")).toBeInTheDocument();
     expect(screen.getByText("Paid to date").parentElement).toHaveTextContent(
       "500.00",
     );
@@ -159,7 +160,7 @@ describe("PaymentsPanel", () => {
     const user = userEvent.setup();
 
     renderWithClient(<PaymentsPanel booking={booking} />);
-    await screen.findByText("QJ72X8ABC");
+    await screen.findByRole("table");
 
     await user.click(screen.getByRole("button", { name: "Record payment" }));
     await user.type(screen.getByLabelText(/Amount received/), "300");
@@ -199,9 +200,9 @@ describe("PaymentsPanel", () => {
       <PaymentsPanel booking={{ ...booking, status: "CONFIRMED" }} />,
     );
 
-    await screen.findByText("QJ72X8ABC");
+    const table = within(await screen.findByRole("table"));
     expect(
-      screen.queryByRole("button", { name: /Delete payment/ }),
+      table.queryByRole("button", { name: /Delete payment/ }),
     ).not.toBeInTheDocument();
     expect(
       screen.getByText(/only be deleted while the booking is pending/),
