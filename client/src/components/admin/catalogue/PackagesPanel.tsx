@@ -241,7 +241,7 @@ export function PackagesPanel({ currency }: { currency: string }) {
   );
 }
 
-function PackageFormDialog({
+export function PackageFormDialog({
   pkg,
   equipment,
   onClose,

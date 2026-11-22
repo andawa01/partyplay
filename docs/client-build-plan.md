@@ -354,10 +354,14 @@ equipment item appears on the public catalogue without a rebuild.
   dialog.
 - Added shared catalogue dialog, field, toggle, status, empty and confirm components so
   the five tables keep one visual and accessibility pattern.
+- Added four focused component tests covering empty equipment validation, the equipment
+  slug-conflict state (server message, retained values and outgoing payload), duplicate
+  equipment lines in a package, and the required target when an offer applies to one item.
 
 **Verified:**
 
 - `npm run typecheck` passed for client and server.
+- `npm test --workspace client` passed: 9 tests, including the four C9 form tests.
 - `npm run build --workspace client` passed. Admin catalogue is a 76.37 kB / 18.60 kB gzip
   lazy chunk; the main bundle remains 472.23 kB / 138.38 kB gzip.
 - Live API pass against the local server: created a category and equipment item, confirmed

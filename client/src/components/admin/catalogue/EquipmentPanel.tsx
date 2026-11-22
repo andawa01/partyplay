@@ -279,7 +279,7 @@ export function EquipmentPanel({ currency }: { currency: string }) {
   );
 }
 
-function EquipmentFormDialog({
+export function EquipmentFormDialog({
   equipment,
   categories,
   categoryIdBySlug,

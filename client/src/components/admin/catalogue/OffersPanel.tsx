@@ -232,7 +232,7 @@ export function OffersPanel({ currency }: { currency: string }) {
   );
 }
 
-function OfferFormDialog({
+export function OfferFormDialog({
   offer,
   equipment,
   packages,
