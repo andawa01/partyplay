@@ -22,6 +22,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { AvailabilityResult } from "../../components/admin/bookings/AvailabilityResult";
 import { BookingActionDialog } from "../../components/admin/bookings/BookingActionDialog";
+import { PaymentsPanel } from "../../components/admin/bookings/PaymentsPanel";
 import {
   AdminBookingStatusBadge,
   PaymentStatusBadge,
@@ -176,8 +177,8 @@ export default function AdminBookingDetailPage() {
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
-        <div className="space-y-6">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px] xl:items-start">
+        <div className="min-w-0 space-y-6">
           <section className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
@@ -378,9 +379,11 @@ export default function AdminBookingDetailPage() {
               </ol>
             )}
           </section>
+
+          <PaymentsPanel booking={booking} />
         </div>
 
-        <aside className="space-y-4">
+        <aside className="min-w-0 space-y-4">
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
@@ -432,7 +435,7 @@ export default function AdminBookingDetailPage() {
               </Button>
             ) : null}
             <p className="mt-3 text-[0.7rem] leading-relaxed text-slate-500">
-              Amounts come from the booking record. Payments arrive in the next slice.
+              Amounts come from the booking record. Record and reconcile payments below.
             </p>
           </section>
 
@@ -608,7 +611,7 @@ function BookingDetailSkeleton() {
     <div className="space-y-6" aria-busy="true">
       <Skeleton className="h-4 w-32" />
       <Skeleton className="h-48 w-full rounded-3xl" />
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <Skeleton className="h-40 rounded-2xl" />

@@ -38,3 +38,39 @@
     @apply bg-blush-200 text-blush-900;
   }
 }
+
+/*
+ * Receipts are previewed in a dialog but printed from a dedicated body-level copy so the
+ * modal transform, scroll container and admin chrome cannot clip the printed page.
+ */
+.print-receipt {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  body > *:not(.print-receipt) {
+    display: none !important;
+  }
+
+  .print-receipt {
+    display: block !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-receipt .receipt-sheet {
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+}

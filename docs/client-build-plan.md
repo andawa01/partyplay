@@ -441,6 +441,72 @@ date, notes), and a dashboard of the summary numbers the API returns. Never comp
 balance client-side for display of record — show the server's `paidAmount`/`amountDue`.
 **Done when** the dashboard numbers match a direct API call for the same period.
 
+**Shipped (`feat/c11-payments-dashboard`):**
+
+- Added a payments panel to the booking detail page with the payment history, method,
+  status, reference, recorded-by and paid/recorded date. The running total, amount due and
+  payment status all come from the server's `meta.booking`; the panel never recalculates a
+  balance locally.
+- The payment history is a table on wide screens and a stacked card list below `lg`, so
+  every reference, note and action stays visible on phones and tablets without sideways
+  scrolling. The balance summary is a compact three-column strip on mobile.
+- Recording a payment opens a focused dialog with amount, method, paid date, reference and
+  note. Cash defaults with the current local date-time, so a cash payment records as paid.
+  Cash, M-Pesa and bank transfers settle immediately when a paid date is supplied;
+  manual/other methods start pending. Validation mirrors the server and server errors stay
+  in the dialog.
+- Payments can be updated from the row: status (`PAID`/`FAILED`), reference and paid date.
+  Amount and method remain read-only. Leaving the paid date blank keeps the existing date,
+  and marking a payment paid fills an empty date server-side.
+- Delete is offered only while the booking is pending, matching the server rule, and asks
+  for confirmation. The dialog explains the amount being removed and shows server errors
+  such as `409`.
+- Every paid payment has a receipt action, and recording a paid deposit opens its receipt
+  automatically. The receipt shows the business contact details, a stable receipt number,
+  customer, payment method/reference/date, rental period, booking total, paid-to-date and
+  balance due. Print / save PDF uses a body-level print copy and `@media print` so it
+  prints as a single A4 page with no admin chrome.
+- Successful record/edit/delete responses update the booking detail cache from the
+  server's summary, then invalidate the payment list, booking lists, status counts and
+  dashboard. The new balance appears without a manual reload and a toast confirms the
+  change.
+- Rebuilt `/admin/dashboard` around `GET /api/admin/dashboard`: pending requests, bookings
+  confirmed this month, completed jobs, collected all-time and this month, outstanding
+  revenue, the five upcoming confirmed jobs and low-stock equipment for the seven-day
+  horizon. Every figure and money string is rendered as returned by the API.
+- The dashboard has refresh, loading, error-with-retry, empty-upcoming and healthy-stock
+  states. Metric cards link to the filtered booking board, upcoming rows open the booking
+  detail, and low stock links to catalogue management.
+- Added six focused component tests: three for server-owned payment totals, the record
+  POST payload and pending-only delete; one for opening and printing a receipt; two for
+  the dashboard figures, empty states, upcoming jobs and low stock.
+
+**Verified:**
+
+- `npm run typecheck` passed for client and server.
+- `npm test --workspace client` passed: 18 tests, including the six C11 tests.
+- `npm run build --workspace client` passed. The booking detail chunk is 49.61 kB / 11.73 kB
+  gzip and the main bundle is 577.52 kB / 168.63 kB gzip. The existing zod comment warning
+  and the main-chunk size warning remain non-fatal.
+- Seeded two real bookings through the public API, confirmed one, and recorded two
+  payments through the admin API. The dashboard rendered exactly the API's figures:
+  `{ pending: 1, confirmedThisMonth: 1, completed: 0 }`, collected `1,500.00`, this month
+  `1,500.00`, outstanding `2,600.00`, upcoming `PP-LSFQGY` and no low-stock rows.
+- Browser pass against the production build on the pending booking: recorded a KES 250
+  cash payment, saw paid-to-date and amount due update from the server, edited it to
+  failed and saw the balance revert, then deleted it. Each change completed without a
+  reload, with the server's summary reflected in the page.
+- Opened a paid receipt at 1440 px and 390 px and printed it through Chrome to PDF. The
+  PDF is one A4 page and contains only the receipt, with the business details, customer,
+  M-Pesa reference and server balance all visible. Mobile balance rows stack instead of
+  truncating, and the print action stays fixed at the bottom of the scrolling preview.
+- No application console errors; the only browser-log entry was the missing favicon
+  `404`. No horizontal page overflow at 1440 px or 390 px. The desktop payment table fits
+  its card without sideways scrolling, and the mobile card layout keeps every field and
+  action visible.
+- Temporary bookings, customers and payments were removed afterwards; the database
+  returned to zero bookings, customers, payments, stock holds and status-history rows.
+
 ---
 
 ## 5. Conventions for every slice
