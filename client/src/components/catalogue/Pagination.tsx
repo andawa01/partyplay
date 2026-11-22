@@ -8,10 +8,12 @@ export function Pagination({
   page,
   totalPages,
   onChange,
+  label = "Catalogue pages",
 }: {
   page: number;
   totalPages: number;
   onChange: (page: number) => void;
+  label?: string;
 }) {
   if (totalPages <= 1) {
     return null;
@@ -22,7 +24,7 @@ export function Pagination({
   const pages = Array.from({ length: end - start + 1 }, (_, index) => start + index);
 
   return (
-    <nav aria-label="Catalogue pages" className="mt-10 flex items-center justify-center gap-1.5">
+    <nav aria-label={label} className="mt-10 flex items-center justify-center gap-1.5">
       <Button
         type="button"
         variant="outline"

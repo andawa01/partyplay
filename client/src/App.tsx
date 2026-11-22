@@ -20,6 +20,8 @@ const StyleGuidePage = lazy(() => import('./pages/StyleGuidePage'))
 const BookingPage = lazy(() => import('./pages/public/BookingPage'))
 const BookingStatusPage = lazy(() => import('./pages/public/BookingStatusPage'))
 const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'))
+const AdminBookingsPage = lazy(() => import('./pages/admin/AdminBookingsPage'))
+const AdminBookingDetailPage = lazy(() => import('./pages/admin/AdminBookingDetailPage'))
 const AdminCataloguePage = lazy(() => import('./pages/admin/AdminCataloguePage'))
 const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'))
 
@@ -92,6 +94,34 @@ export default function App() {
         />
         <Route element={<RequireAdmin />}>
           <Route element={<AdminLayout />}>            <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route
+              path="bookings"
+              element={
+                <Suspense
+                  fallback={
+                    <div className="h-64 animate-pulse rounded-2xl bg-white" aria-busy="true">
+                      <span className="sr-only">Loading bookings…</span>
+                    </div>
+                  }
+                >
+                  <AdminBookingsPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="bookings/:id"
+              element={
+                <Suspense
+                  fallback={
+                    <div className="h-64 animate-pulse rounded-2xl bg-white" aria-busy="true">
+                      <span className="sr-only">Loading booking…</span>
+                    </div>
+                  }
+                >
+                  <AdminBookingDetailPage />
+                </Suspense>
+              }
+            />
             <Route
               path="catalogue"
               element={

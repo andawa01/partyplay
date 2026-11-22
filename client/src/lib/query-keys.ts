@@ -34,8 +34,10 @@ export const queryKeys = {
     packages: () => ["admin", "packages"] as const,
     offers: () => ["admin", "offers"] as const,
     transportProviders: () => ["admin", "transport-providers"] as const,
-    bookings: (filters?: Record<string, unknown>) =>
+    bookings: (filters?: object) =>
       (["admin", "bookings", filters ?? {}] as const),
+    bookingCounts: (filters?: object) =>
+      (["admin", "booking-counts", filters ?? {}] as const),
     booking: (id: string) => ["admin", "booking", id] as const,
     payments: (bookingId: string) =>
       (["admin", "payments", bookingId] as const),

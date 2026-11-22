@@ -720,7 +720,8 @@ the last unit and assert `[201, 409]`.
 | C7 | Booking status page | — | ✅ | `feat/c7-booking-status` |
 | C8 | Admin login and guard | — | ✅ | `feat/c8-admin-auth` |
 | C9 | Admin catalogue CRUD | ✅ | ✅ | `feat/c9-admin-catalogue` |
-| C10–C11 | Client slices | — | ☐ | `feat/c<n>-<slug>` |
+| C10 | Admin booking board | ✅ | ✅ | `feat/c10-admin-bookings` |
+| C11 | Payments and dashboard | — | ☐ | `feat/c11-payments-dashboard` |
 
 ---
 
