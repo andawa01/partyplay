@@ -58,7 +58,7 @@ export function TransportProvidersPanel() {
       <div id="transport-catalogue-heading">
         <PanelHeader
           title="Transport providers"
-          description="The drivers and vehicles available for deliveries. A provider's phone number must be unique."
+          description="The drivers and vehicles available for deliveries. Phone numbers are 10 digits and must be unique."
           count={rows.length}
           createLabel="Add provider"
           onCreate={() => setCreating(true)}
@@ -296,10 +296,11 @@ function TransportProviderFormDialog({
           >
             <Input
               id="provider-phone"
-              inputMode="tel"
+              inputMode="numeric"
+              maxLength={10}
               value={values.phone}
               onChange={(event) => setField("phone", event.target.value)}
-              placeholder="07xx xxx xxx"
+              placeholder="0712345678"
               aria-invalid={Boolean(errors.phone)}
               aria-describedby={errors.phone ? "provider-phone-error" : undefined}
             />

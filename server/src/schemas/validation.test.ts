@@ -1,0 +1,104 @@
+import { describe, expect, it } from "vitest";
+
+import { changePasswordSchema, loginSchema, PASSWORD_MIN_LENGTH } from "./auth";
+import { createBookingSchema } from "./bookings";
+import { updateSettingsSchema } from "./settings";
+import { createTransportProviderSchema } from "./transport-providers";
+
+const booking = {
+  customer: { name: "Jane Wanjiku", phone: "0712345678" },
+  startDate: "2026-12-01",
+  endDate: "2026-12-02",
+  packages: [],
+  equipment: [{ equipmentId: "equipment-1", quantity: 1 }],
+  fulfilmentMethod: "COLLECTION",
+  pickupAddress: "PartyPlay shop, Nairobi",
+};
+
+describe("phone validation", () => {
+  it("accepts exactly 10 digits for a booking", () => {
+    expect(createBookingSchema.safeParse(booking).success).toBe(true);
+  });
+
+  it.each(["071234567", "07123456789", "+254712345678", "0712 345 678", "07123abc78"])(
+    "rejects %s",
+    (phone) => {
+      const result = createBookingSchema.safeParse({
+        ...booking,
+        customer: { ...booking.customer, phone },
+      });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0]?.message).toBe("Phone number must be exactly 10 digits");
+      }
+    },
+  );
+
+  it("applies the same rule to transport providers", () => {
+    expect(
+      createTransportProviderSchema.safeParse({ name: "Driver", phone: "0712345678" }).success,
+    ).toBe(true);
+    expect(
+      createTransportProviderSchema.safeParse({ name: "Driver", phone: "071234567" }).success,
+    ).toBe(false);
+  });
+
+  it("applies to configured contact numbers", () => {
+    expect(updateSettingsSchema.safeParse({ contactPhone: "0712345678" }).success).toBe(true);
+    expect(updateSettingsSchema.safeParse({ contactPhone: "071234567" }).success).toBe(false);
+  });
+});
+
+describe("email validation", () => {
+  it("normalises a valid customer email", () => {
+    const result = createBookingSchema.safeParse({
+      ...booking,
+      customer: { ...booking.customer, email: "  Jane@Example.COM " },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.customer.email).toBe("jane@example.com");
+    }
+  });
+
+  it("rejects a malformed customer email", () => {
+    const result = createBookingSchema.safeParse({
+      ...booking,
+      customer: { ...booking.customer, email: "jane.example.com" },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("keeps email optional for a booking", () => {
+    expect(createBookingSchema.safeParse(booking).success).toBe(true);
+  });
+
+  it("validates login and contact emails", () => {
+    expect(loginSchema.safeParse({ email: "owner@partyplay.co.ke", password: "secret" }).success).toBe(
+      true,
+    );
+    expect(loginSchema.safeParse({ email: "not-an-email", password: "secret" }).success).toBe(
+      false,
+    );
+    expect(updateSettingsSchema.safeParse({ contactEmail: "hello@partyplay.co.ke" }).success).toBe(
+      true,
+    );
+    expect(updateSettingsSchema.safeParse({ contactEmail: "hello" }).success).toBe(false);
+  });
+});
+
+describe("password validation", () => {
+  const change = (newPassword: string) =>
+    changePasswordSchema.safeParse({ currentPassword: "old-password", newPassword });
+
+  it("requires at least 8 characters", () => {
+    expect(PASSWORD_MIN_LENGTH).toBe(8);
+    expect(change("12345678").success).toBe(true);
+    expect(change("1234567").success).toBe(false);
+  });
+
+  it("caps passwords below bcrypt's 72-byte limit", () => {
+    expect(change("a".repeat(200)).success).toBe(true);
+    expect(change("a".repeat(201)).success).toBe(false);
+  });
+});

@@ -6,7 +6,7 @@
 const MIN_SECRET_LENGTH = 32;
 const DEFAULT_SESSION_HOURS = 12;
 
-export const SESSION_COOKIE_NAME = "pp_session";
+export const SESSION_COOKIE_NAME = "pt_sess";
 
 function readJwtSecret(): string {
   const secret = process.env.JWT_SECRET;

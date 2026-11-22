@@ -1,16 +1,13 @@
 import { z } from "zod";
 
-const emailSchema = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .max(254, "Email is too long")
-  .pipe(z.email("Enter a valid email address"));
+import { emailSchema } from "./common";
+
+export const PASSWORD_MIN_LENGTH = 8;
 
 /** bcrypt only uses the first 72 bytes, so cap input well below the hashing limit. */
 const passwordSchema = z
   .string()
-  .min(10, "Password must be at least 10 characters")
+  .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
   .max(200, "Password must be at most 200 characters");
 
 export const loginSchema = z.object({

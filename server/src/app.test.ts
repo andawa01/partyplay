@@ -24,12 +24,13 @@ import { formatCalendarDate, todayInNairobi } from "./lib/dates";
  * is running, so the variable alone cannot gate this.
  */
 const smokeDbAvailable = process.env.PARTYPLAY_SMOKE_DB === "run";
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
   const password = "smoke-test-password";
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 10_000)}`;
   const email = `smoke-${suffix}@example.test`;
-  const phone = `0799${String(Date.now()).slice(-7)}`;
+  const phone = `07${String(Date.now()).slice(-8)}`;
   const equipmentSlug = `smoke-equipment-${suffix}`;
   const categorySlug = `smoke-category-${suffix}`;
 
@@ -122,6 +123,11 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
       })
     ).id;
 
+    // Prisma must mint UUIDs server-side for every new primary key.
+    expect(adminId).toMatch(UUID_PATTERN);
+    expect(categoryId).toMatch(UUID_PATTERN);
+    expect(equipmentId).toMatch(UUID_PATTERN);
+
     // The session is an httpOnly cookie; tests speak HTTP so they replay it verbatim.
     const login = await fetch(base + "/api/auth/login", {
       method: "POST",
@@ -131,8 +137,9 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
     expect(login.status).toBe(200);
     const setCookie =
       (login.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie?.() ?? [];
-    expect(setCookie.length).toBeGreaterThan(0);
-    cookie = setCookie[0].split(";")[0];
+    const sessionCookie = setCookie.find((value) => value.startsWith("pt_sess="));
+    expect(sessionCookie).toBeDefined();
+    cookie = sessionCookie!.split(";")[0];
 
     const dashboard = await api("GET", "/api/admin/dashboard", { cookie });
     expect(dashboard.status).toBe(200);
@@ -236,6 +243,7 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
 
     const code = (created.body.data as { code: string }).code;
     const booking = await db.booking.findUniqueOrThrow({ where: { code } });
+    expect(booking.id).toMatch(UUID_PATTERN);
 
     const availability = () =>
       api(

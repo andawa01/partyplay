@@ -203,7 +203,7 @@ otherwise. D1–D3 change the schema and must be settled before F6.
 | **D4** | Requirements require a *delivery or collection* choice per booking; the schema only has address fields. | Add `FulfilmentMethod` enum `DELIVERY \| COLLECTION` + `fulfilmentMethod` on `Booking` (migration 5, default `COLLECTION`). `DELIVERY` requires `dropoffAddress`; `COLLECTION` requires `pickupAddress` (app-enforced, zod conditional). | Booking form has nowhere to store the choice |
 | **D5** | Package `minQuantity`/`maxQuantity` are guest counts, but `Booking` has no guest count. | Leave the columns informational in the MVP; do not validate them. Add `guestCount Int?` when the owner asks for a real guest limit. | None — no wrong behaviour, just unenforced metadata |
 | **D6** | `Offer` has no FK on `appliesToId` and no discount engine. | Offers are **display-only** in the MVP. `discountAmount` is entered by the owner when confirming, and is an explicit recorded adjustment (requirement §7). No automatic discount logic until after launch. | A discount engine is a feature of its own; skipping it keeps pricing honest |
-| **D7** | Requirements make customer phone mandatory; `Customer.phone` is nullable. | Enforce in zod (`phone` required, 7–20 chars, digits/+/-/space). Leave the column nullable so admin-created walk-in customers are still possible. | Weak |
+| **D7** | Requirements make customer phone mandatory; `Customer.phone` is nullable. | Enforce in zod (`phone` required, exactly 10 digits). Leave the column nullable so admin-created walk-in customers are still possible. | Weak |
 
 **Shipping alongside D1/D3/D4 as migration 5 (`booking_domain_fixes`)**: status enum
 rename, `pricingMode`, `fulfilmentMethod`, `Booking.guestCount` omitted per D5.
@@ -255,10 +255,10 @@ nothing earlier.
 
 | Method | Path | Auth | Body / notes |
 |---|---|---|---|
-| POST | `/api/auth/login` | public | `{ email, password }` → sets `pp_session` httpOnly, `sameSite=lax`, `secure` in prod, `maxAge` from `ADMIN_SESSION_HOURS` (default 12) |
+| POST | `/api/auth/login` | public | `{ email, password }` → sets `pt_sess` httpOnly, `sameSite=lax`, `secure` in prod, `maxAge` from `ADMIN_SESSION_HOURS` (default 12) |
 | POST | `/api/auth/logout` | admin | clears cookie |
 | GET | `/api/auth/me` | admin | `{ id, email, name, role }` |
-| POST | `/api/auth/password` | admin | `{ currentPassword, newPassword }`, min 10 chars, bcrypt cost 12 |
+| POST | `/api/auth/password` | admin | `{ currentPassword, newPassword }`, min 8 chars, bcrypt cost 12 |
 
 **Rules**
 
@@ -429,7 +429,7 @@ dropoffAddress?, pickupAddress?, packages: [{ packageId, quantity }], equipment:
    `Customer.email` is unique, so a shared family email must not 500 — match on phone
    first, then email.
 6. Generate `Booking.code` = `PP-` + 6 uppercase base32 chars, retry on `P2002`
-   (collision), never the `cuid()` default.
+   (collision), never the UUID default.
 7. Create `Booking` (`PENDING`, `holdExpiresAt = now + siteSetting.holdMinutes`,
    `transportCharge = 0`), `BookingItem` rows with snapshots, `PackageBooking` +
    `BookingPackageItem` snapshots, and `StockHold` rows (`ACTIVE`, same `expiresAt`).

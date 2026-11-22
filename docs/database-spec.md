@@ -249,10 +249,10 @@ see them and will never drop them; add new ones the same way, not in
 
 | Field | Type | Null | Default | Notes |
 |---|---|---|---|---|
-| `id` | text | no | `cuid()` | PK |
+| `id` | text | no | `uuid()` | PK |
 | `email` | text | no | — | **UNIQUE**, login identifier |
 | `name` | text | yes | — | |
-| `password` | text | no | — | bcrypt hash, cost 12 (app-enforced) |
+| `password` | text | no | — | bcrypt hash, cost 12; at least 8 characters (app-enforced) |
 | `role` | `Role` | no | `STAFF` | |
 | `createdAt` | timestamp(3) | no | `now()` | |
 | `updatedAt` | timestamp(3) | no | auto | |
@@ -261,7 +261,7 @@ see them and will never drop them; add new ones the same way, not in
 
 | Field | Type | Null | Default | Notes |
 |---|---|---|---|---|
-| `id` | text | no | `cuid()` | PK |
+| `id` | text | no | `uuid()` | PK |
 | `slug` | text | no | — | **UNIQUE**, kebab-case (app-enforced regex) |
 | `name` | text | no | — | |
 | `description` | text | yes | — | |
@@ -278,7 +278,7 @@ category (see `routes/categories.ts`).
 
 | Field | Type | Null | Default | Notes |
 |---|---|---|---|---|
-| `id` | text | no | `cuid()` | PK |
+| `id` | text | no | `uuid()` | PK |
 | `slug` | text | no | — | **UNIQUE** |
 | `name` | text | no | — | **UNIQUE** |
 | `categoryId` | text | no | — | FK → `Category.id`, `RESTRICT` |
@@ -306,7 +306,7 @@ rather than charging zero. `pricePerWeek` is unused in the MVP (D3).
 
 | Field | Type | Null | Default | Notes |
 |---|---|---|---|---|
-| `id` | text | no | `cuid()` | PK |
+| `id` | text | no | `uuid()` | PK |
 | `equipmentId` | text | no | — | FK → `Equipment.id`, **CASCADE** |
 | `total` | int | no | `0` | units actually owned — the stock ceiling |
 | `createdAt` / `updatedAt` | timestamp(3) | no | `now()` / auto | |
@@ -320,7 +320,7 @@ totals live; reserved counts are always derived, never stored.
 
 | Field | Type | Null | Default | Notes |
 |---|---|---|---|---|
-| `id` | text | no | `cuid()` | PK |
+| `id` | text | no | `uuid()` | PK |
 | `slug` | text | no | — | **UNIQUE** |
 | `name` | text | no | — | not unique (unlike equipment `name`) |
 | `description` | text | yes | — | |
@@ -343,7 +343,7 @@ Indexes: unique `(slug)`.
 
 | Field | Type | Null | Default | Notes |
 |---|---|---|---|---|
-| `id` | text | no | `cuid()` | PK |
+| `id` | text | no | `uuid()` | PK |
 | `packageId` | text | no | — | FK → `Package.id`, **CASCADE** |
 | `equipmentId` | text | no | — | FK → `Equipment.id`, `RESTRICT` |
 | `quantity` | int | no | `1` | units per package |
@@ -357,10 +357,10 @@ are expressed by increasing `quantity`. Indexes: `(packageId)`, `(equipmentId)`.
 
 | Field | Type | Null | Default | Notes |
 |---|---|---|---|---|
-| `id` | text | no | `cuid()` | PK |
+| `id` | text | no | `uuid()` | PK |
 | `name` | text | no | — | |
 | `email` | text | yes | — | **UNIQUE**; Postgres allows many `NULL`s |
-| `phone` | text | yes | — | not unique — households may share a phone |
+| `phone` | text | yes | — | not unique — households may share a phone; exactly 10 digits (app-enforced) |
 | `createdAt` / `updatedAt` | timestamp(3) | no | `now()` / auto | |
 
 Indexes: unique `(email)`, `(email)`.
@@ -369,8 +369,8 @@ Indexes: unique `(email)`, `(email)`.
 
 | Field | Type | Null | Default | Notes |
 |---|---|---|---|---|
-| `id` | text | no | `cuid()` | PK |
-| `code` | text | no | `cuid()` | **UNIQUE** — public reference (`PP-XXXXXX` generated app-side; the default is only a fallback) |
+| `id` | text | no | `uuid()` | PK |
+| `code` | text | no | `uuid()` | **UNIQUE** — public reference (`PP-XXXXXX` generated app-side; the default is only a fallback) |
 | `customerId` | text | no | — | FK → `Customer.id`, `RESTRICT` |
 | `startDate` | date | no | — | inclusive rental start |
 | `endDate` | date | no | — | inclusive rental end |
@@ -403,7 +403,7 @@ Indexes: `(customerId)`, `(status)`, `(createdById)`, unique `(code)`, and
 
 | Field | Type | Null | Default | Notes |
 |---|---|---|---|---|
-| `id` | text | no | `cuid()` | PK |
+| `id` | text | no | `uuid()` | PK |
 | `bookingId` | text | no | — | FK → `Booking.id`, **CASCADE** |
 | `equipmentId` | text | no | — | FK → `Equipment.id`, `RESTRICT` |
 | `quantity` | int | no | — | units requested |
@@ -420,7 +420,7 @@ Indexes: `(bookingId)`, `(equipmentId)`.
 
 | Field | Type | Null | Default | Notes |
 |---|---|---|---|---|
-| `id` | text | no | `cuid()` | PK |
+| `id` | text | no | `uuid()` | PK |
 | `packageId` | text | no | — | FK → `Package.id`, `RESTRICT` |
 | `bookingId` | text | no | — | FK → `Booking.id`, **CASCADE** |
 | `quantity` | int | no | `1` | how many of this package |
@@ -437,7 +437,7 @@ multiples go through `quantity`. Indexes: `(bookingId)`.
 
 | Field | Type | Null | Default | Notes |
 |---|---|---|---|---|
-| `id` | text | no | `cuid()` | PK |
+| `id` | text | no | `uuid()` | PK |
 | `packageBookingId` | text | no | — | FK → `PackageBooking.id`, **CASCADE** |
 | `equipmentId` | text | yes | — | FK → `Equipment.id`, **SET NULL** — snapshot survives deletion |
 | `equipmentName` | text | no | — | **snapshot** |
@@ -455,7 +455,7 @@ column (the previous `PackageBooking.itemsSnapshot`) could not do.
 
 | Field | Type | Null | Default | Notes |
 |---|---|---|---|---|
-| `id` | text | no | `cuid()` | PK |
+| `id` | text | no | `uuid()` | PK |
 | `bookingId` | text | no | — | FK → `Booking.id`, **CASCADE** |
 | `equipmentId` | text | no | — | FK → `Equipment.id`, **CASCADE** |
 | `quantity` | int | no | — | units held |
@@ -474,7 +474,7 @@ scan), `(bookingId)`.
 
 | Field | Type | Null | Default | Notes |
 |---|---|---|---|---|
-| `id` | text | no | `cuid()` | PK |
+| `id` | text | no | `uuid()` | PK |
 | `bookingId` | text | no | — | FK → `Booking.id`, **CASCADE** |
 | `fromStatus` | `BookingStatus` | yes | — | null on the first record |
 | `toStatus` | `BookingStatus` | no | — | |
@@ -489,7 +489,7 @@ Indexes: `(bookingId)`, `(adminId)`.
 
 | Field | Type | Null | Default | Notes |
 |---|---|---|---|---|
-| `id` | text | no | `cuid()` | PK |
+| `id` | text | no | `uuid()` | PK |
 | `bookingId` | text | no | — | FK → `Booking.id`, `RESTRICT` |
 | `paidById` | text | yes | — | FK → `Admin.id`, `SET NULL` |
 | `amount` | numeric(10,2) | no | — | |
@@ -510,7 +510,7 @@ Loose promotion container; no foreign keys.
 
 | Field | Type | Null | Default | Notes |
 |---|---|---|---|---|
-| `id` | text | no | `cuid()` | PK |
+| `id` | text | no | `uuid()` | PK |
 | `slug` | text | no | — | **UNIQUE** |
 | `name` | text | no | — | |
 | `description` | text | yes | — | |
@@ -533,9 +533,9 @@ require `appliesToId`; other scopes must leave it null.
 
 | Field | Type | Null | Default | Notes |
 |---|---|---|---|---|
-| `id` | text | no | `cuid()` | PK |
+| `id` | text | no | `uuid()` | PK |
 | `name` | text | no | — | |
-| `phone` | text | no | — | **UNIQUE** |
+| `phone` | text | no | — | **UNIQUE**, exactly 10 digits (app-enforced) |
 | `serviceArea` | text | yes | — | |
 | `notes` | text | yes | — | |
 | `isActive` | boolean | no | `true` | |
@@ -545,7 +545,7 @@ require `appliesToId`; other scopes must leave it null.
 
 | Field | Type | Null | Default | Notes |
 |---|---|---|---|---|
-| `id` | text | no | `cuid()` | PK |
+| `id` | text | no | `uuid()` | PK |
 | `adminId` | text | no | — | FK → `Admin.id`, **CASCADE**, **UNIQUE** — one profile per admin |
 | `businessName` | text | no | `"PartyPlay"` | |
 | `contactPhone` | text | yes | — | |
@@ -757,7 +757,7 @@ days, inverted dates and negative stock are rejected with SQLSTATE `23514`.
    (`PER_DAY` | `FLAT`) decides which price field applies; `pricePerWeek` is
    unused in the MVP.
 7. **`Booking.code` — resolved in F6b.** `lib/booking-code.ts` generates
-   `PP-` + six base32 characters before insert; the `cuid()` default only keeps
+   `PP-` + six base32 characters before insert; the `uuid()` default only keeps
    the column non-null.
 8. **`Booking.paidAmount <= totalAmount` is app-enforced** and deliberately not a
    `CHECK`: editing `totalAmount` after taking payment would otherwise make

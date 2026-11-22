@@ -173,7 +173,7 @@ export default function AdminSettingsPage() {
                 Change password
               </h2>
               <p className="mt-0.5 text-sm text-slate-600">
-                Use at least 10 characters. Choose something unique to this account.
+                Use at least 8 characters. Choose something unique to this account.
               </p>
             </div>
           </div>

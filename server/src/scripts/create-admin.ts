@@ -2,9 +2,8 @@ import "dotenv/config";
 import bcrypt from "bcrypt";
 
 import { db, ensureClient } from "../config/db";
+import { PASSWORD_MIN_LENGTH } from "../schemas/auth";
 import { PASSWORD_COST } from "../services/auth";
-
-const MIN_PASSWORD_LENGTH = 10;
 
 function fail(message: string): never {
   console.error(message);
@@ -19,8 +18,8 @@ async function main(): Promise<void> {
   if (!email) {
     fail("Set ADMIN_EMAIL in server/.env before running this script.");
   }
-  if (!password || password.length < MIN_PASSWORD_LENGTH) {
-    fail(`Set ADMIN_PASSWORD in server/.env to at least ${MIN_PASSWORD_LENGTH} characters.`);
+  if (!password || password.length < PASSWORD_MIN_LENGTH) {
+    fail(`Set ADMIN_PASSWORD in server/.env to at least ${PASSWORD_MIN_LENGTH} characters.`);
   }
 
   await ensureClient();

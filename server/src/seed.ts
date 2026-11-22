@@ -82,8 +82,8 @@ async function main() {
     create: {
       adminId: admin.id,
       businessName: "PartyPlay",
-      contactPhone: "+254700000000",
-      contactWhatsApp: "+254700000000",
+      contactPhone: "0700000000",
+      contactWhatsApp: "0700000000",
       contactEmail: "hello@partyplay.co.ke",
       address: "Nairobi, Kenya",
       defaultDurationDays: 1,

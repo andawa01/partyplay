@@ -67,9 +67,11 @@ Codes the UI must handle deliberately:
 - Money arrives as a **decimal string with 2 dp** (e.g. `"2500.00"`). Format for display;
   never do float arithmetic on it.
 - Delete endpoints return `204` with no body.
-- Admin session is an httpOnly cookie `pp_session` (`sameSite=lax`, 12 h default). The
+- Admin session is an httpOnly cookie `pt_sess` (`sameSite=lax`, 12 h default). The
   wrapper must send `credentials: "include"`; the client never sees or stores the token.
 - `POST /api/bookings` and `GET /api/bookings/:code` are rate-limited — no polling loops.
+- Guest phone numbers are exactly 10 digits, and optional emails must be valid. New admin
+  passwords are at least 8 characters.
 - Prices in a booking request body are ignored by the server, so the form may send only
   ids and quantities; the preview must come from the server, not local maths.
 

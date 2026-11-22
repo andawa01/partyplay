@@ -39,7 +39,7 @@ export const changePasswordFormSchema = z
     currentPassword: z.string().min(1, "Enter your current password").max(200),
     newPassword: z
       .string()
-      .min(10, "Use at least 10 characters")
+      .min(8, "Use at least 8 characters")
       .max(200, "Use 200 characters or fewer"),
     confirmPassword: z.string().min(1, "Confirm your new password"),
   })
