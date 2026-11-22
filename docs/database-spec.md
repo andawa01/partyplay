@@ -252,7 +252,7 @@ see them and will never drop them; add new ones the same way, not in
 | `id` | text | no | `uuid()` | PK |
 | `email` | text | no | — | **UNIQUE**, login identifier |
 | `name` | text | yes | — | |
-| `password` | text | no | — | bcrypt hash, cost 12; at least 8 characters (app-enforced) |
+| `password` | text | no | — | bcrypt hash, cost 12; at least 8 characters with uppercase, lowercase and a number (app-enforced) |
 | `role` | `Role` | no | `STAFF` | |
 | `createdAt` | timestamp(3) | no | `now()` | |
 | `updatedAt` | timestamp(3) | no | auto | |

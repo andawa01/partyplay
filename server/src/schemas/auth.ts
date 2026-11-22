@@ -4,11 +4,14 @@ import { emailSchema } from "./common";
 
 export const PASSWORD_MIN_LENGTH = 8;
 
-/** bcrypt only uses the first 72 bytes, so cap input well below the hashing limit. */
-const passwordSchema = z
+/** New passwords need three character classes as well as a length floor. */
+export const passwordSchema = z
   .string()
   .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
-  .max(200, "Password must be at most 200 characters");
+  .max(200, "Password must be at most 200 characters")
+  .regex(/[a-z]/, "Password must include a lowercase letter")
+  .regex(/[A-Z]/, "Password must include an uppercase letter")
+  .regex(/\d/, "Password must include a number");
 
 export const loginSchema = z.object({
   email: emailSchema,

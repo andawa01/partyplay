@@ -93,12 +93,24 @@ describe("password validation", () => {
 
   it("requires at least 8 characters", () => {
     expect(PASSWORD_MIN_LENGTH).toBe(8);
-    expect(change("12345678").success).toBe(true);
-    expect(change("1234567").success).toBe(false);
+    expect(change("Password1").success).toBe(true);
+    expect(change("Pass123").success).toBe(false);
+  });
+
+  it.each([
+    ["PASSWORD1", "Password must include a lowercase letter"],
+    ["password1", "Password must include an uppercase letter"],
+    ["Password", "Password must include a number"],
+  ])("rejects %s when a character class is missing", (password, message) => {
+    const result = change(password);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe(message);
+    }
   });
 
   it("caps passwords below bcrypt's 72-byte limit", () => {
-    expect(change("a".repeat(200)).success).toBe(true);
-    expect(change("a".repeat(201)).success).toBe(false);
+    expect(change(`Aa1${"a".repeat(197)}`).success).toBe(true);
+    expect(change(`Aa1${"a".repeat(198)}`).success).toBe(false);
   });
 });

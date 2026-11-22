@@ -71,7 +71,7 @@ Codes the UI must handle deliberately:
   wrapper must send `credentials: "include"`; the client never sees or stores the token.
 - `POST /api/bookings` and `GET /api/bookings/:code` are rate-limited — no polling loops.
 - Guest phone numbers are exactly 10 digits, and optional emails must be valid. New admin
-  passwords are at least 8 characters.
+  passwords are at least 8 characters with uppercase, lowercase and a number.
 - Prices in a booking request body are ignored by the server, so the form may send only
   ids and quantities; the preview must come from the server, not local maths.
 
@@ -311,9 +311,9 @@ logging in returns to the intended page.
   whole React Query cache through `clearSession`, and lands on login. A 401 during sign-out
   still clears the client state.
 - `/admin/settings` shows the signed-in account and changes the password. Local validation
-  enforces the 10-character minimum and confirmation match; a wrong current password uses
-  the server message; success clears the fields and confirms with a toast. A 401 clears the
-  session and returns to login.
+  enforces the 8-character minimum, uppercase/lowercase/number requirements and
+  confirmation match; a wrong current password uses the server message; success clears the
+  fields and confirms with a toast. A 401 clears the session and returns to login.
 - Login and settings are lazy-loaded so the public bundle does not pay for the admin form
   code. The dashboard is now an authenticated placeholder with account/settings shortcuts.
 - Added four component tests covering inline 401, inline 429, return-to-attempted-page and

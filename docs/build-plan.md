@@ -258,7 +258,7 @@ nothing earlier.
 | POST | `/api/auth/login` | public | `{ email, password }` → sets `pt_sess` httpOnly, `sameSite=lax`, `secure` in prod, `maxAge` from `ADMIN_SESSION_HOURS` (default 12) |
 | POST | `/api/auth/logout` | admin | clears cookie |
 | GET | `/api/auth/me` | admin | `{ id, email, name, role }` |
-| POST | `/api/auth/password` | admin | `{ currentPassword, newPassword }`, min 8 chars, bcrypt cost 12 |
+| POST | `/api/auth/password` | admin | `{ currentPassword, newPassword }`, min 8 chars with uppercase, lowercase and a number, bcrypt cost 12 |
 
 **Rules**
 

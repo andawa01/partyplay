@@ -40,7 +40,10 @@ export const changePasswordFormSchema = z
     newPassword: z
       .string()
       .min(8, "Use at least 8 characters")
-      .max(200, "Use 200 characters or fewer"),
+      .max(200, "Use 200 characters or fewer")
+      .regex(/[a-z]/, "Add a lowercase letter")
+      .regex(/[A-Z]/, "Add an uppercase letter")
+      .regex(/\d/, "Add a number"),
     confirmPassword: z.string().min(1, "Confirm your new password"),
   })
   .superRefine((input, ctx) => {
