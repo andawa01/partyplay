@@ -1,5 +1,6 @@
 import {
   ArrowUpRight,
+  Boxes,
   LayoutDashboard,
   Loader2,
   LogOut,
@@ -19,6 +20,7 @@ import { toastError } from "../lib/toast";
 
 const links = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/admin/catalogue", label: "Catalogue", icon: Boxes },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
