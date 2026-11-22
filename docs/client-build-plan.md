@@ -324,6 +324,54 @@ editor. Deactivation (equipment delete = deactivate) must be presented as deacti
 deletion. Handle `409` (in use) with the server message. **Done when** a newly created
 equipment item appears on the public catalogue without a rebuild.
 
+**Shipped (`feat/c9-admin-catalogue`):**
+
+- Added `/admin/catalogue` as a lazy-loaded admin route with five tabs: Equipment,
+  Packages, Offers, Categories and Transport. The active tab lives in `?tab=`, so reload
+  and shared links reopen the same section. Catalogue joins Dashboard and Settings in the
+  responsive admin nav.
+- Equipment: table with price, stock, status and category, create/edit form, inventory
+  setter, and deactivate/reactivate. Deactivation is labelled as hiding the item, never as
+  deletion, and existing bookings keep their records. Duplicate slugs surface the server's
+  `409` message.
+- Packages: table of bundle price and included items, create/edit form, and a package item
+  editor that replaces the whole item set after saving. Per-package pricing is stated in
+  the UI; guest-count fields are not introduced. Packages are deactivated with the active
+  toggle; delete is offered only with a warning that booked packages are kept and must be
+  deactivated instead.
+- Offers: create/edit form with percentage or fixed discount, scope, optional equipment or
+  package target, code, start/end window and active flag. The form mirrors the server's
+  percentage, target and date-window rules. Delete is explicit.
+- Categories: table showing parent and active equipment count, create/edit form, parent
+  selection on create, and delete. A category that still contains equipment shows the
+  server's `409` message. The parent is fixed after creation because the API has no clear
+  operation for an existing parent.
+- Transport providers: create/edit/delete with phone, service area, notes and active flag.
+  A duplicate phone shows the server's `409` message.
+- Every mutation invalidates both its admin query and the public catalogue, packages,
+  offers and categories keys, so a saved change appears on the public site without a
+  rebuild or manual reload. Server errors are shown verbatim in the form or confirmation
+  dialog.
+- Added shared catalogue dialog, field, toggle, status, empty and confirm components so
+  the five tables keep one visual and accessibility pattern.
+
+**Verified:**
+
+- `npm run typecheck` passed for client and server.
+- `npm run build --workspace client` passed. Admin catalogue is a 76.37 kB / 18.60 kB gzip
+  lazy chunk; the main bundle remains 472.23 kB / 138.38 kB gzip.
+- Live API pass against the local server: created a category and equipment item, confirmed
+  it in the public equipment list, updated its name/price/stock, created a package and
+  confirmed it publicly, updated it, created/updated an offer, created/updated/deleted a
+  transport provider, tested duplicate slug and duplicate phone `409`s, tested the category
+  in-use `409`, then deactivated the equipment and confirmed it returned `404` publicly.
+- Browser pass against the production build: `/admin/catalogue` loaded all five tabs with
+  no console errors, every edit dialog opened, the transport provider form showed inline
+  validation and successfully created a provider through the UI, and the temporary records
+  were removed afterwards.
+- No horizontal page overflow at 1440 px or 390 px; tables scroll inside their card on
+  narrow screens.
+
 ### C10 — Admin booking board — `GET /api/admin/bookings`, `GET /api/admin/bookings/:id`, `PATCH .../status`, `PATCH .../transport`, `POST .../availability`
 
 Filterable list (status, date overlap, search, pagination) with counts; detail view with

@@ -20,6 +20,7 @@ const StyleGuidePage = lazy(() => import('./pages/StyleGuidePage'))
 const BookingPage = lazy(() => import('./pages/public/BookingPage'))
 const BookingStatusPage = lazy(() => import('./pages/public/BookingStatusPage'))
 const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'))
+const AdminCataloguePage = lazy(() => import('./pages/admin/AdminCataloguePage'))
 const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'))
 
 export default function App() {
@@ -90,10 +91,22 @@ export default function App() {
           }
         />
         <Route element={<RequireAdmin />}>
-          <Route element={<AdminLayout />}>
-            <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route element={<AdminLayout />}>            <Route path="dashboard" element={<AdminDashboardPage />} />
             <Route
-              path="settings"
+              path="catalogue"
+              element={
+                <Suspense
+                  fallback={
+                    <div className="h-64 animate-pulse rounded-2xl bg-white" aria-busy="true">
+                      <span className="sr-only">Loading catalogue…</span>
+                    </div>
+                  }
+                >
+                  <AdminCataloguePage />
+                </Suspense>
+              }
+            />
+            <Route path="settings"
               element={
                 <Suspense
                   fallback={
