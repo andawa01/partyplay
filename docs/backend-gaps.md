@@ -1,7 +1,8 @@
 # Backend gaps — what is not covered yet
 
 **Prepared:** 15 November 2026
-**Scope:** backend only (`server/`), as merged to `main` at `d269e90`
+**Updated:** 24 November 2026 — O1 operations package
+**Scope:** backend and deployment, as merged to `main` at `7b25569` plus the O1 branch
 **Purpose:** a plain list of what the backend does *not* do yet, so the owner can decide
 what is worth paying for next. Nothing here is a bug report against finished work — it is
 the boundary of the current build.
@@ -30,25 +31,23 @@ Everything below is what sits outside that boundary.
 
 ---
 
-## 2. Operations and deployment — **highest risk**
+## 2. Operations and deployment — first package now covered
 
-The backend is complete as an application but is not yet *operable* as a service. There is
-no production deployment definition in the repo at all — no Dockerfile, no app service in
-`docker-compose.yml` (it starts only Postgres), no Caddy/proxy config, no staging
-environment.
+The O1 operations package adds a production Dockerfile, a Caddy-served client, a compose
+stack with migrations, a scheduled sweeper and a nightly `pg_dump`, plus graceful shutdown
+and structured request logs. See `docs/operations.md` for the runbook.
+
+These remain:
 
 | Gap | Why it matters | Risk | Effort |
 |---|---|---|---|
-| No production deploy definition | Nothing to run on a server. The app has to be started by hand with a remembered command. | **High** | M |
-| No graceful shutdown | `index.ts` has no `SIGTERM`/`SIGINT` handling, so a restart or deploy kills in-flight bookings mid-transaction and never closes the Prisma pool cleanly. | **High** | S |
-| Hold sweeper is never scheduled | `npm run job:expire-holds:watch` exists, but nothing runs it. Expiry only happens when someone views availability or a booking; an idle site keeps stale pending bookings and their stock holds. | **High** | S |
-| No backups | Postgres runs with a Docker volume and no dump schedule. A lost volume is a lost business: bookings, payments, customer contacts. | **High** | S |
-| No logging or monitoring | `console.log` to stdout, no request log with status/latency, no error tracker, no uptime check beyond `/api/health`. A failed payment write at 2am is invisible. | **High** | M |
 | No staging environment | Every future change is tested against the same database the owner uses. | Medium | M |
-| No migration runbook | `prisma migrate deploy` works, but there is no documented, rehearsed release step (backup → migrate → restart → verify). | Medium | S |
+| No external monitoring | Request logs exist, but there is no error tracker or uptime alert if the process dies or a payment write fails. | **High** | M |
+| Backups are on-host only | A nightly dump protects against bad writes, but the `pgbackups` volume is on the same host as Postgres. A host loss loses both. | **High** | S |
 
-**Suggested first package:** deploy definition + graceful shutdown + scheduled sweeper +
-nightly `pg_dump`. That turns a working codebase into a working service.
+**Done in O1:** deploy definition, graceful shutdown, scheduled sweeper, nightly backup,
+basic request logging, migration/restore runbook, and a restore into a disposable
+database. That turns the working codebase into a working single-host service.
 
 ---
 
@@ -168,8 +167,8 @@ real workflows; the owner can decide which ones to promote.
 If the goal is "safe to run the business on", this order gives the most risk reduction per
 unit of work:
 
-1. **Operations package** — deploy definition, graceful shutdown, scheduled sweeper,
-   nightly backups, basic request logging. *(§2)*
+1. ~~**Operations package** — deploy definition, graceful shutdown, scheduled sweeper,
+   nightly backups, basic request logging. *(§2)*~~ **Done in O1.**
 2. **Concurrency test in CI** — commit the last-unit test and run the smoke suite in the
    CI job that has Postgres. *(§7)*
 3. **Maintenance blackout dates** — protects against renting out a broken item. *(§4)*
@@ -179,5 +178,5 @@ unit of work:
 7. **Notifications** — the biggest labour saving for the owner. *(§5)*
 8. **Reports and CSV export** — needed at month end. *(§8)*
 
-Items 1 and 2 are small and protect everything else; they are worth doing before the next
-feature, not after.
+Item 2 is small and protects everything else; it is worth doing before the next feature,
+not after.

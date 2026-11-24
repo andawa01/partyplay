@@ -13,6 +13,9 @@ import { expireOverdueBookings } from "../services/hold-expiry";
  */
 const DEFAULT_INTERVAL_MINUTES = 5;
 
+let timer: NodeJS.Timeout | undefined;
+let inFlight: Promise<void> | undefined;
+
 function intervalMinutes(): number {
   const configured = Number(process.env.HOLD_SWEEP_INTERVAL_MINUTES);
   return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_INTERVAL_MINUTES;
@@ -30,16 +33,40 @@ export async function sweepOnce(): Promise<number> {
   }
 }
 
+async function scheduledSweep(): Promise<void> {
+  if (inFlight) {
+    console.warn("[expire-holds] previous sweep still running; skipping this pass");
+    return;
+  }
+
+  inFlight = sweepOnce().then(() => undefined);
+  try {
+    await inFlight;
+  } finally {
+    inFlight = undefined;
+  }
+}
+
 async function runForever(): Promise<void> {
   const minutes = intervalMinutes();
   console.log(`[expire-holds] sweeping every ${minutes} minute(s)`);
 
-  await sweepOnce();
+  await scheduledSweep();
 
-  // A timer callback that throws would crash the process; `sweepOnce` already catches.
-  setInterval(() => {
-    void sweepOnce();
+  // A timer callback that throws would crash the process; the guards above keep it safe.
+  timer = setInterval(() => {
+    void scheduledSweep();
   }, minutes * 60_000);
+}
+
+async function stop(signal: NodeJS.Signals): Promise<void> {
+  console.log(`[expire-holds] ${signal} received, stopping`);
+  if (timer) {
+    clearInterval(timer);
+  }
+  await inFlight;
+  await db.$disconnect();
+  process.exit(0);
 }
 
 async function main(): Promise<void> {
@@ -51,6 +78,8 @@ async function main(): Promise<void> {
     return;
   }
 
+  process.once("SIGTERM", () => void stop("SIGTERM"));
+  process.once("SIGINT", () => void stop("SIGINT"));
   await runForever();
 }
 

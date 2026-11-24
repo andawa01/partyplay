@@ -747,6 +747,7 @@ the last unit and assert `[201, 409]`.
 | C9 | Admin catalogue CRUD | ✅ | ✅ | `feat/c9-admin-catalogue` |
 | C10 | Admin booking board | ✅ | ✅ | `feat/c10-admin-bookings` |
 | C11 | Payments and dashboard | — | ✅ | `feat/c11-payments-dashboard` |
+| O1 | Operations package (deploy, shutdown, sweeper, backups, request logs) | ✅ | — | `feat/o1-operations` |
 
 ---
 
