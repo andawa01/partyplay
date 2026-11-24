@@ -12,13 +12,15 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 model Admin {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String?
-  password  String
-  role      Role     @default(STAFF)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(uuid())
+  email          String   @unique
+  name           String?
+  password       String
+  role           Role     @default(STAFF)
+  // Incremented when a password reset must invalidate every existing session.
+  sessionVersion Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Admins who create / handle bookings; creator is optional so customer-submitted
   // requests can exist before an admin handles them.
@@ -26,6 +28,22 @@ model Admin {
   payments               Payment[]              @relation("paidBy")
   siteSettings           SiteSetting?
   bookingStatusHistories BookingStatusHistory[] @relation("statusHistoryBy")
+  passwordResetTokens    PasswordResetToken[]
+}
+
+// Only the SHA-256 hash of a reset token is stored. The raw token exists once, in the
+// operator's terminal, and cannot be recovered from the database.
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  adminId   String
+  admin     Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([adminId, createdAt])
+  @@index([expiresAt])
 }
 
 enum Role {

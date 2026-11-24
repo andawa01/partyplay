@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { changePasswordSchema, loginSchema, PASSWORD_MIN_LENGTH } from "./auth";
+import {
+  changePasswordSchema,
+  loginSchema,
+  PASSWORD_MIN_LENGTH,
+  resetPasswordSchema,
+} from "./auth";
 import { createBookingSchema } from "./bookings";
 import { updateSettingsSchema } from "./settings";
 import { createTransportProviderSchema } from "./transport-providers";
@@ -112,5 +117,28 @@ describe("password validation", () => {
   it("caps passwords below bcrypt's 72-byte limit", () => {
     expect(change(`Aa1${"a".repeat(197)}`).success).toBe(true);
     expect(change(`Aa1${"a".repeat(198)}`).success).toBe(false);
+  });
+});
+
+describe("password reset validation", () => {
+  const token = "a".repeat(43);
+
+  it("accepts a strong password with a valid token", () => {
+    expect(resetPasswordSchema.safeParse({ token, newPassword: "Password1" }).success).toBe(
+      true,
+    );
+  });
+
+  it("rejects malformed tokens and weak passwords", () => {
+    expect(
+      resetPasswordSchema.safeParse({ token: "short", newPassword: "Password1" }).success,
+    ).toBe(false);
+    expect(
+      resetPasswordSchema.safeParse({ token: "not a token", newPassword: "Password1" })
+        .success,
+    ).toBe(false);
+    expect(resetPasswordSchema.safeParse({ token, newPassword: "password" }).success).toBe(
+      false,
+    );
   });
 });

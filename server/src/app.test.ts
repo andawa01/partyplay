@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "./app";
 import { db, ensureClient } from "./config/db";
 import { formatCalendarDate, todayInNairobi } from "./lib/dates";
+import { issuePasswordResetToken } from "./services/auth";
 
 /**
  * HTTP smoke tests: the real app, middleware and routes against the configured database.
@@ -354,5 +355,53 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
     expect(Number(data.revenue.collected)).toBeCloseTo(baseline.collected + 1500, 2);
     expect(Array.isArray(data.upcoming)).toBe(true);
     expect(data.upcoming).toEqual(baseline.upcoming);
+  }, 30_000);
+
+  it("resets a password once, expires old links and invalidates old sessions", async () => {
+    const { token } = await issuePasswordResetToken(adminId);
+    const stored = await db.passwordResetToken.findFirstOrThrow({
+      where: { adminId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // The raw token never reaches the database.
+    expect(stored.tokenHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(stored.tokenHash).not.toBe(token);
+
+    const newPassword = "Reset-Password1";
+    const reset = await api("POST", "/api/auth/reset-password", {
+      body: { token, newPassword },
+    });
+    expect(reset.status).toBe(204);
+
+    const reused = await api("POST", "/api/auth/reset-password", {
+      body: { token, newPassword },
+    });
+    expect(reused.status).toBe(400);
+
+    // The session issued before the reset carries the old session version.
+    expect((await api("GET", "/api/admin/dashboard", { cookie })).status).toBe(401);
+
+    const oldLogin = await api("POST", "/api/auth/login", {
+      body: { email, password },
+    });
+    expect(oldLogin.status).toBe(401);
+
+    const newLogin = await fetch(base + "/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password: newPassword }),
+    });
+    expect(newLogin.status).toBe(200);
+
+    const { token: expiredToken } = await issuePasswordResetToken(adminId);
+    await db.passwordResetToken.updateMany({
+      where: { adminId, usedAt: null },
+      data: { expiresAt: new Date(Date.now() - 1_000) },
+    });
+    const expired = await api("POST", "/api/auth/reset-password", {
+      body: { token: expiredToken, newPassword: "Another-Password1" },
+    });
+    expect(expired.status).toBe(400);
   }, 30_000);
 });

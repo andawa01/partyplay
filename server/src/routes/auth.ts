@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { changePassword, login, logout, me } from "../controllers/auth";
+import { changePassword, login, logout, me, resetPassword } from "../controllers/auth";
 import { asyncHandler } from "../lib/async";
 import { requireAdmin } from "../middleware/auth";
 import { createRateLimiter } from "../middleware/rate-limit";
@@ -14,7 +14,16 @@ const loginRateLimiter = createRateLimiter({
   message: "Too many login attempts. Try again in a few minutes.",
 });
 
+/** Reset tokens are long and single-use; the limit still slows automated guessing. */
+const resetRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: "Too many reset attempts. Try again in a few minutes.",
+});
+
 router.post("/login", loginRateLimiter, asyncHandler(login));
+
+router.post("/reset-password", resetRateLimiter, asyncHandler(resetPassword));
 
 router.post("/logout", requireAdmin, asyncHandler(logout));
 

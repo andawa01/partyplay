@@ -34,21 +34,22 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
       return;
     }
 
-    const adminId = readSessionToken(token);
-    if (!adminId) {
+    const claims = readSessionToken(token);
+    if (!claims) {
       res.clearCookie(authConfig.cookieName, sessionCookieOptions);
       next(unauthorized("Your session has expired. Sign in again."));
       return;
     }
 
-    const admin = await findAdminForSession(adminId);
-    if (!admin) {
+    const admin = await findAdminForSession(claims.adminId);
+    if (!admin || admin.sessionVersion !== claims.sessionVersion) {
       res.clearCookie(authConfig.cookieName, sessionCookieOptions);
       next(unauthorized("Your session is no longer valid. Sign in again."));
       return;
     }
 
-    req.admin = admin;
+    const { sessionVersion: _sessionVersion, ...summary } = admin;
+    req.admin = summary;
     next();
   } catch (error) {
     next(error);

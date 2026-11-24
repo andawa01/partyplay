@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "admin:create": "tsx src/scripts/create-admin.ts",
+    "admin:reset-link": "tsx src/scripts/create-password-reset.ts",
     "job:expire-holds": "tsx src/jobs/expire-holds.ts --once",
     "job:expire-holds:watch": "tsx src/jobs/expire-holds.ts",
     "db:migrate": "prisma migrate dev",

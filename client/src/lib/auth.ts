@@ -19,6 +19,11 @@ export interface ChangePasswordInput {
   newPassword: string;
 }
 
+export interface ResetPasswordInput {
+  token: string;
+  newPassword: string;
+}
+
 export const loginFormSchema = z.object({
   email: z
     .string()
@@ -34,16 +39,18 @@ export const loginFormSchema = z.object({
 
 export type LoginFormValues = z.infer<typeof loginFormSchema>;
 
+const newPasswordSchema = z
+  .string()
+  .min(8, "Use at least 8 characters")
+  .max(200, "Use 200 characters or fewer")
+  .regex(/[a-z]/, "Add a lowercase letter")
+  .regex(/[A-Z]/, "Add an uppercase letter")
+  .regex(/\d/, "Add a number");
+
 export const changePasswordFormSchema = z
   .object({
     currentPassword: z.string().min(1, "Enter your current password").max(200),
-    newPassword: z
-      .string()
-      .min(8, "Use at least 8 characters")
-      .max(200, "Use 200 characters or fewer")
-      .regex(/[a-z]/, "Add a lowercase letter")
-      .regex(/[A-Z]/, "Add an uppercase letter")
-      .regex(/\d/, "Add a number"),
+    newPassword: newPasswordSchema,
     confirmPassword: z.string().min(1, "Confirm your new password"),
   })
   .superRefine((input, ctx) => {
@@ -64,6 +71,23 @@ export const changePasswordFormSchema = z
   });
 
 export type ChangePasswordFormValues = z.infer<typeof changePasswordFormSchema>;
+
+export const resetPasswordFormSchema = z
+  .object({
+    newPassword: newPasswordSchema,
+    confirmPassword: z.string().min(1, "Confirm your new password"),
+  })
+  .superRefine((input, ctx) => {
+    if (input.newPassword !== input.confirmPassword) {
+      ctx.addIssue({
+        code: "custom",
+        message: "The new passwords do not match",
+        path: ["confirmPassword"],
+      });
+    }
+  });
+
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordFormSchema>;
 
 /**
  * Only return to an admin path supplied by the guard. The value comes from router state,

@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 
 import { authConfig, sessionCookieMaxAgeMs, sessionCookieOptions } from "../config/auth";
 import { unauthorized } from "../lib/api-error";
-import { changePasswordSchema, loginSchema } from "../schemas/auth";
+import { changePasswordSchema, loginSchema, resetPasswordSchema } from "../schemas/auth";
 import * as auth from "../services/auth";
 
 export async function login(req: Request, res: Response): Promise<void> {
@@ -37,5 +37,15 @@ export async function changePassword(req: Request, res: Response): Promise<void>
 
   const input = changePasswordSchema.parse(req.body);
   await auth.changePassword(admin.id, input);
+  res.status(204).send();
+}
+
+export async function resetPassword(req: Request, res: Response): Promise<void> {
+  const input = resetPasswordSchema.parse(req.body);
+  await auth.resetPassword(input);
+
+  // The reset increments the session version; drop any cookie that happens to be
+  // present in this browser as well.
+  res.clearCookie(authConfig.cookieName, sessionCookieOptions);
   res.status(204).send();
 }

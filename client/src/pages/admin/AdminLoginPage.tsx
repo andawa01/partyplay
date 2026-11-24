@@ -283,6 +283,10 @@ export default function AdminLoginPage() {
             </Button>
           </form>
 
+          <p className="mt-4 text-xs leading-relaxed text-slate-500">
+            Forgot your password? Ask the site operator for a one-time reset link.
+          </p>
+
           <div className="mt-5 flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-500">
             <Check aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-emerald-600" />
             Your session is stored in a secure, http-only cookie and expires automatically.

@@ -28,5 +28,16 @@ export const changePasswordSchema = z
     path: ["newPassword"],
   });
 
+export const resetPasswordSchema = z.object({
+  token: z
+    .string()
+    .trim()
+    .min(32, "This reset link is invalid")
+    .max(200, "This reset link is invalid")
+    .regex(/^[A-Za-z0-9_-]+$/, "This reset link is invalid"),
+  newPassword: passwordSchema,
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

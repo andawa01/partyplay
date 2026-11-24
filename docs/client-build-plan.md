@@ -316,6 +316,11 @@ logging in returns to the intended page.
   fields and confirms with a toast. A 401 clears the session and returns to login.
 - Login and settings are lazy-loaded so the public bundle does not pay for the admin form
   code. The dashboard is now an authenticated placeholder with account/settings shortcuts.
+- `/admin/reset-password#token=...` sits outside the admin guard. The token is read from
+  the URL fragment so it never reaches server logs, the form enforces the password policy
+  and matching confirmation, and success explains that old sessions were signed out. A
+  missing, expired or reused link shows a recovery message. Login links users to the
+  server-assisted recovery path.
 - Added four component tests covering inline 401, inline 429, return-to-attempted-page and
   the unauthenticated guard redirect.
 

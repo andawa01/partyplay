@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { changePasswordFormSchema } from "./auth";
+import { changePasswordFormSchema, resetPasswordFormSchema } from "./auth";
 
 function change(newPassword: string) {
   return changePasswordFormSchema.safeParse({
@@ -33,5 +33,31 @@ describe("change password form", () => {
       confirmPassword: "Password2",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("reset password form", () => {
+  it("accepts a strong matching password", () => {
+    expect(
+      resetPasswordFormSchema.safeParse({
+        newPassword: "Password1",
+        confirmPassword: "Password1",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects weak or mismatched passwords", () => {
+    expect(
+      resetPasswordFormSchema.safeParse({
+        newPassword: "password",
+        confirmPassword: "password",
+      }).success,
+    ).toBe(false);
+    expect(
+      resetPasswordFormSchema.safeParse({
+        newPassword: "Password1",
+        confirmPassword: "Password2",
+      }).success,
+    ).toBe(false);
   });
 });

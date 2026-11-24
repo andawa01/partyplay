@@ -81,11 +81,22 @@ erDiagram
     BOOKING ||--o{ PAYMENT : receives
     BOOKING ||--o{ BOOKING_STATUS_HISTORY : audited_by
 
+    ADMIN ||--o{ PASSWORD_RESET_TOKEN : issues
+
     ADMIN {
         string id PK
         string email UK
         string password
         string role
+        int sessionVersion
+        datetime createdAt
+    }
+    PASSWORD_RESET_TOKEN {
+        string id PK
+        string adminId FK
+        string tokenHash UK
+        datetime expiresAt
+        datetime usedAt
         datetime createdAt
     }
     SITE_SETTING {
@@ -254,8 +265,27 @@ see them and will never drop them; add new ones the same way, not in
 | `name` | text | yes | — | |
 | `password` | text | no | — | bcrypt hash, cost 12; at least 8 characters with uppercase, lowercase and a number (app-enforced) |
 | `role` | `Role` | no | `STAFF` | |
+| `sessionVersion` | integer | no | `0` | Bumped by password reset; JWT `ver` must match |
 | `createdAt` | timestamp(3) | no | `now()` | |
 | `updatedAt` | timestamp(3) | no | auto | |
+
+### 4.1.1 PasswordResetToken
+
+| Field | Type | Null | Default | Notes |
+|---|---|---|---|---|
+| `id` | text | no | `uuid()` | PK |
+| `adminId` | text | no | — | FK → `Admin.id`, `CASCADE` on delete |
+| `tokenHash` | text | no | — | **UNIQUE**, SHA-256 hex of the raw token |
+| `expiresAt` | timestamp(3) | no | — | 30 minutes after issue |
+| `usedAt` | timestamp(3) | yes | — | Set when consumed or superseded |
+| `createdAt` | timestamp(3) | no | `now()` | |
+
+Indexes: `(adminId, createdAt)`, `(expiresAt)`, unique `(tokenHash)`.
+
+**App-enforced:** only the hash is stored; the raw token is printed once by
+`npm run admin:reset-link -- <email>`. Issuing a new token marks every unused
+token for that admin as used. Consuming a token also bumps `Admin.sessionVersion`,
+so existing sessions stop working.
 
 ### 4.2 Category
 
