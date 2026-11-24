@@ -1,22 +1,16 @@
 import { z } from "zod";
 
+import { emailSchema, phoneSchema } from "./common";
+
 /**
  * Public guest booking request (F6b). Prices are deliberately absent: the server prices
  * from the database, so a tampered body cannot change what anything costs.
  */
 
-/** D7: phone is required for guests (7–20 characters, digits and the usual separators). */
-const phoneSchema = z
-  .string()
-  .trim()
-  .min(7)
-  .max(20)
-  .regex(/^[0-9+\-()\s]+$/, "phone may only contain digits, +, -, ( ), and spaces");
-
 const customerSchema = z.object({
   name: z.string().trim().min(1).max(120),
   phone: phoneSchema,
-  email: z.email().max(254).optional(),
+  email: emailSchema.optional(),
 });
 
 const equipmentLineSchema = z.object({

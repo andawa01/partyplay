@@ -108,8 +108,8 @@ roles, but nothing creates or manages additional accounts.
 | Gap | Why it matters | Risk | Effort |
 |---|---|---|---|
 | No staff accounts | The owner cannot give a helper limited access; they would have to share the owner password. | **High** | M |
-| No password reset | There is no reset path at all: `POST /api/auth/password` needs an existing session, and `admin:create` deliberately refuses to overwrite an existing account. Recovery means editing the database by hand. | **High** | S |
-| No session revocation | Logout clears the cookie only; a copied cookie stays valid until it expires (12h default). Changing `JWT_SECRET` logs everyone out, but that is the only lever. | Medium | S |
+| Reset email depends on Resend | Self-service reset works once `RESEND_API_KEY` and `MAIL_FROM` are configured. Without them the request endpoint returns `503`; the server CLI still works as a fallback. | Low | S |
+| Partial session revocation | Logout clears only the current cookie. Password reset bumps `Admin.sessionVersion` and revokes every existing session, but there is no per-session list or remote sign-out. | Low | M |
 | No two-factor authentication | One password protects all customer and payment data. | Medium | M |
 | Admin routes are unthrottled | Only login and public booking routes are limited. A stolen session can be used at full speed. | Low | S |
 | No security headers | No Helmet/CSP; HTTPS and header hardening are assumed to be the proxy's job but nothing in the repo states or enforces it. | Medium | S |
@@ -176,7 +176,7 @@ unit of work:
 3. **Maintenance blackout dates** — protects against renting out a broken item. *(§4)*
 4. **Refunds and overpayment policy** — closes the gap between the books and reality. *(§3)*
 5. **Booking edit** — removes the cancel-and-rebook workaround. *(§4)*
-6. **Password reset + staff accounts** — stops password sharing and lockouts. *(§6)*
+6. **Staff accounts** — stops password sharing. *(§6)*
 7. **Notifications** — the biggest labour saving for the owner. *(§5)*
 8. **Reports and CSV export** — needed at month end. *(§8)*
 

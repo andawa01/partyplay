@@ -12,13 +12,15 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 model Admin {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  password  String
-  role      Role     @default(STAFF)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(uuid())
+  email          String   @unique
+  name           String?
+  password       String
+  role           Role     @default(STAFF)
+  // Incremented when a password reset must invalidate every existing session.
+  sessionVersion Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Admins who create / handle bookings; creator is optional so customer-submitted
   // requests can exist before an admin handles them.
@@ -26,6 +28,22 @@ model Admin {
   payments               Payment[]              @relation("paidBy")
   siteSettings           SiteSetting?
   bookingStatusHistories BookingStatusHistory[] @relation("statusHistoryBy")
+  passwordResetTokens    PasswordResetToken[]
+}
+
+// Only the SHA-256 hash of a reset token is stored. The raw token exists once, in the
+// operator's terminal, and cannot be recovered from the database.
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  adminId   String
+  admin     Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([adminId, createdAt])
+  @@index([expiresAt])
 }
 
 enum Role {
@@ -39,7 +57,7 @@ enum Role {
 // ---------------------------------------------------------------------------
 
 model Category {
-  id          String      @id @default(cuid())
+  id          String      @id @default(uuid())
   slug        String      @unique
   name        String
   description String?
@@ -55,7 +73,7 @@ model Category {
 }
 
 model Equipment {
-  id            String   @id @default(cuid())
+  id            String   @id @default(uuid())
   slug          String   @unique
   name          String   @unique
   categoryId    String
@@ -93,11 +111,11 @@ model Equipment {
 
 enum PricingMode {
   PER_DAY // pricePerDay × rental days × quantity
-  FLAT    // flatPrice × quantity, once per hire
+  FLAT // flatPrice × quantity, once per hire
 }
 
 model EquipmentInventory {
-  id          String    @id @default(cuid())
+  id          String    @id @default(uuid())
   equipmentId String
   equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
   total       Int       @default(0) // equipment owned by PartyPlay
@@ -113,7 +131,7 @@ model EquipmentInventory {
 // ---------------------------------------------------------------------------
 
 model Package {
-  id            String   @id @default(cuid())
+  id            String   @id @default(uuid())
   slug          String   @unique
   name          String
   description   String?
@@ -135,7 +153,7 @@ model Package {
 }
 
 model PackageItem {
-  id          String    @id @default(cuid())
+  id          String    @id @default(uuid())
   packageId   String
   package     Package   @relation("PackageItems", fields: [packageId], references: [id], onDelete: Cascade)
   equipmentId String
@@ -148,7 +166,7 @@ model PackageItem {
 }
 
 model PackageBooking {
-  id        String  @id @default(cuid())
+  id        String  @id @default(uuid())
   packageId String
   package   Package @relation(fields: [packageId], references: [id])
   bookingId String
@@ -174,7 +192,7 @@ model PackageBooking {
 // Kept as rows (not JSON) so inventory availability can be aggregated in SQL:
 // a confirmed booking reserves the package contents exactly like standalone items.
 model BookingPackageItem {
-  id               String         @id @default(cuid())
+  id               String         @id @default(uuid())
   packageBookingId String
   packageBooking   PackageBooking @relation(fields: [packageBookingId], references: [id], onDelete: Cascade)
 
@@ -194,7 +212,7 @@ model BookingPackageItem {
 // ---------------------------------------------------------------------------
 
 model Offer {
-  id            String         @id @default(cuid())
+  id            String         @id @default(uuid())
   slug          String         @unique
   name          String
   description   String?
@@ -231,7 +249,7 @@ enum OfferAppliesTo {
 // ---------------------------------------------------------------------------
 
 model Customer {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   name      String
   email     String?  @unique // optional; unique only when provided
   phone     String?
@@ -248,33 +266,33 @@ model Customer {
 // ---------------------------------------------------------------------------
 
 model Booking {
-  id              String        @id @default(cuid())
-  code            String        @unique @default(cuid()) // human-friendly PP-XXXXXX generated in backend
-  customerId      String
-  customer        Customer      @relation(fields: [customerId], references: [id])
-  startDate       DateTime      @db.Date // inclusive rental start (calendar date)
-  endDate         DateTime      @db.Date // inclusive rental end (calendar date)
-  status          BookingStatus @default(PENDING)
+  id               String           @id @default(uuid())
+  code             String           @unique @default(uuid()) // PP-XXXXXX generated in backend; UUID is a fallback
+  customerId       String
+  customer         Customer         @relation(fields: [customerId], references: [id])
+  startDate        DateTime         @db.Date // inclusive rental start (calendar date)
+  endDate          DateTime         @db.Date // inclusive rental end (calendar date)
+  status           BookingStatus    @default(PENDING)
   fulfilmentMethod FulfilmentMethod @default(COLLECTION) // D4; addresses are app-enforced
-  notes           String?
-  specialRequests String?
-  totalAmount     Decimal       @db.Decimal(10, 2)
-  transportCharge Decimal       @default(0) @db.Decimal(10, 2)
-  discountAmount  Decimal       @default(0) @db.Decimal(10, 2)
-  paidAmount      Decimal       @default(0) @db.Decimal(10, 2)
-  currency        String        @default("KES")
-  createdById     String? // admin who handled/created the booking; nullable for customer-submitted requests
-  createdBy       Admin?        @relation("handledBy", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  approvedAt      DateTime?
-  cancelledAt     DateTime?
-  fulfilmentDate  DateTime?
-  deliveredBy     String? // driver/boda name or id
-  dropoffAddress  String?
-  dropoffNotes    String?
-  pickupAddress   String?
-  pickupNotes     String?
+  notes            String?
+  specialRequests  String?
+  totalAmount      Decimal          @db.Decimal(10, 2)
+  transportCharge  Decimal          @default(0) @db.Decimal(10, 2)
+  discountAmount   Decimal          @default(0) @db.Decimal(10, 2)
+  paidAmount       Decimal          @default(0) @db.Decimal(10, 2)
+  currency         String           @default("KES")
+  createdById      String? // admin who handled/created the booking; nullable for customer-submitted requests
+  createdBy        Admin?           @relation("handledBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  approvedAt       DateTime?
+  cancelledAt      DateTime?
+  fulfilmentDate   DateTime?
+  deliveredBy      String? // driver/boda name or id
+  dropoffAddress   String?
+  dropoffNotes     String?
+  pickupAddress    String?
+  pickupNotes      String?
 
   // Pending requests hold stock for a configurable window (default 120 minutes).
   // Expired pending bookings must stop consuming stock — enforced by the backend.
@@ -309,7 +327,7 @@ enum FulfilmentMethod {
 }
 
 model BookingItem {
-  id             String    @id @default(cuid())
+  id             String    @id @default(uuid())
   bookingId      String
   booking        Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   equipmentId    String
@@ -332,7 +350,7 @@ model BookingItem {
 // their BookingItem / BookingPackageItem rows are the source of truth for what is
 // reserved, so inventory stays consumed after the hold window closes.
 model StockHold {
-  id          String          @id @default(cuid())
+  id          String          @id @default(uuid())
   bookingId   String
   booking     Booking         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   equipmentId String
@@ -363,7 +381,7 @@ enum StockHoldStatus {
 // ---------------------------------------------------------------------------
 
 model BookingStatusHistory {
-  id         String         @id @default(cuid())
+  id         String         @id @default(uuid())
   bookingId  String
   booking    Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   fromStatus BookingStatus?
@@ -383,7 +401,7 @@ model BookingStatusHistory {
 // ---------------------------------------------------------------------------
 
 model Payment {
-  id          String        @id @default(cuid())
+  id          String        @id @default(uuid())
   bookingId   String
   booking     Booking       @relation(fields: [bookingId], references: [id])
   paidById    String?
@@ -421,7 +439,7 @@ enum PaymentStatus {
 // ---------------------------------------------------------------------------
 
 model TransportProvider {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   name        String
   phone       String   @unique
   serviceArea String? // e.g. "Nairobi CBD and surrounds"
@@ -436,7 +454,7 @@ model TransportProvider {
 // ---------------------------------------------------------------------------
 
 model SiteSetting {
-  id                  String   @id @default(cuid())
+  id                  String   @id @default(uuid())
   adminId             String   @unique
   admin               Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
   businessName        String   @default("PartyPlay")

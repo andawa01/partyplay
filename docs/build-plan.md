@@ -203,7 +203,7 @@ otherwise. D1–D3 change the schema and must be settled before F6.
 | **D4** | Requirements require a *delivery or collection* choice per booking; the schema only has address fields. | Add `FulfilmentMethod` enum `DELIVERY \| COLLECTION` + `fulfilmentMethod` on `Booking` (migration 5, default `COLLECTION`). `DELIVERY` requires `dropoffAddress`; `COLLECTION` requires `pickupAddress` (app-enforced, zod conditional). | Booking form has nowhere to store the choice |
 | **D5** | Package `minQuantity`/`maxQuantity` are guest counts, but `Booking` has no guest count. | Leave the columns informational in the MVP; do not validate them. Add `guestCount Int?` when the owner asks for a real guest limit. | None — no wrong behaviour, just unenforced metadata |
 | **D6** | `Offer` has no FK on `appliesToId` and no discount engine. | Offers are **display-only** in the MVP. `discountAmount` is entered by the owner when confirming, and is an explicit recorded adjustment (requirement §7). No automatic discount logic until after launch. | A discount engine is a feature of its own; skipping it keeps pricing honest |
-| **D7** | Requirements make customer phone mandatory; `Customer.phone` is nullable. | Enforce in zod (`phone` required, 7–20 chars, digits/+/-/space). Leave the column nullable so admin-created walk-in customers are still possible. | Weak |
+| **D7** | Requirements make customer phone mandatory; `Customer.phone` is nullable. | Enforce in zod (`phone` required, exactly 10 digits). Leave the column nullable so admin-created walk-in customers are still possible. | Weak |
 
 **Shipping alongside D1/D3/D4 as migration 5 (`booking_domain_fixes`)**: status enum
 rename, `pricingMode`, `fulfilmentMethod`, `Booking.guestCount` omitted per D5.
@@ -244,21 +244,23 @@ dependencies in the list are done.
 
 **Goal:** one owner account can log in, everything admin-only is genuinely protected.
 
-**Schema:** none. `Admin` already has `email`, `password`, `role`; `UserSession` was
-dropped in migration 2, so this is stateless.
+**Schema:** `Admin` already has `email`, `password`, `role` and now `sessionVersion`.
+`PasswordResetToken` stores only a SHA-256 token hash with an expiry and `usedAt`;
+`UserSession` was dropped in migration 2, so sessions remain stateless.
 
 **New dependencies:** `cookie-parser` and `jsonwebtoken` (+ `@types/cookie-parser`,
-`@types/jsonwebtoken`). Neither is installed today — add them in this feature and
-nothing earlier.
+`@types/jsonwebtoken`). Password reset email uses the official `resend` Node SDK.
 
 **Endpoints**
 
 | Method | Path | Auth | Body / notes |
 |---|---|---|---|
-| POST | `/api/auth/login` | public | `{ email, password }` → sets `pp_session` httpOnly, `sameSite=lax`, `secure` in prod, `maxAge` from `ADMIN_SESSION_HOURS` (default 12) |
+| POST | `/api/auth/login` | public | `{ email, password }` → sets `pt_sess` httpOnly, `sameSite=lax`, `secure` in prod, `maxAge` from `ADMIN_SESSION_HOURS` (default 12) |
 | POST | `/api/auth/logout` | admin | clears cookie |
 | GET | `/api/auth/me` | admin | `{ id, email, name, role }` |
-| POST | `/api/auth/password` | admin | `{ currentPassword, newPassword }`, min 10 chars, bcrypt cost 12 |
+| POST | `/api/auth/password` | admin | `{ currentPassword, newPassword }`, min 8 chars with uppercase, lowercase and a number, bcrypt cost 12 |
+| POST | `/api/auth/forgot-password` | public | `{ email }` → `202` generic response; sends a reset link when the email belongs to an admin. Rate-limited to 5 requests per IP per 15 minutes |
+| POST | `/api/auth/reset-password` | public | `{ token, newPassword }`, consumes a one-time reset token, min 8 chars with uppercase, lowercase and a number, bcrypt cost 12 |
 
 **Rules**
 
@@ -268,15 +270,34 @@ nothing earlier.
 - Simple in-memory rate limit: 10 attempts per IP per 15 minutes → `429`. In-memory is
   acceptable for a single-instance MVP; note it in code.
 - `requireAdmin` verifies the JWT, loads the `Admin` row, attaches `req.admin`, and
-  returns `401` (not `501`, not `403`) when absent. JWT payload holds only `sub`.
+  returns `401` (not `501`, not `403`) when absent. JWT payload holds `sub` plus `ver`;
+  the version is compared with `Admin.sessionVersion` on every request.
 - `npm run admin:create` (`server/src/scripts/create-admin.ts`) creates the owner from
   `ADMIN_EMAIL` / `ADMIN_PASSWORD`, hashing with bcrypt. It is idempotent: rerunning it
   never overwrites an existing password — signed-in admins change it through
   `POST /api/auth/password`.
+- `POST /api/auth/forgot-password` always returns the same `202` message, whether or not
+  the email belongs to an admin. It creates a 32-byte random token, stores only its
+  SHA-256 hash, expires the link after 30 minutes, invalidates the admin's previous unused
+  links and sends a frontend URL with the token in the URL fragment (`#token=…`) so it
+  never reaches server logs or a Referer.
+- Reset email is sent through Resend. Set `RESEND_API_KEY` and `MAIL_FROM` (a verified
+  sender/domain) in `server/.env`; when unset, the endpoint returns a clear `503` and the
+  UI explains that email delivery is not configured.
+- `npm run admin:reset-link -- owner@example.com` remains a server-side fallback for
+  recovery when email is unavailable.
+- `POST /api/auth/reset-password` is rate-limited to 10 attempts per IP per 15 minutes.
+  It consumes the token in a transaction, applies the password policy, marks every other
+  unused link for that admin as used, bumps `Admin.sessionVersion` and clears the session
+  cookie. A reused or expired token gets the same 400 response.
+- Cleanup-on-issue deletes reset rows more than 7 days past expiry or use, so the table
+  stays bounded without adding a scheduler.
 
 **Verify:** login → cookie set → `/api/auth/me` 200; no cookie → 401; login with wrong
 password → 401; `/api/categories` POST without cookie → 401; with cookie → works
-(remove the 501 stub behaviour).
+(remove the 501 stub behaviour). Request a reset email, confirm the generic response for
+known and unknown addresses, reset the password, confirm the old cookie gets 401, the old
+password stops working, the new password works and the same token cannot be used twice.
 
 **Depends on:** F1.
 
@@ -429,7 +450,7 @@ dropoffAddress?, pickupAddress?, packages: [{ packageId, quantity }], equipment:
    `Customer.email` is unique, so a shared family email must not 500 — match on phone
    first, then email.
 6. Generate `Booking.code` = `PP-` + 6 uppercase base32 chars, retry on `P2002`
-   (collision), never the `cuid()` default.
+   (collision), never the UUID default.
 7. Create `Booking` (`PENDING`, `holdExpiresAt = now + siteSetting.holdMinutes`,
    `transportCharge = 0`), `BookingItem` rows with snapshots, `PackageBooking` +
    `BookingPackageItem` snapshots, and `StockHold` rows (`ACTIVE`, same `expiresAt`).

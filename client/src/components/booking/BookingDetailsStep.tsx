@@ -73,6 +73,7 @@ export function BookingDetailsStep({
           label="Phone or WhatsApp"
           htmlFor="booking-phone"
           error={errors.phone}
+          hint="Use exactly 10 digits, e.g. 0712345678."
           required
         >
           <Input
@@ -80,10 +81,11 @@ export function BookingDetailsStep({
             value={details.phone}
             onChange={(event) => onChange("phone", event.target.value)}
             autoComplete="tel"
-            inputMode="tel"
+            inputMode="numeric"
+            maxLength={10}
             aria-invalid={Boolean(errors.phone)}
             aria-describedby={errors.phone ? "booking-phone-error" : undefined}
-            placeholder="07xx xxx xxx"
+            placeholder="0712345678"
           />
         </Field>
 

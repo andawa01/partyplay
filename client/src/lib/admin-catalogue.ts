@@ -657,8 +657,7 @@ export const transportProviderFormSchema = z.object({
   phone: z
     .string()
     .trim()
-    .min(7, "Enter a phone number with at least 7 characters")
-    .max(20, "Keep the phone number to 20 characters"),
+    .regex(/^\d{10}$/, "Enter exactly 10 digits, e.g. 0712345678"),
   serviceArea: z.string().trim().max(200, "Keep the service area to 200 characters"),
   notes: z.string().trim().max(1000, "Keep the notes to 1000 characters"),
   isActive: z.boolean(),

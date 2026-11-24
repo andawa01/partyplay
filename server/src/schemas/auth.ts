@@ -1,17 +1,17 @@
 import { z } from "zod";
 
-const emailSchema = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .max(254, "Email is too long")
-  .pipe(z.email("Enter a valid email address"));
+import { emailSchema } from "./common";
 
-/** bcrypt only uses the first 72 bytes, so cap input well below the hashing limit. */
-const passwordSchema = z
+export const PASSWORD_MIN_LENGTH = 8;
+
+/** New passwords need three character classes as well as a length floor. */
+export const passwordSchema = z
   .string()
-  .min(10, "Password must be at least 10 characters")
-  .max(200, "Password must be at most 200 characters");
+  .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
+  .max(200, "Password must be at most 200 characters")
+  .regex(/[a-z]/, "Password must include a lowercase letter")
+  .regex(/[A-Z]/, "Password must include an uppercase letter")
+  .regex(/\d/, "Password must include a number");
 
 export const loginSchema = z.object({
   email: emailSchema,
@@ -28,5 +28,21 @@ export const changePasswordSchema = z
     path: ["newPassword"],
   });
 
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});
+
+export const resetPasswordSchema = z.object({
+  token: z
+    .string()
+    .trim()
+    .min(32, "This reset link is invalid")
+    .max(200, "This reset link is invalid")
+    .regex(/^[A-Za-z0-9_-]+$/, "This reset link is invalid"),
+  newPassword: passwordSchema,
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

@@ -134,15 +134,11 @@ export const bookingDetailsSchema = z
     phone: z
       .string()
       .trim()
-      .min(7, "Enter a phone number we can reach you on")
-      .max(20, "Use 20 characters or fewer")
-      .regex(
-        /^[0-9+\-()\s]+$/,
-        "Use digits, spaces, +, -, or parentheses only",
-      ),
+      .regex(/^\d{10}$/, "Enter exactly 10 digits, e.g. 0712345678"),
     email: z
       .string()
       .trim()
+      .toLowerCase()
       .max(254, "Use 254 characters or fewer")
       .refine((value) => value === "" || z.email().safeParse(value).success, {
         message: "Enter a valid email address or leave it blank",

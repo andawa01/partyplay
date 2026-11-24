@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "../lib/api";
-import type { AdminUser, ChangePasswordInput, LoginInput } from "../lib/auth";
+import type {
+  AdminUser,
+  ChangePasswordInput,
+  ForgotPasswordInput,
+  LoginInput,
+  ResetPasswordInput,
+} from "../lib/auth";
 import { queryKeys } from "../lib/query-keys";
 
 /**
@@ -50,6 +56,30 @@ export function useChangePassword() {
   return useMutation({
     mutationFn: async (input: ChangePasswordInput) => {
       await apiFetch<undefined>("/api/auth/password", {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+    },
+    retry: false,
+  });
+}
+
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: async (input: ForgotPasswordInput) => {
+      await apiFetch<{ message: string }>("/api/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+    },
+    retry: false,
+  });
+}
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: async (input: ResetPasswordInput) => {
+      await apiFetch<undefined>("/api/auth/reset-password", {
         method: "POST",
         body: JSON.stringify(input),
       });

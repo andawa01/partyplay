@@ -1,11 +1,13 @@
 import { z } from "zod";
 
+import { emailSchema, phoneSchema } from "./common";
+
 /** Every field is optional so the settings form can save a partial draft. */
 export const updateSettingsSchema = z.object({
   businessName: z.string().trim().min(1).max(128),
-  contactPhone: z.string().trim().max(32).nullable(),
-  contactWhatsApp: z.string().trim().max(32).nullable(),
-  contactEmail: z.email().max(254).nullable(),
+  contactPhone: phoneSchema.nullable(),
+  contactWhatsApp: phoneSchema.nullable(),
+  contactEmail: emailSchema.nullable(),
   address: z.string().trim().max(300).nullable(),
   aboutText: z.string().max(4000).nullable(),
   facebookUrl: z.url().max(2048).nullable(),

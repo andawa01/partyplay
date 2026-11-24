@@ -4,11 +4,25 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 
 import bcrypt from "bcrypt";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+const emailMock = vi.hoisted(() => ({
+  isEmailConfigured: vi.fn(() => true),
+  sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("./lib/email", () => ({
+  isEmailConfigured: emailMock.isEmailConfigured,
+  sendPasswordResetEmail: emailMock.sendPasswordResetEmail,
+}));
 
 import { createApp } from "./app";
 import { db, ensureClient } from "./config/db";
 import { formatCalendarDate, todayInNairobi } from "./lib/dates";
+import {
+  issuePasswordResetToken,
+  PASSWORD_RESET_RETENTION_MS,
+} from "./services/auth";
 
 /**
  * HTTP smoke tests: the real app, middleware and routes against the configured database.
@@ -24,12 +38,13 @@ import { formatCalendarDate, todayInNairobi } from "./lib/dates";
  * is running, so the variable alone cannot gate this.
  */
 const smokeDbAvailable = process.env.PARTYPLAY_SMOKE_DB === "run";
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
   const password = "smoke-test-password";
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 10_000)}`;
   const email = `smoke-${suffix}@example.test`;
-  const phone = `0799${String(Date.now()).slice(-7)}`;
+  const phone = `07${String(Date.now()).slice(-8)}`;
   const equipmentSlug = `smoke-equipment-${suffix}`;
   const categorySlug = `smoke-category-${suffix}`;
 
@@ -122,6 +137,11 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
       })
     ).id;
 
+    // Prisma must mint UUIDs server-side for every new primary key.
+    expect(adminId).toMatch(UUID_PATTERN);
+    expect(categoryId).toMatch(UUID_PATTERN);
+    expect(equipmentId).toMatch(UUID_PATTERN);
+
     // The session is an httpOnly cookie; tests speak HTTP so they replay it verbatim.
     const login = await fetch(base + "/api/auth/login", {
       method: "POST",
@@ -131,8 +151,9 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
     expect(login.status).toBe(200);
     const setCookie =
       (login.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie?.() ?? [];
-    expect(setCookie.length).toBeGreaterThan(0);
-    cookie = setCookie[0].split(";")[0];
+    const sessionCookie = setCookie.find((value) => value.startsWith("pt_sess="));
+    expect(sessionCookie).toBeDefined();
+    cookie = sessionCookie!.split(";")[0];
 
     const dashboard = await api("GET", "/api/admin/dashboard", { cookie });
     expect(dashboard.status).toBe(200);
@@ -236,6 +257,7 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
 
     const code = (created.body.data as { code: string }).code;
     const booking = await db.booking.findUniqueOrThrow({ where: { code } });
+    expect(booking.id).toMatch(UUID_PATTERN);
 
     const availability = () =>
       api(
@@ -346,5 +368,117 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
     expect(Number(data.revenue.collected)).toBeCloseTo(baseline.collected + 1500, 2);
     expect(Array.isArray(data.upcoming)).toBe(true);
     expect(data.upcoming).toEqual(baseline.upcoming);
+  }, 30_000);
+
+  it("requests a reset email without revealing whether the account exists", async () => {
+    emailMock.sendPasswordResetEmail.mockClear();
+
+    const known = await api("POST", "/api/auth/forgot-password", {
+      body: { email },
+    });
+    expect(known.status).toBe(202);
+    expect(emailMock.sendPasswordResetEmail).toHaveBeenCalledTimes(1);
+
+    const sent = emailMock.sendPasswordResetEmail.mock.calls[0]?.[0] as {
+      to: string;
+      resetUrl: string;
+    };
+    expect(sent.to).toBe(email);
+    expect(sent.resetUrl).toContain("/admin/reset-password#token=");
+
+    const unknown = await api("POST", "/api/auth/forgot-password", {
+      body: { email: `unknown-${suffix}@example.test` },
+    });
+    expect(unknown.status).toBe(202);
+    expect(unknown.body).toMatchObject({ data: { message: expect.any(String) } });
+    expect(emailMock.sendPasswordResetEmail).toHaveBeenCalledTimes(1);
+  }, 30_000);
+
+  it("cleans up reset tokens after the retention window", async () => {
+    const stale = await db.passwordResetToken.create({
+      data: {
+        adminId,
+        tokenHash: `stale-${suffix}`,
+        expiresAt: new Date(Date.now() - PASSWORD_RESET_RETENTION_MS - 60_000),
+      },
+    });
+    const recentUsed = await db.passwordResetToken.create({
+      data: {
+        adminId,
+        tokenHash: `used-${suffix}`,
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+        usedAt: new Date(),
+      },
+    });
+
+    await issuePasswordResetToken(adminId);
+
+    const remaining = await db.passwordResetToken.findMany({
+      where: { id: { in: [stale.id, recentUsed.id] } },
+      select: { id: true },
+    });
+    const ids = remaining.map((row) => row.id);
+    expect(ids).not.toContain(stale.id);
+    expect(ids).toContain(recentUsed.id);
+  }, 30_000);
+
+  it("reports missing email configuration without sending or looking up an account", async () => {
+    emailMock.sendPasswordResetEmail.mockClear();
+    emailMock.isEmailConfigured.mockReturnValueOnce(false);
+
+    const response = await api("POST", "/api/auth/forgot-password", {
+      body: { email },
+    });
+    expect(response.status).toBe(503);
+    expect(response.body).toMatchObject({ code: "EMAIL_NOT_CONFIGURED" });
+    expect(emailMock.sendPasswordResetEmail).not.toHaveBeenCalled();
+  }, 30_000);
+
+  it("resets a password once, expires old links and invalidates old sessions", async () => {
+    const { token } = await issuePasswordResetToken(adminId);
+    const stored = await db.passwordResetToken.findFirstOrThrow({
+      where: { adminId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // The raw token never reaches the database.
+    expect(stored.tokenHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(stored.tokenHash).not.toBe(token);
+
+    const newPassword = "Reset-Password1";
+    const reset = await api("POST", "/api/auth/reset-password", {
+      body: { token, newPassword },
+    });
+    expect(reset.status).toBe(204);
+
+    const reused = await api("POST", "/api/auth/reset-password", {
+      body: { token, newPassword },
+    });
+    expect(reused.status).toBe(400);
+
+    // The session issued before the reset carries the old session version.
+    expect((await api("GET", "/api/admin/dashboard", { cookie })).status).toBe(401);
+
+    const oldLogin = await api("POST", "/api/auth/login", {
+      body: { email, password },
+    });
+    expect(oldLogin.status).toBe(401);
+
+    const newLogin = await fetch(base + "/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password: newPassword }),
+    });
+    expect(newLogin.status).toBe(200);
+
+    const { token: expiredToken } = await issuePasswordResetToken(adminId);
+    await db.passwordResetToken.updateMany({
+      where: { adminId, usedAt: null },
+      data: { expiresAt: new Date(Date.now() - 1_000) },
+    });
+    const expired = await api("POST", "/api/auth/reset-password", {
+      body: { token: expiredToken, newPassword: "Another-Password1" },
+    });
+    expect(expired.status).toBe(400);
   }, 30_000);
 });
