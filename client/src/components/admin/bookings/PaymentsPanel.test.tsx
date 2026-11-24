@@ -53,6 +53,7 @@ const booking: AdminBookingDetail = {
   stockHolds: [],
   payments: [],
   statusHistory: [],
+  edits: [],
   totals: {
     subtotal: "1200.00",
     discountAmount: "0.00",

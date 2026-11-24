@@ -16,6 +16,7 @@ import type {
   AdminBookingListQuery,
   CreateBookingInput,
   QuoteBookingInput,
+  UpdateBookingDetailsInput,
   UpdateBookingStatusInput,
   UpdateBookingTransportInput,
 } from "../schemas/bookings";
@@ -325,6 +326,50 @@ function serializePrice(price: BookingPrice) {
   };
 }
 
+/** Writes the frozen item/package snapshots for a freshly priced booking. */
+async function writeBookingSnapshots(
+  tx: Prisma.TransactionClient,
+  bookingId: string,
+  price: BookingPrice,
+): Promise<void> {
+  if (price.items.length > 0) {
+    await tx.bookingItem.createMany({
+      data: price.items.map((line) => ({
+        bookingId,
+        equipmentId: line.equipmentId,
+        quantity: line.quantity,
+        unitPrice: line.unitPrice.toFixed(2),
+        priceForPeriod: line.priceForPeriod.toFixed(2),
+        days: line.days,
+      })),
+    });
+  }
+
+  for (const pkg of price.packages) {
+    const packageBooking = await tx.packageBooking.create({
+      data: {
+        bookingId,
+        packageId: pkg.packageId,
+        quantity: pkg.quantity,
+        packageName: pkg.packageName,
+        packagePrice: pkg.packagePrice.toFixed(2),
+      },
+      select: { id: true },
+    });
+
+    if (pkg.items.length > 0) {
+      await tx.bookingPackageItem.createMany({
+        data: pkg.items.map((item) => ({
+          packageBookingId: packageBooking.id,
+          equipmentId: item.equipmentId,
+          equipmentName: item.equipmentName,
+          quantity: item.quantity,
+        })),
+      });
+    }
+  }
+}
+
 function parseBookingRange(
   startInput: string,
   endInput: string,
@@ -443,42 +488,7 @@ async function createInTransaction(
         },
       });
 
-      if (price.items.length > 0) {
-        await tx.bookingItem.createMany({
-          data: price.items.map((line) => ({
-            bookingId: booking.id,
-            equipmentId: line.equipmentId,
-            quantity: line.quantity,
-            unitPrice: line.unitPrice.toFixed(2),
-            priceForPeriod: line.priceForPeriod.toFixed(2),
-            days: line.days,
-          })),
-        });
-      }
-
-      for (const pkg of price.packages) {
-        const packageBooking = await tx.packageBooking.create({
-          data: {
-            bookingId: booking.id,
-            packageId: pkg.packageId,
-            quantity: pkg.quantity,
-            packageName: pkg.packageName,
-            packagePrice: pkg.packagePrice.toFixed(2),
-          },
-          select: { id: true },
-        });
-
-        if (pkg.items.length > 0) {
-          await tx.bookingPackageItem.createMany({
-            data: pkg.items.map((item) => ({
-              packageBookingId: packageBooking.id,
-              equipmentId: item.equipmentId,
-              equipmentName: item.equipmentName,
-              quantity: item.quantity,
-            })),
-          });
-        }
-      }
+      await writeBookingSnapshots(tx, booking.id, price);
 
       if (equipmentIds.length > 0) {
         await tx.stockHold.createMany({
@@ -780,6 +790,21 @@ const adminBookingDetailSelect = {
     },
     orderBy: { createdAt: "asc" },
   },
+  edits: {
+    select: {
+      id: true,
+      note: true,
+      previousStartDate: true,
+      previousEndDate: true,
+      newStartDate: true,
+      newEndDate: true,
+      previousTotalAmount: true,
+      newTotalAmount: true,
+      createdAt: true,
+      admin: { select: { id: true, name: true, email: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  },
 } satisfies Prisma.BookingSelect;
 
 type AdminBookingDetailRow = Prisma.BookingGetPayload<{ select: typeof adminBookingDetailSelect }>;
@@ -878,6 +903,16 @@ function toAdminBookingDetail(row: AdminBookingDetailRow) {
       paidAt: payment.paidAt?.toISOString() ?? null,
       createdAt: payment.createdAt.toISOString(),
     })),
+    edits: row.edits.map((edit) => ({
+      ...edit,
+      previousStartDate: formatCalendarDate(edit.previousStartDate),
+      previousEndDate: formatCalendarDate(edit.previousEndDate),
+      newStartDate: formatCalendarDate(edit.newStartDate),
+      newEndDate: formatCalendarDate(edit.newEndDate),
+      previousTotalAmount: money(edit.previousTotalAmount),
+      newTotalAmount: money(edit.newTotalAmount),
+      createdAt: edit.createdAt.toISOString(),
+    })),
     statusHistory: row.statusHistories.map((entry) => ({
       ...entry,
       createdAt: entry.createdAt.toISOString(),
@@ -904,6 +939,353 @@ function toAdminBookingDetail(row: AdminBookingDetailRow) {
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
+}
+
+/** Serializes edits and status changes for one booking. */
+async function lockBookingRecord(tx: Prisma.TransactionClient, bookingId: string): Promise<void> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`booking:${bookingId}`}))`;
+}
+
+const editableBookingSelect = {
+  id: true,
+  status: true,
+  startDate: true,
+  endDate: true,
+  totalAmount: true,
+  discountAmount: true,
+  transportCharge: true,
+  holdExpiresAt: true,
+  approvedAt: true,
+  items: {
+    select: {
+      equipmentId: true,
+      quantity: true,
+      days: true,
+      unitPrice: true,
+      priceForPeriod: true,
+      equipment: { select: { name: true } },
+    },
+    orderBy: { equipmentId: "asc" },
+  },
+  packages: {
+    select: {
+      packageId: true,
+      packageName: true,
+      packagePrice: true,
+      quantity: true,
+      items: { select: { equipmentId: true, equipmentName: true, quantity: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  },
+} satisfies Prisma.BookingSelect;
+
+type EditableBookingRow = Prisma.BookingGetPayload<{ select: typeof editableBookingSelect }>;
+
+type BookingSnapshot = {
+  startDate: string;
+  endDate: string;
+  totalAmount: string;
+  equipment: Array<{
+    equipmentId: string;
+    name: string;
+    quantity: number;
+    days: number;
+    unitPrice: string;
+    priceForPeriod: string;
+  }>;
+  packages: Array<{
+    packageId: string;
+    name: string;
+    quantity: number;
+    packagePrice: string;
+    items: Array<{ equipmentId: string | null; name: string; quantity: number }>;
+  }>;
+};
+
+function snapshotFromBooking(booking: EditableBookingRow): BookingSnapshot {
+  return {
+    startDate: formatCalendarDate(booking.startDate),
+    endDate: formatCalendarDate(booking.endDate),
+    totalAmount: money(booking.totalAmount) ?? "0.00",
+    equipment: booking.items.map((line) => ({
+      equipmentId: line.equipmentId,
+      name: line.equipment.name,
+      quantity: line.quantity,
+      days: line.days,
+      unitPrice: money(line.unitPrice) ?? "0.00",
+      priceForPeriod: money(line.priceForPeriod) ?? "0.00",
+    })),
+    packages: booking.packages.map((pkg) => ({
+      packageId: pkg.packageId,
+      name: pkg.packageName,
+      quantity: pkg.quantity,
+      packagePrice: money(pkg.packagePrice) ?? "0.00",
+      items: pkg.items.map((item) => ({
+        equipmentId: item.equipmentId,
+        name: item.equipmentName,
+        quantity: item.quantity,
+      })),
+    })),
+  };
+}
+
+function snapshotFromPrice(price: BookingPrice, startDate: Date, endDate: Date): BookingSnapshot {
+  return {
+    startDate: formatCalendarDate(startDate),
+    endDate: formatCalendarDate(endDate),
+    totalAmount: price.totalAmount.toFixed(2),
+    equipment: price.items.map((line) => ({
+      equipmentId: line.equipmentId,
+      name: line.equipmentName,
+      quantity: line.quantity,
+      days: line.days,
+      unitPrice: line.unitPrice.toFixed(2),
+      priceForPeriod: line.priceForPeriod.toFixed(2),
+    })),
+    packages: price.packages.map((pkg) => ({
+      packageId: pkg.packageId,
+      name: pkg.packageName,
+      quantity: pkg.quantity,
+      packagePrice: pkg.packagePrice.toFixed(2),
+      items: pkg.items.map((item) => ({
+        equipmentId: item.equipmentId,
+        name: item.equipmentName,
+        quantity: item.quantity,
+      })),
+    })),
+  };
+}
+
+/**
+ * Keeps StockHold rows aligned with the edited demand. Pending bookings get a fresh ACTIVE
+ * hold window; confirmed bookings keep their original consumed timing because item rows
+ * already carry the reservation.
+ */
+async function syncStockHolds(
+  tx: Prisma.TransactionClient,
+  bookingId: string,
+  demand: Map<string, number>,
+  options: {
+    status: "ACTIVE" | "CONSUMED";
+    expiresAt: Date;
+    releasedAt: Date | null;
+    preserveTiming: boolean;
+  },
+): Promise<void> {
+  const existing = await tx.stockHold.findMany({
+    where: { bookingId },
+    select: { id: true, equipmentId: true },
+  });
+  const byEquipment = new Map(existing.map((hold) => [hold.equipmentId, hold]));
+  const kept = new Set<string>();
+
+  for (const [equipmentId, quantity] of demand) {
+    kept.add(equipmentId);
+    const hold = byEquipment.get(equipmentId);
+
+    if (hold) {
+      await tx.stockHold.update({
+        where: { id: hold.id },
+        data: {
+          quantity,
+          status: options.status,
+          ...(options.preserveTiming
+            ? {}
+            : { expiresAt: options.expiresAt, releasedAt: options.releasedAt }),
+        },
+      });
+    } else {
+      await tx.stockHold.create({
+        data: {
+          bookingId,
+          equipmentId,
+          quantity,
+          status: options.status,
+          expiresAt: options.expiresAt,
+          releasedAt: options.releasedAt,
+        },
+      });
+    }
+  }
+
+  const staleIds = existing.filter((hold) => !kept.has(hold.equipmentId)).map((hold) => hold.id);
+  if (staleIds.length > 0) {
+    await tx.stockHold.deleteMany({ where: { id: { in: staleIds } } });
+  }
+}
+
+/**
+ * Explicit admin edit of an open booking. The catalogue is repriced from current prices,
+ * the booking's own existing reservation is excluded from the availability check, and a
+ * BookingEdit row freezes the previous and new line shapes.
+ */
+export async function updateBookingDetails(
+  id: string,
+  input: UpdateBookingDetailsInput,
+  adminId: string,
+) {
+  const startDate = parseCalendarDate(input.startDate);
+  const endDate = parseCalendarDate(input.endDate);
+
+  if (endDate.getTime() < startDate.getTime()) {
+    throw badRequest("endDate must be on or after startDate", {
+      startDate: formatCalendarDate(startDate),
+      endDate: formatCalendarDate(endDate),
+    });
+  }
+
+  const days = rentalDays(startDate, endDate);
+
+  for (let attempt = 1; attempt <= SERIALIZATION_ATTEMPTS; attempt += 1) {
+    try {
+      const result = await db.$transaction(
+        async (tx) => {
+          await lockBookingRecord(tx, id);
+
+          const booking = await tx.booking.findUnique({
+            where: { id },
+            select: editableBookingSelect,
+          });
+
+          if (!booking) {
+            throw notFound(`Booking "${id}" was not found`);
+          }
+
+          if (booking.status !== "PENDING" && booking.status !== "CONFIRMED") {
+            throw conflict("Only pending or confirmed bookings can be edited", {
+              status: booking.status,
+            });
+          }
+
+          if (startDate.getTime() !== booking.startDate.getTime() && isPastDate(startDate)) {
+            throw badRequest("startDate has already passed", {
+              startDate: formatCalendarDate(startDate),
+              today: formatCalendarDate(todayInNairobi()),
+            });
+          }
+
+          const catalogue = await loadCatalogue(tx, input);
+          const demand = buildDemand(input, catalogue);
+          const equipmentIds = [...demand.keys()].sort();
+
+          if (equipmentIds.length > 0) {
+            await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${equipmentIds.join(",")}))`;
+          }
+
+          const shortages = await findShortages({
+            equipmentIds,
+            startDate,
+            endDate,
+            excludeBookingId: id,
+            client: tx,
+            demand: equipmentIds.map((equipmentId) => ({
+              equipmentId,
+              quantity: demand.get(equipmentId) ?? 0,
+            })),
+          });
+
+          if (shortages.length > 0) {
+            const maintenance = shortages.some((shortage) => shortage.maintenance);
+            throw conflict(
+              maintenance
+                ? "Some equipment is unavailable for maintenance on the requested dates"
+                : "Not enough stock for the requested dates",
+              {
+                startDate: formatCalendarDate(startDate),
+                endDate: formatCalendarDate(endDate),
+                shortages,
+              },
+            );
+          }
+
+          const price = priceBooking({
+            days,
+            equipment: input.equipment.map((line) => ({
+              equipment: catalogue.equipment.get(line.equipmentId) as BookableEquipment,
+              quantity: line.quantity,
+            })),
+            packages: input.packages,
+            packageCatalogue: catalogue.packages,
+            discountAmount: Number(booking.discountAmount),
+            transportCharge: Number(booking.transportCharge),
+          });
+
+          const settings = await tx.siteSetting.findFirst({ select: { holdMinutes: true } });
+          const holdMinutes = settings?.holdMinutes ?? 120;
+          const expiresAt = new Date(Date.now() + holdMinutes * 60_000);
+          const previousSnapshot = snapshotFromBooking(booking);
+
+          await tx.bookingItem.deleteMany({ where: { bookingId: id } });
+          await tx.packageBooking.deleteMany({ where: { bookingId: id } });
+          await writeBookingSnapshots(tx, id, price);
+
+          const updated = await tx.booking.update({
+            where: { id },
+            data: {
+              startDate,
+              endDate,
+              totalAmount: price.totalAmount.toFixed(2),
+              discountAmount: price.discountAmount.toFixed(2),
+              ...(booking.status === "PENDING" ? { holdExpiresAt: expiresAt } : {}),
+            },
+            select: { id: true, totalAmount: true },
+          });
+
+          await syncStockHolds(
+            tx,
+            id,
+            demand,
+            booking.status === "PENDING"
+              ? {
+                  status: "ACTIVE",
+                  expiresAt,
+                  releasedAt: null,
+                  preserveTiming: false,
+                }
+              : {
+                  status: "CONSUMED",
+                  expiresAt: booking.holdExpiresAt ?? new Date(),
+                  releasedAt: booking.approvedAt ?? new Date(),
+                  preserveTiming: true,
+                },
+          );
+
+          await tx.bookingEdit.create({
+            data: {
+              bookingId: id,
+              adminId,
+              note: input.note ?? null,
+              previousStartDate: booking.startDate,
+              previousEndDate: booking.endDate,
+              newStartDate: startDate,
+              newEndDate: endDate,
+              previousTotalAmount: booking.totalAmount,
+              newTotalAmount: updated.totalAmount,
+              previousSnapshot: previousSnapshot as Prisma.InputJsonValue,
+              newSnapshot: snapshotFromPrice(price, startDate, endDate) as Prisma.InputJsonValue,
+            },
+          });
+
+          return { id: updated.id, previousTotalAmount: booking.totalAmount };
+        },
+        { isolationLevel: "Serializable", timeout: 10_000 },
+      );
+
+      const detail = await loadAdminBooking(result.id);
+      return {
+        ...detail,
+        previousTotalAmount: money(result.previousTotalAmount) ?? "0.00",
+        totalChanged: detail.totals.totalAmount !== (money(result.previousTotalAmount) ?? "0.00"),
+        changedBy: adminId,
+      };
+    } catch (error) {
+      if (!isRetryableTransactionError(error) || attempt === SERIALIZATION_ATTEMPTS) {
+        throw error;
+      }
+    }
+  }
+
+  throw new ApiError(500, "BOOKING_EDIT_FAILED", "The booking could not be updated");
 }
 
 /** Units this booking physically occupies, from its frozen snapshots. */
@@ -1009,6 +1391,8 @@ export async function changeBookingStatus(
 ) {
   const changedId = await db.$transaction(
     async (tx) => {
+      await lockBookingRecord(tx, id);
+
       const booking = await tx.booking.findUnique({
         where: { id },
         select: {

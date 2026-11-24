@@ -161,6 +161,15 @@ export const updateBookingTransportSchema = z.object({
   transportCharge: z.number().min(0).max(99_999_999.99),
 });
 
+/** The admin can change dates and the requested lines, but not customer or fulfilment. */
+export const updateBookingDetailsSchema = z
+  .object({
+    ...bookingRangeSchema,
+    note: z.string().trim().max(500).optional(),
+  })
+  .superRefine(addSelectionIssues);
+
 export type AdminBookingListQuery = z.infer<typeof adminBookingListQuerySchema>;
 export type UpdateBookingStatusInput = z.infer<typeof updateBookingStatusSchema>;
 export type UpdateBookingTransportInput = z.infer<typeof updateBookingTransportSchema>;
+export type UpdateBookingDetailsInput = z.infer<typeof updateBookingDetailsSchema>;

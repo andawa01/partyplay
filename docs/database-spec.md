@@ -44,6 +44,7 @@ Out of scope for this document: API shapes, authentication flows, UI.
 | 17 | `TransportProvider` | Delivery/transport contacts |
 | 18 | `EquipmentBlackout` | Date-specific maintenance downtime for an equipment item |
 | 19 | `PaymentRefund` | Money returned against a paid payment |
+| 20 | `BookingEdit` | Audit snapshot of an explicit date/item edit |
 
 Enums: `Role`, `DiscountType`, `OfferAppliesTo`, `BookingStatus`,
 `StockHoldStatus`, `PaymentMethod`, `PaymentStatus`.
@@ -58,6 +59,7 @@ erDiagram
     ADMIN ||--o{ BOOKING : handles
     ADMIN ||--o{ PAYMENT : records
     ADMIN ||--o{ PAYMENT_REFUND : returns
+    ADMIN ||--o{ BOOKING_EDIT : edits
     ADMIN ||--o{ BOOKING_STATUS_HISTORY : changes
 
     CATEGORY ||--o{ CATEGORY : parent_of
@@ -84,6 +86,7 @@ erDiagram
 
     BOOKING ||--o{ PAYMENT : receives
     PAYMENT ||--o{ PAYMENT_REFUND : refunded_by
+    BOOKING ||--o{ BOOKING_EDIT : revised_by
     BOOKING ||--o{ BOOKING_STATUS_HISTORY : audited_by
 
     ADMIN ||--o{ PASSWORD_RESET_TOKEN : issues
@@ -648,6 +651,27 @@ Indexes: `(paymentId)`, `(refundedAt)`.
 exceed the original payment amount. Refund rows are immutable, and a fully refunded
 payment cannot be edited or deleted.
 
+### 4.20 BookingEdit
+
+| Field | Type | Null | Default | Notes |
+|---|---|---|---|---|
+| `id` | text | no | `uuid()` | PK |
+| `bookingId` | text | no | — | FK → `Booking.id`, **CASCADE** |
+| `adminId` | text | yes | — | FK → `Admin.id`, `SET NULL` |
+| `note` | text | yes | — | optional reason for the change |
+| `previousStartDate` / `previousEndDate` | date | no | — | dates before the edit |
+| `newStartDate` / `newEndDate` | date | no | — | dates after the edit |
+| `previousTotalAmount` / `newTotalAmount` | numeric(10,2) | no | — | totals before/after |
+| `previousSnapshot` / `newSnapshot` | jsonb | no | — | frozen equipment and package lines |
+| `createdAt` | timestamp(3) | no | `now()` | |
+
+Indexes: `(bookingId)`, `(adminId)`.
+
+**DB-enforced:** both stored date ranges are ordered and both totals are non-negative.
+**App-enforced:** edits are allowed only on `PENDING` / `CONFIRMED` bookings; the new
+selection is availability-checked and repriced from the current catalogue before the
+snapshots are replaced.
+
 ---
 
 ## 5. Enums
@@ -778,8 +802,11 @@ Consequences to respect in code:
 
 - Availability must read `BookingPackageItem`, **not** `PackageItem`, for booked
   packages — otherwise a package edit silently changes past consumption.
-- Re-pricing a booking is an explicit admin action that rewrites the snapshots;
-  it never happens as a side effect of a catalogue update.
+- Re-pricing a booking is an explicit admin action that rewrites the snapshots
+  (F13); it never happens as a side effect of a catalogue update. Every edit stores
+  the previous and new line snapshots in `BookingEdit`.
+- Editing dates or items is availability-checked with the booking's own existing
+  reservation excluded, so a confirmed booking cannot block its own edit.
 - Deleting equipment sets `BookingPackageItem.equipmentId` to null but keeps the
   name and quantity, so history survives.
 
@@ -833,9 +860,12 @@ Migration `20261113194645_harden_booking_index_and_check_constraints` adds:
 | `Package_duration_check` | `Package` | `duration IS NULL OR duration >= 1` |
 | `EquipmentBlackout_dates_check` | `EquipmentBlackout` | `endDate >= startDate` |
 | `PaymentRefund_amount_check` | `PaymentRefund` | `amount > 0` |
+| `BookingEdit_dates_check` | `BookingEdit` | both stored ranges are ordered |
+| `BookingEdit_totals_check` | `BookingEdit` | both stored totals are >= 0 |
 
 The blackout CHECK was added by migration `20261124115958_add_equipment_blackouts`;
-the refund CHECK by `20261124124910_add_payment_refunds`.
+the refund CHECK by `20261124124910_add_payment_refunds`; the edit CHECKs by
+`20261124131532_add_booking_edits`.
 
 A single-day booking (`startDate = endDate`) is accepted; zero quantities, zero
 days, inverted dates and negative stock are rejected with SQLSTATE `23514`.
@@ -891,6 +921,7 @@ days, inverted dates and negative stock are rejected with SQLSTATE `23514`.
 | 6 | `20261124091858_add_secure_password_resets` | Hashed password-reset tokens and session versioning |
 | 7 | `20261124115958_add_equipment_blackouts` | `EquipmentBlackout` plus date-order CHECK |
 | 8 | `20261124124910_add_payment_refunds` | `PaymentRefund` plus positive-amount CHECK |
+| 9 | `20261124131532_add_booking_edits` | `BookingEdit` audit snapshots plus date/total CHECKs |
 
 Apply with `npm run db:migrate --workspace server` (`prisma migrate dev`).
 Check state with `npx prisma migrate status` from `server/`.

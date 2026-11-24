@@ -4,6 +4,7 @@ import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/rea
 import { apiFetch } from "../lib/api";
 import type {
   AdminBookingDetail,
+  AdminBookingEditInput,
   AdminBookingSummary,
   BookingActionTarget,
   BookingAvailabilityCheck,
@@ -136,6 +137,41 @@ export function useUpdateTransportCharge() {
       const { totalChanged: _totalChanged, changedBy: _changedBy, ...detail } = booking;
       queryClient.setQueryData(queryKeys.admin.booking(booking.id), detail);
       return invalidateBookingLists(queryClient);
+    },
+  });
+}
+
+export function useUpdateBookingDetails() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, input }: { id: string; input: AdminBookingEditInput }) => {
+      return (
+        await apiFetch<
+          AdminBookingDetail & {
+            previousTotalAmount: string;
+            totalChanged: boolean;
+            changedBy: string;
+          }
+        >(`/api/admin/bookings/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify(input),
+        })
+      ).data;
+    },
+    onSuccess: (booking) => {
+      const {
+        previousTotalAmount: _previousTotalAmount,
+        totalChanged: _totalChanged,
+        changedBy: _changedBy,
+        ...detail
+      } = booking;
+      queryClient.setQueryData(queryKeys.admin.booking(booking.id), detail);
+      return Promise.all([
+        invalidateBookingLists(queryClient),
+        queryClient.invalidateQueries({ queryKey: ["availability"] }),
+        queryClient.invalidateQueries({ queryKey: ["calendar"] }),
+      ]);
     },
   });
 }

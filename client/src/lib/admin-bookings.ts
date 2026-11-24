@@ -140,6 +140,30 @@ export interface AdminStatusHistoryEntry {
   admin: { id: string; name: string | null; email: string } | null;
 }
 
+export interface AdminBookingEdit {
+  id: string;
+  note: string | null;
+  previousStartDate: string;
+  previousEndDate: string;
+  newStartDate: string;
+  newEndDate: string;
+  previousTotalAmount: string;
+  newTotalAmount: string;
+  createdAt: string;
+  admin: { id: string; name: string | null; email: string } | null;
+}
+
+export interface AdminBookingSelection {
+  packages: Array<{ packageId: string; quantity: number }>;
+  equipment: Array<{ equipmentId: string; quantity: number }>;
+}
+
+export interface AdminBookingEditInput extends AdminBookingSelection {
+  startDate: string;
+  endDate: string;
+  note?: string;
+}
+
 export interface AdminBookingDetail extends AdminBookingSummary {
   createdBy: { id: string; name: string | null; email: string } | null;
   items: AdminBookingItem[];
@@ -147,6 +171,7 @@ export interface AdminBookingDetail extends AdminBookingSummary {
   stockHolds: AdminStockHold[];
   payments: AdminBookingPayment[];
   statusHistory: AdminStatusHistoryEntry[];
+  edits: AdminBookingEdit[];
   totals: {
     subtotal: string;
     discountAmount: string;

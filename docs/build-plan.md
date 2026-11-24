@@ -55,9 +55,9 @@ small `vitest` suite; nothing else does by default.
 | Workspaces | `client/` (React 19 + Vite + TS + Tailwind 4) and `server/` (Express 5 + TS) |
 | Server entry | `server/src/index.ts` — cors, json, `/api/health`, `/api/hello`, mounts `/api/categories`, calls `ensureClient()` before listen |
 | Database | PostgreSQL 17 in docker, `docker-compose.yml`, host port 5433 |
-| Prisma schema | 19 models, all required entities present (`database-spec.md` §3) |
-| Migrations | 8 applied; `prisma migrate status` reports up to date |
-| DB hardening | 14 CHECK constraints + `Booking(status, startDate, endDate)` index |
+| Prisma schema | 20 models, all required entities present (`database-spec.md` §3) |
+| Migrations | 9 applied; `prisma migrate status` reports up to date |
+| DB hardening | 16 CHECK constraints + `Booking(status, startDate, endDate)` index |
 | Inventory service | `server/src/services/availability.ts` — `getAvailability`, `getReservedQuantities`, `findShortages`, `toDateOnly`, `isValidRange` |
 | Routes | `/api/categories` (list, get, create, patch, delete — admin guarded by a stub) |
 | Auth | `requireAdmin` is a **501 stub** — no login exists |
@@ -641,6 +641,36 @@ dashboard collected is unchanged by the refund pair.
 
 ---
 
+### F13 — Booking edit
+
+| Method | Path | Notes |
+|---|---|---|
+| PATCH | `/api/admin/bookings/:id` | `{ startDate, endDate, packages, equipment, note? }` |
+
+**Rules**
+
+- Only `PENDING` and `CONFIRMED` bookings are editable. Customer identity, fulfilment
+  method/addresses, notes, special requests, discount and transport charge are not changed
+  by this endpoint.
+- The catalogue is repriced from current prices. The server recalculates
+  `totalAmount = subtotal - discount + transport`; it never accepts a client total.
+- Availability is rechecked inside the transaction with the booking's own rows excluded.
+  Maintenance blackouts and maximum quantities apply exactly as they do on creation.
+- Pending bookings get a fresh hold window and their `StockHold` rows are resynced.
+  Confirmed bookings update their item snapshots and keep consumed holds as history.
+- A `BookingEdit` row stores the previous/new dates, totals and line snapshots plus the
+  admin and an optional note. The booking code and payment rows are untouched.
+- Editing can change the balance after payments; any resulting overpayment is resolved with
+  the F12 refund workflow, not by deleting payment history.
+
+**Verify:** edit a pending booking's dates and quantities, confirm the old dates are free
+and the new demand is reserved; try a shortage and get `409`; confirm and edit again; assert
+`BookingEdit` rows and the admin edit-history response.
+
+**Depends on:** F8, F12.
+
+---
+
 ## 7. Milestone C — Client (only after B1–B4 are done)
 
 Built feature-parallel to the backend slices above, in this order. Each consumes a
@@ -684,7 +714,7 @@ F1  platform ──┬── F2 auth ──┬── F4 admin catalogue
                └── (migration 5: D1, D3, D4) before F6b
 ```
 
-Engine order: **F1 → F2 → F3 → F4 → F5 → F6a → F6b → F6c → F7 → F8 → F9 → F10 → F11 → F12 → C1…C11.**
+Engine order: **F1 → F2 → F3 → F4 → F5 → F6a → F6b → F6c → F7 → F8 → F9 → F10 → F11 → F12 → F13 → C1…C11.**
 
 F2 before F4 because admin CRUD is meaningless without a login to test it through. F6a
 before F6b because creation without trustworthy pricing produces garbage snapshots. F7
@@ -769,6 +799,7 @@ the last unit and assert `[201, 409]`.
 | F10 | Dashboard summaries | ✅ | — | `feat/f10-dashboard` |
 | F11 | Maintenance blackout dates | ✅ | ✅ | `feat/f11-maintenance-blackouts` |
 | F12 | Refunds and overpayment policy | ✅ | ✅ | `feat/f12-refunds-overpayment` |
+| F13 | Booking edit | ✅ | ✅ | `feat/f13-booking-edit` |
 | C1 | Client foundation | — | ✅ | `feat/c1-client-foundation` |
 | C2 | Public shell and site settings | — | ✅ | `feat/c2-public-shell` |
 | C3 | Equipment catalogue and detail | — | ✅ | `feat/c3-equipment-catalogue` |
