@@ -748,6 +748,7 @@ the last unit and assert `[201, 409]`.
 | C10 | Admin booking board | ✅ | ✅ | `feat/c10-admin-bookings` |
 | C11 | Payments and dashboard | — | ✅ | `feat/c11-payments-dashboard` |
 | O1 | Operations package (deploy, shutdown, sweeper, backups, request logs) | ✅ | — | `feat/o1-operations` |
+| T1 | CI HTTP smoke suite + last-unit concurrency regression | ✅ | — | `chore/ci-concurrency-tests` |
 
 ---
 

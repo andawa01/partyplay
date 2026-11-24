@@ -9,7 +9,14 @@ declare global {
 
 async function createClient() {
   const client = new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    // The smoke suite deliberately causes a serialization conflict and retries it; that
+    // expected failure should not look like an application error in CI output.
+    log:
+      process.env.NODE_ENV === "test"
+        ? []
+        : process.env.NODE_ENV === "development"
+          ? ["error", "warn"]
+          : ["error"],
   });
 
   // Verify the database is reachable before the app starts serving traffic.

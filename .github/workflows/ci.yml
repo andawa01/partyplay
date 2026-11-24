@@ -68,6 +68,8 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql://partyplay:partyplay@localhost:5432/partyplay
+      # This job owns Postgres, so the HTTP suite must fail rather than silently skip.
+      PARTYPLAY_REQUIRE_SMOKE_DB: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -80,6 +82,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate --schema server/prisma/schema.prisma
 
       # Applies every migration to a database that has never seen this schema.
       # This is what catches a hand-edited migration that only worked because the
@@ -99,3 +104,8 @@ jobs:
           --from-schema-datasource server/prisma/schema.prisma
           --to-schema-datamodel server/prisma/schema.prisma
           --exit-code
+
+      # The HTTP suite needs the real database. PARTYPLAY_REQUIRE_SMOKE_DB makes a
+      # missing connection a failure here instead of reducing coverage silently.
+      - name: Run HTTP smoke tests
+        run: npm test --workspace server -- src/app.test.ts
