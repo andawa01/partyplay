@@ -4,10 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { AdminBookingDetail } from "../../../lib/admin-bookings";
-import type {
-  BookingPaymentSummary,
-  PaymentRow,
-} from "../../../lib/admin-payments";
+import type { BookingPaymentSummary, PaymentRow } from "../../../lib/admin-payments";
 import { SITE_FALLBACK } from "../../../lib/site";
 import { PaymentsPanel } from "./PaymentsPanel";
 
@@ -26,9 +23,7 @@ function renderWithClient(children: React.ReactNode) {
     },
   });
   queryClient.setQueryData(["site"], SITE_FALLBACK);
-  return render(
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
-  );
+  return render(<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>);
 }
 
 const booking: AdminBookingDetail = {
@@ -125,9 +120,7 @@ describe("PaymentsPanel", () => {
     const table = within(await screen.findByRole("table"));
     expect(table.getByText("QJ72X8ABC")).toBeInTheDocument();
     expect(table.getByText("M-Pesa")).toBeInTheDocument();
-    expect(screen.getByText("Paid to date").parentElement).toHaveTextContent(
-      "500.00",
-    );
+    expect(screen.getByText("Paid to date").parentElement).toHaveTextContent("500.00");
     expect(screen.getByText("Amount due").parentElement).toHaveTextContent("700.00");
     expect(screen.getByText("Part paid")).toBeInTheDocument();
   });
@@ -147,17 +140,15 @@ describe("PaymentsPanel", () => {
       paidAmount: "800.00",
       amountDue: "400.00",
     };
-    const fetchMock = vi.fn(
-      async (_input: RequestInfo | URL, init?: RequestInit) => {
-        if (init?.method === "POST") {
-          return jsonResponse(201, { data: { payment: newPayment, booking: settled } });
-        }
-        return jsonResponse(200, {
-          data: [payment],
-          meta: { total: 1, paidTotal: "500.00", booking: summary },
-        });
-      },
-    );
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        return jsonResponse(201, { data: { payment: newPayment, booking: settled } });
+      }
+      return jsonResponse(200, {
+        data: [payment],
+        meta: { total: 1, paidTotal: "500.00", booking: summary },
+      });
+    });
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
 
@@ -179,17 +170,13 @@ describe("PaymentsPanel", () => {
       );
     });
 
-    const postCall = fetchMock.mock.calls.find(
-      ([, init]) => init?.method === "POST",
-    );
+    const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === "POST");
     const body = JSON.parse(String(postCall?.[1]?.body)) as Record<string, unknown>;
     expect(body).toMatchObject({ amount: 300, method: "CASH" });
     expect(typeof body.paidAt).toBe("string");
 
     const receipt = within(await screen.findByRole("dialog"));
-    expect(
-      receipt.getByRole("heading", { name: "Payment receipt" }),
-    ).toBeInTheDocument();
+    expect(receipt.getByRole("heading", { name: "Payment receipt" })).toBeInTheDocument();
     expect(receipt.getByText(/RCPT-PAYMENT2/)).toBeInTheDocument();
   });
 
@@ -209,21 +196,15 @@ describe("PaymentsPanel", () => {
 
     renderWithClient(<PaymentsPanel booking={booking} />);
     const table = within(await screen.findByRole("table"));
-    await user.click(
-      table.getByRole("button", { name: /Print receipt/ }),
-    );
+    await user.click(table.getByRole("button", { name: /Print receipt/ }));
 
     const receipt = within(await screen.findByRole("dialog"));
-    expect(
-      receipt.getByRole("heading", { name: "Payment receipt" }),
-    ).toBeInTheDocument();
+    expect(receipt.getByRole("heading", { name: "Payment receipt" })).toBeInTheDocument();
     expect(receipt.getByText(/RCPT-PAYMENT1/)).toBeInTheDocument();
     expect(receipt.getByText("Test Customer")).toBeInTheDocument();
     expect(receipt.getByText("M-Pesa")).toBeInTheDocument();
 
-    await user.click(
-      receipt.getByRole("button", { name: /Print \/ save PDF/ }),
-    );
+    await user.click(receipt.getByRole("button", { name: /Print \/ save PDF/ }));
     expect(printMock).toHaveBeenCalledTimes(1);
   });
 
@@ -238,16 +219,10 @@ describe("PaymentsPanel", () => {
       ),
     );
 
-    renderWithClient(
-      <PaymentsPanel booking={{ ...booking, status: "CONFIRMED" }} />,
-    );
+    renderWithClient(<PaymentsPanel booking={{ ...booking, status: "CONFIRMED" }} />);
 
     const table = within(await screen.findByRole("table"));
-    expect(
-      table.queryByRole("button", { name: /Delete payment/ }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/only be deleted while the booking is pending/),
-    ).toBeInTheDocument();
+    expect(table.queryByRole("button", { name: /Delete payment/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/only be deleted while the booking is pending/)).toBeInTheDocument();
   });
 });

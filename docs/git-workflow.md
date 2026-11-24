@@ -85,10 +85,14 @@ git pull --rebase              # start from what is actually on the remote
 git switch -c feat/f1-platform-foundation
 ```
 
-Work, checking as you go (this is the same command CI runs):
+Work, checking as you go (these are the same commands CI runs):
 
 ```bash
+npm run lint
+npm run format:check
 npm run typecheck
+npm test --workspace server
+npm test --workspace client
 ```
 
 Finish:
@@ -154,7 +158,8 @@ The database rules that matter, all of them learned the hard way in Phase 2.2:
 The single source of truth is `docs/build-plan.md` §1 (Definition of Done). The short
 version, which is also what the PR template asks:
 
-- [ ] Typecheck passes (CI enforces this)
+- [ ] Lint, format and typecheck pass (CI enforces this)
+- [ ] Coverage floors pass (CI enforces this; server coverage needs the database)
 - [ ] The feature's verification recipe from build-plan §10 was actually run, with its
       result recorded in the PR description
 - [ ] Route -> middleware -> controller -> service -> db is intact (no `db` in a
@@ -181,14 +186,17 @@ version, which is also what the PR template asks:
 ## 8. CI
 
 `.github/workflows/ci.yml` runs on pushes to `main`, `feat/**`, `fix/**`, `chore/**` and on
-pull requests into `main`. Two independent jobs, both on Node 22, both under a minute:
+pull requests into `main`. Two independent jobs, both on Node 22:
 
 **`Typecheck`** — no database
 
 1. `npm ci`
 2. `npx prisma generate`
-3. `npm run typecheck` (client then server)
-4. `npm test --workspace server` (from F6a: pricing, availability, transitions)
+3. `npm run lint` — ESLint errors and warnings fail the job
+4. `npm run format:check` — Prettier must report no changes
+5. `npm run typecheck` (client then server)
+6. `npm test --workspace server` (from F6a: pricing, availability, transitions)
+7. `npm test --workspace client -- --coverage` — client tests and the client coverage floor
 
 **`Migrations apply from empty`** — `postgres:17-alpine` service container, database
 starting with zero tables
@@ -198,9 +206,10 @@ starting with zero tables
 3. `npx prisma migrate status` — must report the schema is up to date
 4. `npx prisma migrate diff --exit-code` — must report no difference between the migrated
    database and `schema.prisma` (exits non-zero when they diverge)
-5. `npm test --workspace server -- src/app.test.ts` — the HTTP smoke suite against the
-   migrated database, with `PARTYPLAY_REQUIRE_SMOKE_DB=1` so an unreachable database fails
-   the job instead of silently skipping
+5. `npm test --workspace server -- --coverage` — the full server suite, including the HTTP
+   smoke tests, against the migrated database. `PARTYPLAY_REQUIRE_SMOKE_DB=1` makes an
+   unreachable database fail the job instead of silently skipping, and the coverage floor
+   fails the step if coverage drops.
 
 Why the empty database matters: a hand-edited migration can succeed locally only because
 the object already existed. Applying from nothing is the only honest test of it, and it is
@@ -208,10 +217,13 @@ the step that would have caught a broken CHECK-constraint migration before it re
 The drift step catches the opposite failure — an applied migration whose result no longer
 matches the Prisma schema.
 
-The server test suite started at F6a (pricing). Pure tests run in `Typecheck`; the HTTP
+The server test suite started at F6a (pricing). Pure tests run in `Typecheck`; the full
 suite runs again in the migrations job, where Postgres exists. The latter includes the
 committed last-unit concurrency test: two simultaneous requests must produce one `201` and
-one `409`.
+one `409`. Coverage includes every source file matched by `include`, so untested files
+count against the floor. The current floors are server 58/44/47/58 and client
+27/19/25/27 for statements/branches/functions/lines. Raise them as tests are added;
+lowering one needs a deliberate review decision.
 
 **Branch protection cannot be set from a file.** To make `main` truly un-pushable, turn on
 in GitHub → Settings → Branches: require a pull request before merging, and require both

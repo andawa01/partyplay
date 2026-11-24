@@ -19,10 +19,16 @@ const createFields = {
 
 export const createPackageSchema = z
   .object(createFields)
-  .refine((input) => input.maxQuantity === null || input.maxQuantity === undefined || input.maxQuantity >= input.minQuantity, {
-    message: "maxQuantity must be at least minQuantity",
-    path: ["maxQuantity"],
-  });
+  .refine(
+    (input) =>
+      input.maxQuantity === null ||
+      input.maxQuantity === undefined ||
+      input.maxQuantity >= input.minQuantity,
+    {
+      message: "maxQuantity must be at least minQuantity",
+      path: ["maxQuantity"],
+    },
+  );
 
 /** `slug` is absent on purpose: it is the stable public identifier. */
 export const updatePackageSchema = z
@@ -53,10 +59,9 @@ export const packageItemsSchema = z.object({
       }),
     )
     .max(100)
-    .refine(
-      (items) => new Set(items.map((item) => item.equipmentId)).size === items.length,
-      { message: "An equipment item can only appear once" },
-    ),
+    .refine((items) => new Set(items.map((item) => item.equipmentId)).size === items.length, {
+      message: "An equipment item can only appear once",
+    }),
 });
 
 export type CreatePackageInput = z.infer<typeof createPackageSchema>;

@@ -33,18 +33,9 @@ import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { ErrorState } from "../../components/ui/error-state";
 import { Skeleton } from "../../components/ui/skeleton";
-import {
-  useAdminBooking,
-  useCheckBookingAvailability,
-} from "../../hooks/use-admin-bookings";
-import type {
-  BookingActionOption,
-  BookingAvailabilityCheck,
-} from "../../lib/admin-bookings";
-import {
-  adminStatusMeta,
-  allowedBookingActions,
-} from "../../lib/admin-bookings";
+import { useAdminBooking, useCheckBookingAvailability } from "../../hooks/use-admin-bookings";
+import type { BookingActionOption, BookingAvailabilityCheck } from "../../lib/admin-bookings";
+import { adminStatusMeta, allowedBookingActions } from "../../lib/admin-bookings";
 import { formatDateTime, formatLongDate } from "../../lib/dates";
 import { formatMoney } from "../../lib/money";
 import { toastError } from "../../lib/toast";
@@ -84,8 +75,7 @@ export default function AdminBookingDetailPage() {
   const booking = bookingQuery.data;
   const actions = allowedBookingActions(booking.status);
   const meta = adminStatusMeta[booking.status];
-  const canChangeTransport =
-    booking.status === "PENDING" || booking.status === "CONFIRMED";
+  const canChangeTransport = booking.status === "PENDING" || booking.status === "CONFIRMED";
 
   function startAction(nextAction: BookingActionOption) {
     if (nextAction.to === "CONFIRMED") {
@@ -129,9 +119,7 @@ export default function AdminBookingDetailPage() {
             <div className="flex flex-wrap items-center gap-2">
               <AdminBookingStatusBadge status={booking.status} />
               <PaymentStatusBadge status={booking.paymentStatus} />
-              {booking.holdExpired ? (
-                <Badge variant="destructive">Hold expired</Badge>
-              ) : null}
+              {booking.holdExpired ? <Badge variant="destructive">Hold expired</Badge> : null}
             </div>
             <p className="mt-4 font-mono text-2xl font-bold tracking-[0.12em] text-brand-800">
               {booking.code}
@@ -218,9 +206,7 @@ export default function AdminBookingDetailPage() {
                 <CalendarDays aria-hidden="true" className="size-4 text-brand-700" />
                 Rental and fulfilment
               </h2>
-              <p className="mt-3 font-medium text-slate-900">
-                {formatLongDate(booking.startDate)}
-              </p>
+              <p className="mt-3 font-medium text-slate-900">{formatLongDate(booking.startDate)}</p>
               <p className="text-sm text-slate-600">
                 to {formatLongDate(booking.endDate)} · {booking.rentalDays} day
                 {booking.rentalDays === 1 ? "" : "s"}
@@ -364,9 +350,7 @@ export default function AdminBookingDetailPage() {
                     </p>
                     <p className="text-xs text-slate-500">
                       {formatDateTime(entry.createdAt)}
-                      {entry.admin
-                        ? ` · ${entry.admin.name ?? entry.admin.email}`
-                        : ""}
+                      {entry.admin ? ` · ${entry.admin.name ?? entry.admin.email}` : ""}
                     </p>
                     {entry.reason ? (
                       <p className="mt-1 text-sm text-slate-700">{entry.reason}</p>
@@ -393,7 +377,11 @@ export default function AdminBookingDetailPage() {
               <PaymentStatusBadge status={booking.paymentStatus} />
             </div>
             <dl className="mt-4 space-y-1.5 text-sm">
-              <MoneyRow label="Subtotal" value={booking.totals.subtotal} currency={booking.currency} />
+              <MoneyRow
+                label="Subtotal"
+                value={booking.totals.subtotal}
+                currency={booking.currency}
+              />
               {Number(booking.totals.discountAmount) > 0 ? (
                 <MoneyRow
                   label="Discount"
@@ -411,7 +399,11 @@ export default function AdminBookingDetailPage() {
                 <dt>Total</dt>
                 <dd>{formatMoney(booking.totals.totalAmount, booking.currency)}</dd>
               </div>
-              <MoneyRow label="Paid" value={booking.totals.paidAmount} currency={booking.currency} />
+              <MoneyRow
+                label="Paid"
+                value={booking.totals.paidAmount}
+                currency={booking.currency}
+              />
               <div className="flex justify-between gap-3 pt-1 text-sm font-semibold text-amber-800">
                 <dt>Amount due</dt>
                 <dd>{formatMoney(booking.totals.amountDue, booking.currency)}</dd>
@@ -443,9 +435,7 @@ export default function AdminBookingDetailPage() {
             <section
               className={cn(
                 "rounded-2xl border p-5",
-                booking.holdExpired
-                  ? "border-red-200 bg-red-50"
-                  : "border-amber-200 bg-amber-50",
+                booking.holdExpired ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50",
               )}
             >
               <h2
@@ -480,7 +470,10 @@ export default function AdminBookingDetailPage() {
 
               <div className="mt-3">
                 {check.isPending ? (
-                  <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600" aria-busy="true">
+                  <div
+                    className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600"
+                    aria-busy="true"
+                  >
                     <span className="inline-flex items-center gap-2">
                       <Loader2 aria-hidden="true" className="size-4 animate-spin" />
                       Checking the dates…
@@ -492,9 +485,7 @@ export default function AdminBookingDetailPage() {
                   <Alert variant="destructive">
                     <AlertTitle>Stock check failed</AlertTitle>
                     <AlertDescription>
-                      {check.error instanceof Error
-                        ? check.error.message
-                        : "Try the check again."}
+                      {check.error instanceof Error ? check.error.message : "Try the check again."}
                     </AlertDescription>
                   </Alert>
                 ) : (
@@ -512,7 +503,11 @@ export default function AdminBookingDetailPage() {
                 disabled={check.isPending}
                 className="mt-3 w-full"
               >
-                {check.isPending ? "Checking…" : availability ? "Check again" : "Check availability"}
+                {check.isPending
+                  ? "Checking…"
+                  : availability
+                    ? "Check again"
+                    : "Check availability"}
               </Button>
             </section>
           ) : null}
@@ -549,10 +544,7 @@ export default function AdminBookingDetailPage() {
       ) : null}
 
       {transportOpen ? (
-        <TransportChargeDialog
-          booking={booking}
-          onClose={() => setTransportOpen(false)}
-        />
+        <TransportChargeDialog booking={booking} onClose={() => setTransportOpen(false)} />
       ) : null}
     </div>
   );

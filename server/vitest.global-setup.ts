@@ -36,6 +36,7 @@ export default async function setup(): Promise<void> {
     if (required) {
       throw new Error(
         `[tests] database unreachable while smoke tests are required: ${detail ?? "unknown error"}`,
+        { cause: error },
       );
     }
     console.warn(

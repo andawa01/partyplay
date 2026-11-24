@@ -6,9 +6,7 @@
 const NAIROBI_TIME_ZONE = "Africa/Nairobi";
 
 export function todayCalendarDate(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: NAIROBI_TIME_ZONE }).format(
-    new Date(),
-  );
+  return new Intl.DateTimeFormat("en-CA", { timeZone: NAIROBI_TIME_ZONE }).format(new Date());
 }
 
 export function isValidCalendarDate(value: string): boolean {
@@ -21,9 +19,7 @@ export function isValidCalendarDate(value: string): boolean {
   const day = Number(match[3]);
   const date = new Date(Date.UTC(year, month - 1, day));
   return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
+    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
   );
 }
 

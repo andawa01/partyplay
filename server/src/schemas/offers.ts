@@ -18,7 +18,11 @@ export const createOfferSchema = z.object({
   name: z.string().trim().min(1).max(128),
   description: z.string().max(2000).nullish(),
   discountType: discountTypeSchema,
-  discountValue: z.number().positive().max(99_999_999.99).transform((value) => value.toFixed(2)),
+  discountValue: z
+    .number()
+    .positive()
+    .max(99_999_999.99)
+    .transform((value) => value.toFixed(2)),
   appliesTo: appliesToSchema,
   appliesToId: z.string().min(1).max(64).nullish(),
   code: z
@@ -39,10 +43,20 @@ export const updateOfferSchema = z
     name: z.string().trim().min(1).max(128),
     description: z.string().max(2000).nullable(),
     discountType: discountTypeSchema,
-    discountValue: z.number().positive().max(99_999_999.99).transform((value) => value.toFixed(2)),
+    discountValue: z
+      .number()
+      .positive()
+      .max(99_999_999.99)
+      .transform((value) => value.toFixed(2)),
     appliesTo: appliesToSchema,
     appliesToId: z.string().min(1).max(64).nullable(),
-    code: z.string().trim().min(1).max(64).transform((value) => value.toUpperCase()).nullable(),
+    code: z
+      .string()
+      .trim()
+      .min(1)
+      .max(64)
+      .transform((value) => value.toUpperCase())
+      .nullable(),
     startsAt: z.coerce.date().nullable(),
     endsAt: z.coerce.date().nullable(),
     isActive: z.boolean(),

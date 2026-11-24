@@ -149,11 +149,7 @@ export async function issuePasswordResetToken(
  */
 export async function requestPasswordReset(email: string): Promise<void> {
   if (!isEmailConfigured()) {
-    throw new ApiError(
-      503,
-      "EMAIL_NOT_CONFIGURED",
-      "Password reset email is not configured yet.",
-    );
+    throw new ApiError(503, "EMAIL_NOT_CONFIGURED", "Password reset email is not configured yet.");
   }
 
   const admin = await db.admin.findUnique({

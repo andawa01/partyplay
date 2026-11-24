@@ -59,11 +59,7 @@ export interface AdminPackage {
 }
 
 export type OfferAppliesTo =
-  | "ALL_BOOKINGS"
-  | "ALL_EQUIPMENT"
-  | "ALL_PACKAGES"
-  | "ONE_EQUIPMENT"
-  | "ONE_PACKAGE";
+  "ALL_BOOKINGS" | "ALL_EQUIPMENT" | "ALL_PACKAGES" | "ONE_EQUIPMENT" | "ONE_PACKAGE";
 
 export interface AdminOffer {
   id: string;
@@ -97,10 +93,7 @@ export type FieldErrors<T> = Partial<Record<keyof T, string>>;
 
 export function formFieldErrors<T>(error: ZodError): FieldErrors<T> {
   const next: FieldErrors<T> = {};
-  const fieldErrors = error.flatten().fieldErrors as Record<
-    string,
-    string[] | undefined
-  >;
+  const fieldErrors = error.flatten().fieldErrors as Record<string, string[] | undefined>;
   for (const [field, messages] of Object.entries(fieldErrors)) {
     if (messages?.[0]) {
       next[field as keyof T] = messages[0];
@@ -129,22 +122,22 @@ const nameField = z
   .min(1, "Name is required")
   .max(128, "Keep the name to 128 characters");
 
-const optionalDescription = z
+const optionalDescription = z.string().trim().max(2000, "Keep the description to 2000 characters");
+
+const optionalUrl = z
   .string()
   .trim()
-  .max(2000, "Keep the description to 2000 characters");
-
-const optionalUrl = z.string().trim().refine((value) => {
-  if (value === "") {
-    return true;
-  }
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}, "Use a complete http:// or https:// image URL");
+  .refine((value) => {
+    if (value === "") {
+      return true;
+    }
+    try {
+      const url = new URL(value);
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      return false;
+    }
+  }, "Use a complete http:// or https:// image URL");
 
 function optionalWholeNumber(min: number, max: number, label: string) {
   return z
@@ -152,8 +145,7 @@ function optionalWholeNumber(min: number, max: number, label: string) {
     .trim()
     .refine(
       (value) =>
-        value === "" ||
-        (/^\d+$/.test(value) && Number(value) >= min && Number(value) <= max),
+        value === "" || (/^\d+$/.test(value) && Number(value) >= min && Number(value) <= max),
       `${label} must be a whole number from ${min} to ${max}`,
     );
 }
@@ -175,8 +167,7 @@ function optionalMoney(label: string) {
     .trim()
     .refine(
       (value) =>
-        value === "" ||
-        (/^\d+(?:\.\d{1,2})?$/.test(value) && Number(value) <= 99_999_999.99),
+        value === "" || (/^\d+(?:\.\d{1,2})?$/.test(value) && Number(value) <= 99_999_999.99),
       `${label} must be a positive number with up to 2 decimals`,
     );
 }
@@ -187,20 +178,22 @@ function requiredMoney(label: string) {
     .trim()
     .min(1, `${label} is required`)
     .refine(
-      (value) =>
-        /^\d+(?:\.\d{1,2})?$/.test(value) && Number(value) <= 99_999_999.99,
+      (value) => /^\d+(?:\.\d{1,2})?$/.test(value) && Number(value) <= 99_999_999.99,
       `${label} must be a positive number with up to 2 decimals`,
     );
 }
 
 function optionalDateTime(label: string) {
-  return z.string().trim().refine((value) => {
-    if (value === "") {
-      return true;
-    }
-    const parsed = new Date(value);
-    return !Number.isNaN(parsed.getTime());
-  }, `${label} is not a valid date and time`);
+  return z
+    .string()
+    .trim()
+    .refine((value) => {
+      if (value === "") {
+        return true;
+      }
+      const parsed = new Date(value);
+      return !Number.isNaN(parsed.getTime());
+    }, `${label} is not a valid date and time`);
 }
 
 // ---------------------------------------------------------------------------
@@ -249,8 +242,7 @@ export const equipmentFormSchema = z
     (values) =>
       values.pricingMode === "FLAT" ? values.flatPrice !== "" : values.pricePerDay !== "",
     {
-      message:
-        "Set the price used by this pricing mode so the public catalogue can show a price",
+      message: "Set the price used by this pricing mode so the public catalogue can show a price",
       path: ["pricePerDay"],
     },
   );
@@ -380,15 +372,13 @@ export const packageFormSchema = z
       )
       .max(100, "A package can include at most 100 equipment lines")
       .refine(
-        (items) =>
-          new Set(items.map((item) => item.equipmentId)).size === items.length,
+        (items) => new Set(items.map((item) => item.equipmentId)).size === items.length,
         "Each equipment item can only appear once",
       ),
   })
   .refine(
     (values) =>
-      values.maxQuantity === "" ||
-      Number(values.maxQuantity) >= Number(values.minQuantity),
+      values.maxQuantity === "" || Number(values.maxQuantity) >= Number(values.minQuantity),
     {
       message: "Maximum quantity must be at least the minimum",
       path: ["maxQuantity"],
@@ -506,18 +496,13 @@ export const offerFormSchema = z
     endsAt: optionalDateTime("End"),
     isActive: z.boolean(),
   })
+  .refine((values) => values.discountType !== "PERCENTAGE" || Number(values.discountValue) <= 100, {
+    message: "A percentage cannot exceed 100",
+    path: ["discountValue"],
+  })
   .refine(
     (values) =>
-      values.discountType !== "PERCENTAGE" || Number(values.discountValue) <= 100,
-    {
-      message: "A percentage cannot exceed 100",
-      path: ["discountValue"],
-    },
-  )
-  .refine(
-    (values) =>
-      !["ONE_EQUIPMENT", "ONE_PACKAGE"].includes(values.appliesTo) ||
-      values.appliesToId !== "",
+      !["ONE_EQUIPMENT", "ONE_PACKAGE"].includes(values.appliesTo) || values.appliesToId !== "",
     {
       message: "Choose what this offer applies to",
       path: ["appliesToId"],
@@ -695,9 +680,7 @@ export function emptyTransportProviderForm(): TransportProviderFormValues {
   };
 }
 
-export function transportProviderToForm(
-  provider: TransportProvider,
-): TransportProviderFormValues {
+export function transportProviderToForm(provider: TransportProvider): TransportProviderFormValues {
   return {
     name: provider.name,
     phone: provider.phone,

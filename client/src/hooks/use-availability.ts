@@ -26,11 +26,7 @@ export function useCalendarForDemands(demands: EquipmentDemand[], month: string)
     queries: demands.map((demand) => ({
       queryKey: queryKeys.calendar(demand.equipmentId, month),
       queryFn: async () =>
-        (
-          await apiFetch<CalendarDay[], CalendarMeta>(
-            calendarPath(demand.equipmentId, month),
-          )
-        ).data,
+        (await apiFetch<CalendarDay[], CalendarMeta>(calendarPath(demand.equipmentId, month))).data,
       enabled: demand.equipmentId !== "",
       staleTime: 30_000,
       retry: false,

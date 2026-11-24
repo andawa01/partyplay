@@ -1,10 +1,6 @@
 import { z } from "zod";
 
-import type {
-  BookingStatus,
-  FulfilmentMethod,
-  PaymentStatus,
-} from "./bookings";
+import type { BookingStatus, FulfilmentMethod, PaymentStatus } from "./bookings";
 
 export const ADMIN_BOOKING_STATUSES: BookingStatus[] = [
   "PENDING",
@@ -16,12 +12,7 @@ export const ADMIN_BOOKING_STATUSES: BookingStatus[] = [
 ];
 
 export type AdminBadgeVariant =
-  | "default"
-  | "secondary"
-  | "outline"
-  | "success"
-  | "warning"
-  | "destructive";
+  "default" | "secondary" | "outline" | "success" | "warning" | "destructive";
 
 export const adminStatusMeta: Record<
   BookingStatus,
@@ -63,14 +54,12 @@ export const adminStatusMeta: Record<
   },
 };
 
-export const paymentStatusMeta: Record<
-  PaymentStatus,
-  { label: string; badge: AdminBadgeVariant }
-> = {
-  UNPAID: { label: "Unpaid", badge: "warning" },
-  PARTIALLY_PAID: { label: "Part paid", badge: "secondary" },
-  PAID: { label: "Paid", badge: "success" },
-};
+export const paymentStatusMeta: Record<PaymentStatus, { label: string; badge: AdminBadgeVariant }> =
+  {
+    UNPAID: { label: "Unpaid", badge: "warning" },
+    PARTIALLY_PAID: { label: "Part paid", badge: "secondary" },
+    PAID: { label: "Paid", badge: "success" },
+  };
 
 export interface AdminBookingCustomer {
   id: string;
@@ -275,8 +264,7 @@ const actionOptions: Record<BookingActionTarget, BookingActionOption> = {
     to: "COMPLETED",
     label: "Mark completed",
     shortLabel: "Complete",
-    description:
-      "Close the hire once everything has been delivered or collected and returned.",
+    description: "Close the hire once everything has been delivered or collected and returned.",
     destructive: false,
     requiresReason: false,
   },
@@ -305,10 +293,7 @@ export function bookingActionFormSchema(action: BookingActionTarget) {
 
   return z
     .object({
-      reason: z
-        .string()
-        .trim()
-        .max(500, "Keep the reason to 500 characters"),
+      reason: z.string().trim().max(500, "Keep the reason to 500 characters"),
       note: z.string().trim().max(1000, "Keep the note to 1,000 characters"),
     })
     .superRefine((values, ctx) => {
@@ -335,8 +320,7 @@ export const transportChargeSchema = z.object({
     .trim()
     .min(1, "Enter the transport charge")
     .refine(
-      (value) =>
-        /^\d+(?:\.\d{1,2})?$/.test(value) && Number(value) <= 99_999_999.99,
+      (value) => /^\d+(?:\.\d{1,2})?$/.test(value) && Number(value) <= 99_999_999.99,
       "Use a positive number with up to 2 decimals",
     ),
 });

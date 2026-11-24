@@ -3,10 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type {
-  AdminBookingDetail,
-  BookingAvailabilityCheck,
-} from "../../../lib/admin-bookings";
+import type { AdminBookingDetail, BookingAvailabilityCheck } from "../../../lib/admin-bookings";
 import { allowedBookingActions } from "../../../lib/admin-bookings";
 import { BookingActionDialog } from "./BookingActionDialog";
 
@@ -24,9 +21,7 @@ function renderWithClient(children: React.ReactNode) {
       queries: { retry: false },
     },
   });
-  return render(
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
-  );
+  return render(<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>);
 }
 
 const booking: AdminBookingDetail = {
@@ -104,12 +99,8 @@ const unavailable: BookingAvailabilityCheck = {
   ],
 };
 
-const confirmAction = allowedBookingActions("PENDING").find(
-  (action) => action.to === "CONFIRMED",
-)!;
-const cancelAction = allowedBookingActions("PENDING").find(
-  (action) => action.to === "CANCELLED",
-)!;
+const confirmAction = allowedBookingActions("PENDING").find((action) => action.to === "CONFIRMED")!;
+const cancelAction = allowedBookingActions("PENDING").find((action) => action.to === "CANCELLED")!;
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -131,9 +122,7 @@ describe("BookingActionDialog", () => {
 
     expect(screen.getByText("Not enough stock for these dates")).toBeInTheDocument();
     expect(screen.getByText(/short by/)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Confirm booking" }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Confirm booking" })).toBeDisabled();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -143,28 +132,21 @@ describe("BookingActionDialog", () => {
     const user = userEvent.setup();
 
     renderWithClient(
-      <BookingActionDialog
-        booking={booking}
-        action={cancelAction}
-        onClose={vi.fn()}
-      />,
+      <BookingActionDialog booking={booking} action={cancelAction} onClose={vi.fn()} />,
     );
 
     await user.click(screen.getByRole("button", { name: "Cancel booking" }));
 
-    expect(
-      await screen.findByText("Record why the booking was cancelled"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Record why the booking was cancelled")).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("shows the server's INVALID_TRANSITION message and stays open", async () => {
-    const fetchMock = vi.fn(
-      async (_input: RequestInfo | URL, _init?: RequestInit) =>
-        jsonResponse(409, {
-          error: "A booking cannot move from CANCELLED to CONFIRMED",
-          code: "INVALID_TRANSITION",
-        }),
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      jsonResponse(409, {
+        error: "A booking cannot move from CANCELLED to CONFIRMED",
+        code: "INVALID_TRANSITION",
+      }),
     );
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
@@ -180,18 +162,14 @@ describe("BookingActionDialog", () => {
 
     await user.click(screen.getByRole("button", { name: "Confirm booking" }));
 
-    expect(
-      await screen.findByText("That status change is not allowed"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("That status change is not allowed")).toBeInTheDocument();
     expect(
       screen.getByText("A booking cannot move from CANCELLED to CONFIRMED"),
     ).toBeInTheDocument();
     expect(screen.getByText("INVALID_TRANSITION")).toBeInTheDocument();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0]?.[0]).toBe(
-      "/api/admin/bookings/booking-1/status",
-    );
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/admin/bookings/booking-1/status");
     expect(fetchMock.mock.calls[0]?.[1]?.method).toBe("PATCH");
   });
 });

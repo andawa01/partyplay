@@ -34,11 +34,12 @@ before the next one starts.
 | 1 | Route, zod schema, service and any migration are committed on the feature branch |
 | 2 | The route -> middleware -> controller -> service -> db flow is intact; no controller imports `db` |
 | 3 | Every error path returns the standard envelope (§4.2) with the right status code |
-| 4 | `npm run typecheck --workspace server` exits 0 |
-| 5 | The feature's verification recipe (§10) has been run against the local database and passed |
-| 6 | Any new env var is in `server/.env.example` |
-| 7 | `docs/database-spec.md` updated if the schema changed |
-| 8 | Progress ledger row in §12 ticked |
+| 4 | `npm run typecheck`, `npm run lint` and `npm run format:check` exit 0 |
+| 5 | Coverage floors pass in CI; `npm run test:coverage` locally where the database is available |
+| 6 | The feature's verification recipe (§10) has been run against the local database and passed |
+| 7 | Any new env var is in `server/.env.example` |
+| 8 | `docs/database-spec.md` updated if the schema changed |
+| 9 | Progress ledger row in §12 ticked |
 
 Manual verification is the baseline. Automated tests are added where the logic is
 arithmetic or stateful and a hand-check cannot prove it: the pricing module (F6a),
@@ -749,6 +750,7 @@ the last unit and assert `[201, 409]`.
 | C11 | Payments and dashboard | — | ✅ | `feat/c11-payments-dashboard` |
 | O1 | Operations package (deploy, shutdown, sweeper, backups, request logs) | ✅ | — | `feat/o1-operations` |
 | T1 | CI HTTP smoke suite + last-unit concurrency regression | ✅ | — | `chore/ci-concurrency-tests` |
+| T2 | ESLint, Prettier and all-source coverage thresholds | ✅ | — | `chore/lint-format-coverage` |
 
 ---
 

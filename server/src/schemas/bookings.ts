@@ -91,9 +91,7 @@ export const createBookingSchema = z
  * personal information, and the price must come from the same pricing service the
  * create transaction uses.
  */
-export const quoteBookingSchema = z
-  .object(bookingRangeSchema)
-  .superRefine(addSelectionIssues);
+export const quoteBookingSchema = z.object(bookingRangeSchema).superRefine(addSelectionIssues);
 
 function addDuplicateIssues(
   ids: string[],

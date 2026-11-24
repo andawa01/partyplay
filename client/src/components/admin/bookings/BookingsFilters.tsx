@@ -1,10 +1,7 @@
 import { Search, X } from "lucide-react";
 
 import type { BookingListFilters } from "../../../lib/admin-bookings";
-import {
-  ADMIN_BOOKING_STATUSES,
-  adminStatusMeta,
-} from "../../../lib/admin-bookings";
+import { ADMIN_BOOKING_STATUSES, adminStatusMeta } from "../../../lib/admin-bookings";
 import type { BookingStatus } from "../../../lib/bookings";
 import { cn } from "../../../lib/cn";
 import { Button } from "../../ui/button";
@@ -94,12 +91,7 @@ export function BookingsFilters({
             />
           </div>
           {hasFilters ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClear}
-              className="self-end"
-            >
+            <Button type="button" variant="outline" onClick={onClear} className="self-end">
               <X aria-hidden="true" className="size-4" />
               Clear filters
             </Button>
@@ -181,4 +173,3 @@ function StatusPill({
     </button>
   );
 }
-

@@ -35,9 +35,7 @@ describe("Cloudinary image uploads", () => {
     expect(signature.cloudName).toBe("partyplay-demo");
     expect(signature.apiKey).toBe("123456789");
     expect(signature.folder).toBe("partyplay/packages");
-    expect(signature.uploadUrl).toBe(
-      "https://api.cloudinary.com/v1_1/partyplay-demo/image/upload",
-    );
+    expect(signature.uploadUrl).toBe("https://api.cloudinary.com/v1_1/partyplay-demo/image/upload");
     expect(signature.allowedFormats).toEqual(["jpg", "jpeg", "png", "webp"]);
     expect(signature.maxFileSize).toBe(8 * 1024 * 1024);
     expect(signature.signature).toMatch(/^[a-f0-9]{40}$/);

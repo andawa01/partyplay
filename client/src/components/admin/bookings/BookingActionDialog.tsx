@@ -7,10 +7,7 @@ import type {
   BookingActionOption,
   BookingAvailabilityCheck,
 } from "../../../lib/admin-bookings";
-import {
-  bookingActionFormSchema,
-  type BookingActionFormValues,
-} from "../../../lib/admin-bookings";
+import { bookingActionFormSchema, type BookingActionFormValues } from "../../../lib/admin-bookings";
 import { isApiError } from "../../../lib/api";
 import { toast } from "../../../lib/toast";
 import { Alert, AlertDescription, AlertTitle } from "../../ui/alert";
@@ -48,8 +45,7 @@ export function BookingActionDialog({
   const [errors, setErrors] = useState<FormErrors>({});
 
   const isConfirm = action.to === "CONFIRMED";
-  const stockBlocksConfirm =
-    isConfirm && (!availability || !availability.available);
+  const stockBlocksConfirm = isConfirm && (!availability || !availability.available);
 
   function setField(field: keyof BookingActionFormValues, value: string) {
     setValues((current) => ({ ...current, [field]: value }));
@@ -141,9 +137,7 @@ export function BookingActionDialog({
                 ? update.error.message
                 : "Check your connection and try again."}
               {isApiError(update.error) ? (
-                <span className="mt-1 block text-xs opacity-70">
-                  {update.error.code}
-                </span>
+                <span className="mt-1 block text-xs opacity-70">{update.error.code}</span>
               ) : null}
             </AlertDescription>
           </Alert>
@@ -154,7 +148,12 @@ export function BookingActionDialog({
             <>
               <div>
                 <Label htmlFor="booking-action-reason">
-                  Reason{action.requiresReason ? <span className="text-blush-600">*</span> : " (optional)"}
+                  Reason
+                  {action.requiresReason ? (
+                    <span className="text-blush-600">*</span>
+                  ) : (
+                    " (optional)"
+                  )}
                 </Label>
                 <Textarea
                   id="booking-action-reason"
@@ -206,18 +205,13 @@ export function BookingActionDialog({
             </>
           ) : (
             <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-600">
-              Confirming commits this booking&apos;s stock. The server checks availability
-              again inside the transaction, so a lapsed hold cannot oversell the dates.
+              Confirming commits this booking&apos;s stock. The server checks availability again
+              inside the transaction, so a lapsed hold cannot oversell the dates.
             </p>
           )}
 
           <DialogFooter className="border-t border-slate-100 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={update.isPending}
-            >
+            <Button type="button" variant="outline" onClick={onClose} disabled={update.isPending}>
               Keep as is
             </Button>
             <Button
@@ -231,7 +225,9 @@ export function BookingActionDialog({
                   <Loader2 aria-hidden="true" className="size-4 animate-spin" />
                   Updating…
                 </>
-              ) : action.label}
+              ) : (
+                action.label
+              )}
             </Button>
           </DialogFooter>
         </form>

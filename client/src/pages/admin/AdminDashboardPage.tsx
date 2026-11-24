@@ -77,8 +77,8 @@ export default function AdminDashboardPage() {
               Good to see you, {displayName}.
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-              {formatMonthLabel(data.month)} at a glance. Stock, bookings and money all
-              come straight from the live records — no counters to drift.
+              {formatMonthLabel(data.month)} at a glance. Stock, bookings and money all come
+              straight from the live records — no counters to drift.
             </p>
             <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
               <span className="inline-flex items-center gap-1.5">
@@ -189,9 +189,7 @@ export default function AdminDashboardPage() {
               <p className="mt-3 text-3xl font-semibold tracking-tight">
                 {formatMoney(data.revenue.collected, currency)}
               </p>
-              <p className="mt-1 text-xs text-slate-400">
-                Every successful payment on record
-              </p>
+              <p className="mt-1 text-xs text-slate-400">Every successful payment on record</p>
             </div>
           </div>
 
@@ -205,9 +203,7 @@ export default function AdminDashboardPage() {
             <p className="mt-3 text-2xl font-semibold text-slate-900">
               {formatMoney(data.revenue.thisMonth, currency)}
             </p>
-            <p className="mt-1 text-xs text-slate-500">
-              {formatMonthLabel(data.month)} payments
-            </p>
+            <p className="mt-1 text-xs text-slate-500">{formatMonthLabel(data.month)} payments</p>
           </div>
 
           <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5">
@@ -259,10 +255,7 @@ export default function AdminDashboardPage() {
 
           {upcoming.length === 0 ? (
             <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-9 text-center">
-              <CalendarCheck
-                aria-hidden="true"
-                className="mx-auto size-7 text-slate-400"
-              />
+              <CalendarCheck aria-hidden="true" className="mx-auto size-7 text-slate-400" />
               <p className="mt-2 font-medium text-slate-900">Nothing on the calendar</p>
               <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-slate-500">
                 Confirmed jobs will appear here as soon as dates are locked in.
@@ -291,8 +284,7 @@ export default function AdminDashboardPage() {
                         {booking.customer.name}
                       </p>
                       <p className="mt-0.5 text-xs text-slate-500">
-                        {formatLongDate(booking.startDate)} →{" "}
-                        {formatLongDate(booking.endDate)}
+                        {formatLongDate(booking.startDate)} → {formatLongDate(booking.endDate)}
                         {booking.customer.phone ? ` · ${booking.customer.phone}` : ""}
                       </p>
                     </div>
@@ -329,8 +321,7 @@ export default function AdminDashboardPage() {
                 Low stock
               </h2>
               <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                Fully booked on at least one day in the next{" "}
-                {data.inventory.horizonDays} days.
+                Fully booked on at least one day in the next {data.inventory.horizonDays} days.
               </p>
             </div>
             <Button asChild variant="ghost" size="sm" className="-mr-2">
@@ -343,14 +334,10 @@ export default function AdminDashboardPage() {
 
           {data.inventory.lowStock.length === 0 ? (
             <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/70 px-5 py-8 text-center">
-              <PackageCheck
-                aria-hidden="true"
-                className="mx-auto size-7 text-emerald-600"
-              />
+              <PackageCheck aria-hidden="true" className="mx-auto size-7 text-emerald-600" />
               <p className="mt-2 font-medium text-emerald-950">Stock looks healthy</p>
               <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-emerald-800">
-                Nothing is fully committed over the next {data.inventory.horizonDays}{" "}
-                days.
+                Nothing is fully committed over the next {data.inventory.horizonDays} days.
               </p>
             </div>
           ) : (
@@ -362,12 +349,10 @@ export default function AdminDashboardPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-900">
-                        {item.name}
-                      </p>
+                      <p className="truncate text-sm font-medium text-slate-900">{item.name}</p>
                       <p className="mt-0.5 text-xs text-amber-900">
-                        {item.availableToday} of {item.total} free today ·{" "}
-                        {item.reservedToday} reserved
+                        {item.availableToday} of {item.total} free today · {item.reservedToday}{" "}
+                        reserved
                       </p>
                     </div>
                     <Badge variant="warning" className="shrink-0">
@@ -435,12 +420,7 @@ function MetricCard({
       className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
     >
       <div className="flex items-start justify-between gap-3">
-        <span
-          className={cn(
-            "grid size-10 place-items-center rounded-xl ring-1",
-            tones[tone],
-          )}
-        >
+        <span className={cn("grid size-10 place-items-center rounded-xl ring-1", tones[tone])}>
           <Icon aria-hidden="true" className="size-5" />
         </span>
         <ArrowUpRight
@@ -449,9 +429,7 @@ function MetricCard({
         />
       </div>
       <p className="mt-4 text-sm font-medium text-slate-500">{label}</p>
-      <p className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">
-        {value}
-      </p>
+      <p className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">{value}</p>
       <p className="mt-1 text-xs leading-relaxed text-slate-500">{hint}</p>
     </Link>
   );
@@ -484,9 +462,7 @@ function QuickLink({
             className="size-3.5 text-brand-600 opacity-0 transition group-hover:opacity-100"
           />
         </span>
-        <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">
-          {description}
-        </span>
+        <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">{description}</span>
       </span>
     </Link>
   );

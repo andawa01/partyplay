@@ -1,21 +1,21 @@
-import { CalendarDays, Gift, Percent, Sparkles, Tag } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { CalendarDays, Gift, Percent, Sparkles, Tag } from "lucide-react";
+import { Link } from "react-router-dom";
 
-import { Button } from '../../components/ui/button'
-import { ErrorState } from '../../components/ui/error-state'
-import { useOffers } from '../../hooks/use-packages'
-import { useSite } from '../../hooks/use-site'
+import { Button } from "../../components/ui/button";
+import { ErrorState } from "../../components/ui/error-state";
+import { useOffers } from "../../hooks/use-packages";
+import { useSite } from "../../hooks/use-site";
 import {
   offerAppliesToLabel,
   offerDiscountLabel,
   offerValidityLabel,
   type Offer,
-} from '../../lib/packages'
+} from "../../lib/packages";
 
 export default function OffersPage() {
-  const offers = useOffers()
-  const site = useSite()
-  const currency = site.data?.currency ?? 'KES'
+  const offers = useOffers();
+  const site = useSite();
+  const currency = site.data?.currency ?? "KES";
 
   return (
     <div className="pb-4">
@@ -38,8 +38,8 @@ export default function OffersPage() {
               A little extra for your celebration
             </h1>
             <p className="mt-4 max-w-xl text-lg leading-relaxed text-slate-600">
-              Seasonal offers and weekday savings we are running right now. Take a look, then
-              tell us which one caught your eye.
+              Seasonal offers and weekday savings we are running right now. Take a look, then tell
+              us which one caught your eye.
             </p>
           </div>
         </div>
@@ -48,12 +48,15 @@ export default function OffersPage() {
       <section className="mx-auto mt-10 max-w-6xl px-4" aria-labelledby="offers-heading">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 id="offers-heading" className="text-2xl font-semibold tracking-tight text-slate-900">
+            <h2
+              id="offers-heading"
+              className="text-2xl font-semibold tracking-tight text-slate-900"
+            >
               Current offers
             </h2>
             <p className="mt-1 text-slate-600">
-              Promotions are display-only — the owner confirms any discount when your booking
-              is confirmed.
+              Promotions are display-only — the owner confirms any discount when your booking is
+              confirmed.
             </p>
           </div>
           <Button asChild variant="ghost" size="sm">
@@ -99,8 +102,8 @@ export default function OffersPage() {
                 No offers are running right now
               </h3>
               <p className="mx-auto mt-2 max-w-md text-slate-600">
-                New promotions appear here when the owner publishes them. In the meantime,
-                browse the packages or ask us what is available.
+                New promotions appear here when the owner publishes them. In the meantime, browse
+                the packages or ask us what is available.
               </p>
               <div className="mt-5 flex flex-wrap justify-center gap-2">
                 <Button asChild>
@@ -115,17 +118,17 @@ export default function OffersPage() {
         </div>
 
         <p className="mt-6 rounded-xl bg-slate-50 p-4 text-sm leading-relaxed text-slate-600 ring-1 ring-slate-200">
-          <strong className="font-semibold text-slate-800">How offers work:</strong> the
-          online booking request does not apply discounts automatically. Any offer you see
-          here is confirmed by the owner by phone or WhatsApp before your booking is final.
+          <strong className="font-semibold text-slate-800">How offers work:</strong> the online
+          booking request does not apply discounts automatically. Any offer you see here is
+          confirmed by the owner by phone or WhatsApp before your booking is final.
         </p>
       </section>
     </div>
-  )
+  );
 }
 
 function OfferCard({ offer, currency }: { offer: Offer; currency: string }) {
-  const Icon = offer.discountType === 'PERCENTAGE' ? Percent : Gift
+  const Icon = offer.discountType === "PERCENTAGE" ? Percent : Gift;
 
   return (
     <article className="group flex h-full flex-col rounded-2xl border border-blush-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blush-300 hover:shadow-md">
@@ -138,9 +141,7 @@ function OfferCard({ offer, currency }: { offer: Offer; currency: string }) {
         </p>
       </div>
 
-      <h3 className="mt-5 text-lg font-semibold tracking-tight text-slate-900">
-        {offer.name}
-      </h3>
+      <h3 className="mt-5 text-lg font-semibold tracking-tight text-slate-900">{offer.name}</h3>
       {offer.description ? (
         <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{offer.description}</p>
       ) : null}
@@ -155,7 +156,7 @@ function OfferCard({ offer, currency }: { offer: Offer; currency: string }) {
         </span>
       </div>
     </article>
-  )
+  );
 }
 
 function OfferSkeleton() {
@@ -173,5 +174,5 @@ function OfferSkeleton() {
         <div className="h-6 w-28 animate-pulse rounded-full bg-slate-200" />
       </div>
     </div>
-  )
+  );
 }

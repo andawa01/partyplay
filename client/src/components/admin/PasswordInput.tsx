@@ -13,11 +13,7 @@ export function PasswordInput({
 
   return (
     <div className="relative">
-      <Input
-        type={visible ? "text" : "password"}
-        className={cn("pr-10", className)}
-        {...props}
-      />
+      <Input type={visible ? "text" : "password"} className={cn("pr-10", className)} {...props} />
       <button
         type="button"
         onClick={() => setVisible((current) => !current)}

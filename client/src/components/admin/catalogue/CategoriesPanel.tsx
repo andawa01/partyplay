@@ -6,11 +6,7 @@ import {
   useDeleteCategory,
   useSaveCategory,
 } from "../../../hooks/use-admin-catalogue";
-import type {
-  AdminCategory,
-  CategoryFormValues,
-  FieldErrors,
-} from "../../../lib/admin-catalogue";
+import type { AdminCategory, CategoryFormValues, FieldErrors } from "../../../lib/admin-catalogue";
 import {
   categoryFormSchema,
   categoryPayload,
@@ -24,14 +20,7 @@ import { Button } from "../../ui/button";
 import { ErrorState } from "../../ui/error-state";
 import { Input } from "../../ui/input";
 import { Textarea } from "../../ui/textarea";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../../ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
 import {
   CatalogueDialog,
   CatalogueTableSkeleton,
@@ -109,20 +98,16 @@ export function CategoriesPanel() {
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <p className="font-medium text-slate-900">{category.name}</p>
-                          {category.isGroup ? (
-                            <Badge variant="secondary">Parent</Badge>
-                          ) : null}
+                          {category.isGroup ? <Badge variant="secondary">Parent</Badge> : null}
                         </div>
-                        <p className="truncate text-xs text-slate-500">
-                          {category.slug}
-                        </p>
+                        <p className="truncate text-xs text-slate-500">{category.slug}</p>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-slate-700">
                       {category.parentId
-                        ? nameById.get(category.parentId) ?? "Parent category"
+                        ? (nameById.get(category.parentId) ?? "Parent category")
                         : "Top level"}
                     </span>
                   </TableCell>
@@ -165,11 +150,7 @@ export function CategoriesPanel() {
       )}
 
       {creating ? (
-        <CategoryFormDialog
-          key="new-category"
-          roots={roots}
-          onClose={() => setCreating(false)}
-        />
+        <CategoryFormDialog key="new-category" roots={roots} onClose={() => setCreating(false)} />
       ) : null}
 
       {editing ? (
@@ -229,15 +210,12 @@ function CategoryFormDialog({
   const save = useSaveCategory();
 
   const parentName = category?.parentId
-    ? roots.find((root) => root.id === category.parentId)?.name ??
+    ? (roots.find((root) => root.id === category.parentId)?.name ??
       category.parent?.name ??
-      "Current parent"
+      "Current parent")
     : "";
 
-  function setField<K extends keyof CategoryFormValues>(
-    field: K,
-    value: CategoryFormValues[K],
-  ) {
+  function setField<K extends keyof CategoryFormValues>(field: K, value: CategoryFormValues[K]) {
     setValues((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
     if (save.error) {
@@ -280,12 +258,7 @@ function CategoryFormDialog({
       <form onSubmit={submit} className="space-y-5" noValidate>
         <FormError error={save.error} />
 
-        <FormField
-          label="Name"
-          htmlFor="category-name"
-          required
-          error={errors.name}
-        >
+        <FormField label="Name" htmlFor="category-name" required error={errors.name}>
           <Input
             id="category-name"
             value={values.name}
@@ -302,7 +275,11 @@ function CategoryFormDialog({
           htmlFor="category-slug"
           required={!category}
           error={errors.slug}
-          hint={category ? "The public URL keeps its original slug." : "Lowercase words separated by hyphens."}
+          hint={
+            category
+              ? "The public URL keeps its original slug."
+              : "Lowercase words separated by hyphens."
+          }
         >
           <Input
             id="category-slug"
@@ -332,9 +309,7 @@ function CategoryFormDialog({
             disabled={Boolean(category)}
             className={nativeSelectClassName}
           >
-            <option value={category ? values.parentId : ""}>
-              {parentName || "Top level"}
-            </option>
+            <option value={category ? values.parentId : ""}>{parentName || "Top level"}</option>
             {!category
               ? roots.map((root) => (
                   <option key={root.id} value={root.id}>
@@ -358,9 +333,7 @@ function CategoryFormDialog({
             maxLength={1000}
             placeholder="A short description of what belongs in this category."
             aria-invalid={Boolean(errors.description)}
-            aria-describedby={
-              errors.description ? "category-description-error" : undefined
-            }
+            aria-describedby={errors.description ? "category-description-error" : undefined}
           />
         </FormField>
 

@@ -52,19 +52,9 @@ import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import { Skeleton } from "../../ui/skeleton";
 import { Textarea } from "../../ui/textarea";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../../ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
 import { PaymentReceiptDialog } from "./PaymentReceiptDialog";
-import {
-  PaymentRowStatusBadge,
-  PaymentStatusBadge,
-} from "./BookingStatusBadge";
+import { PaymentRowStatusBadge, PaymentStatusBadge } from "./BookingStatusBadge";
 
 type PaymentFieldErrors = Partial<Record<keyof PaymentFormValues, string>>;
 type EditFieldErrors = Partial<Record<keyof PaymentEditFormValues, string>>;
@@ -118,8 +108,8 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
             Payments
           </h2>
           <p className="mt-1 max-w-xl text-xs leading-relaxed text-slate-500">
-            Every payment is recorded against this booking. Paid totals and the balance
-            always come from the server.
+            Every payment is recorded against this booking. Paid totals and the balance always come
+            from the server.
           </p>
         </div>
         <Button
@@ -168,14 +158,11 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
         />
       ) : rows.length === 0 ? (
         <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center">
-          <Banknote
-            aria-hidden="true"
-            className="mx-auto size-7 text-slate-400"
-          />
+          <Banknote aria-hidden="true" className="mx-auto size-7 text-slate-400" />
           <p className="mt-2 font-medium text-slate-900">No payments recorded</p>
           <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
-            Record cash, M-Pesa or a bank transfer here. Manual payments start pending
-            until they are confirmed.
+            Record cash, M-Pesa or a bank transfer here. Manual payments start pending until they
+            are confirmed.
           </p>
           <Button
             type="button"
@@ -435,13 +422,7 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
   );
 }
 
-function PaymentDate({
-  value,
-  paidAt,
-}: {
-  value: string;
-  paidAt: string | null;
-}) {
+function PaymentDate({ value, paidAt }: { value: string; paidAt: string | null }) {
   const [date, time] = formatDateTime(value).split(", ");
 
   return (
@@ -501,10 +482,7 @@ function RecordPaymentDialog({
   const [errors, setErrors] = useState<PaymentFieldErrors>({});
   const record = useRecordPayment();
 
-  function setField<K extends keyof PaymentFormValues>(
-    field: K,
-    value: PaymentFormValues[K],
-  ) {
+  function setField<K extends keyof PaymentFormValues>(field: K, value: PaymentFormValues[K]) {
     setValues((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
     if (record.error) {
@@ -552,8 +530,8 @@ function RecordPaymentDialog({
         <DialogHeader>
           <DialogTitle>Record payment · {bookingCode}</DialogTitle>
           <DialogDescription>
-            Cash, M-Pesa and bank transfers can settle immediately when a paid date is
-            supplied. Manual and other methods start pending.
+            Cash, M-Pesa and bank transfers can settle immediately when a paid date is supplied.
+            Manual and other methods start pending.
           </DialogDescription>
         </DialogHeader>
 
@@ -579,12 +557,7 @@ function RecordPaymentDialog({
               />
             </PaymentField>
 
-            <PaymentField
-              id="payment-method"
-              label="Method"
-              required
-              error={errors.method}
-            >
+            <PaymentField id="payment-method" label="Method" required error={errors.method}>
               <select
                 id="payment-method"
                 value={values.method}
@@ -599,9 +572,7 @@ function RecordPaymentDialog({
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-slate-500">
-                {paymentMethodMeta[values.method].hint}
-              </p>
+              <p className="mt-1 text-xs text-slate-500">{paymentMethodMeta[values.method].hint}</p>
             </PaymentField>
           </div>
 
@@ -633,9 +604,7 @@ function RecordPaymentDialog({
               onChange={(event) => setField("providerRef", event.target.value)}
               placeholder="e.g. QJ72X8ABC"
               aria-invalid={Boolean(errors.providerRef)}
-              aria-describedby={
-                errors.providerRef ? "payment-reference-error" : undefined
-              }
+              aria-describedby={errors.providerRef ? "payment-reference-error" : undefined}
             />
           </PaymentField>
 
@@ -652,20 +621,13 @@ function RecordPaymentDialog({
               maxLength={500}
               placeholder="Optional note for the payment history."
               aria-invalid={Boolean(errors.description)}
-              aria-describedby={
-                errors.description ? "payment-description-error" : undefined
-              }
+              aria-describedby={errors.description ? "payment-description-error" : undefined}
               className="min-h-16"
             />
           </PaymentField>
 
           <DialogFooter className="border-t border-slate-100 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={record.isPending}
-            >
+            <Button type="button" variant="outline" onClick={onClose} disabled={record.isPending}>
               Cancel
             </Button>
             <Button type="submit" disabled={record.isPending} aria-busy={record.isPending}>
@@ -694,9 +656,7 @@ function EditPaymentDialog({
   currency: string;
   onClose: () => void;
 }) {
-  const [values, setValues] = useState<PaymentEditFormValues>(() =>
-    paymentEditToForm(payment),
-  );
+  const [values, setValues] = useState<PaymentEditFormValues>(() => paymentEditToForm(payment));
   const [errors, setErrors] = useState<EditFieldErrors>({});
   const update = useUpdatePayment();
 
@@ -745,8 +705,8 @@ function EditPaymentDialog({
         <DialogHeader>
           <DialogTitle>Update payment</DialogTitle>
           <DialogDescription>
-            Change the payment status, reference or paid date. The amount and method are
-            part of the original record.
+            Change the payment status, reference or paid date. The amount and method are part of the
+            original record.
           </DialogDescription>
         </DialogHeader>
 
@@ -761,9 +721,7 @@ function EditPaymentDialog({
           </div>
           <div className="mt-1 flex justify-between gap-3">
             <span className="text-slate-500">Method</span>
-            <span className="font-medium text-slate-800">
-              {paymentMethodLabel(payment.method)}
-            </span>
+            <span className="font-medium text-slate-800">{paymentMethodLabel(payment.method)}</span>
           </div>
         </div>
 
@@ -782,20 +740,14 @@ function EditPaymentDialog({
             </select>
           </PaymentField>
 
-          <PaymentField
-            id="payment-edit-reference"
-            label="Reference"
-            error={errors.providerRef}
-          >
+          <PaymentField id="payment-edit-reference" label="Reference" error={errors.providerRef}>
             <Input
               id="payment-edit-reference"
               value={values.providerRef}
               onChange={(event) => setField("providerRef", event.target.value)}
               placeholder="M-Pesa code, bank reference or receipt number"
               aria-invalid={Boolean(errors.providerRef)}
-              aria-describedby={
-                errors.providerRef ? "payment-edit-reference-error" : undefined
-              }
+              aria-describedby={errors.providerRef ? "payment-edit-reference-error" : undefined}
             />
           </PaymentField>
 
@@ -811,19 +763,12 @@ function EditPaymentDialog({
               value={values.paidAt}
               onChange={(event) => setField("paidAt", event.target.value)}
               aria-invalid={Boolean(errors.paidAt)}
-              aria-describedby={
-                errors.paidAt ? "payment-edit-paid-at-error" : undefined
-              }
+              aria-describedby={errors.paidAt ? "payment-edit-paid-at-error" : undefined}
             />
           </PaymentField>
 
           <DialogFooter className="border-t border-slate-100 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={update.isPending}
-            >
+            <Button type="button" variant="outline" onClick={onClose} disabled={update.isPending}>
               Cancel
             </Button>
             <Button type="submit" disabled={update.isPending} aria-busy={update.isPending}>
@@ -875,8 +820,8 @@ function DeletePaymentDialog({
           <DialogTitle>Delete this payment?</DialogTitle>
           <DialogDescription>
             {formatMoney(payment.amount, currency)} recorded via{" "}
-            {paymentMethodLabel(payment.method)} will be removed. The server recalculates
-            the booking balance immediately.
+            {paymentMethodLabel(payment.method)} will be removed. The server recalculates the
+            booking balance immediately.
           </DialogDescription>
         </DialogHeader>
         {error ? <PaymentError error={error} /> : null}
@@ -944,9 +889,7 @@ function PaymentError({ error }: { error: unknown }) {
     <Alert variant="destructive">
       <AlertTitle>Payment not updated</AlertTitle>
       <AlertDescription>
-        {isApiError(error)
-          ? error.message
-          : "Check your connection and try again."}
+        {isApiError(error) ? error.message : "Check your connection and try again."}
         {isApiError(error) ? (
           <span className="mt-1 block text-xs opacity-70">{error.code}</span>
         ) : null}

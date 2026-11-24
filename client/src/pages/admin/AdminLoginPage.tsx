@@ -18,11 +18,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { useAdminSession, useLogin } from "../../hooks/use-auth";
 import { isApiError } from "../../lib/api";
-import {
-  adminReturnPath,
-  loginFormSchema,
-  type LoginFormValues,
-} from "../../lib/auth";
+import { adminReturnPath, loginFormSchema, type LoginFormValues } from "../../lib/auth";
 
 const highlights = [
   {
@@ -50,9 +46,9 @@ export default function AdminLoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fieldErrors, setFieldErrors] = useState<
-    Partial<Record<keyof LoginFormValues, string>>
-  >({});
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof LoginFormValues, string>>>(
+    {},
+  );
 
   const returnTo = adminReturnPath((location.state as { from?: unknown } | null)?.from);
 
@@ -65,8 +61,7 @@ export default function AdminLoginPage() {
   }
 
   const loginError = login.error;
-  const invalidCredentials =
-    isApiError(loginError) && loginError.status === 401;
+  const invalidCredentials = isApiError(loginError) && loginError.status === 401;
   const rateLimited = isApiError(loginError) && loginError.status === 429;
 
   function changeField(field: keyof LoginFormValues, value: string) {
@@ -87,9 +82,7 @@ export default function AdminLoginPage() {
     const parsed = loginFormSchema.safeParse({ email, password });
     if (!parsed.success) {
       const nextErrors: Partial<Record<keyof LoginFormValues, string>> = {};
-      for (const [field, messages] of Object.entries(
-        parsed.error.flatten().fieldErrors,
-      )) {
+      for (const [field, messages] of Object.entries(parsed.error.flatten().fieldErrors)) {
         if (messages?.[0]) {
           nextErrors[field as keyof LoginFormValues] = messages[0];
         }
@@ -136,8 +129,8 @@ export default function AdminLoginPage() {
             We&apos;ll keep the details together.
           </h1>
           <p className="mt-4 max-w-lg text-lg leading-relaxed text-slate-300">
-            One private place for booking requests, stock, customer details and the
-            money side of the business.
+            One private place for booking requests, stock, customer details and the money side of
+            the business.
           </p>
 
           <ul className="mt-10 space-y-5">
@@ -148,9 +141,7 @@ export default function AdminLoginPage() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-white">{title}</p>
-                  <p className="mt-0.5 text-sm leading-relaxed text-slate-400">
-                    {description}
-                  </p>
+                  <p className="mt-0.5 text-sm leading-relaxed text-slate-400">{description}</p>
                 </div>
               </li>
             ))}
@@ -170,10 +161,7 @@ export default function AdminLoginPage() {
             <Link to="/" className="text-xl font-bold text-slate-900">
               PartyPlay <span className="text-brand-700">Admin</span>
             </Link>
-            <Link
-              to="/"
-              className="text-xs font-medium text-slate-500 hover:text-brand-700"
-            >
+            <Link to="/" className="text-xs font-medium text-slate-500 hover:text-brand-700">
               View site
             </Link>
           </div>
@@ -183,9 +171,7 @@ export default function AdminLoginPage() {
               <ShieldCheck aria-hidden="true" className="size-3.5" />
               Secure sign in
             </span>
-            <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">
-              Welcome back
-            </h2>
+            <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">Welcome back</h2>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">
               Sign in with the owner account to manage PartyPlay.
             </p>
@@ -206,9 +192,7 @@ export default function AdminLoginPage() {
                   : "Check your connection and try again."}
               </AlertDescription>
               {rateLimited ? (
-                <p className="mt-2 text-xs">
-                  Wait a few minutes before trying again.
-                </p>
+                <p className="mt-2 text-xs">Wait a few minutes before trying again.</p>
               ) : null}
             </Alert>
           ) : null}
@@ -225,9 +209,7 @@ export default function AdminLoginPage() {
                 autoFocus
                 placeholder="owner@partyplay.co.ke"
                 aria-invalid={Boolean(fieldErrors.email)}
-                aria-describedby={
-                  fieldErrors.email ? "admin-email-error" : undefined
-                }
+                aria-describedby={fieldErrors.email ? "admin-email-error" : undefined}
                 className="mt-1.5 h-11"
               />
               {fieldErrors.email ? (
@@ -247,16 +229,11 @@ export default function AdminLoginPage() {
                 autoComplete="current-password"
                 placeholder="Enter your password"
                 aria-invalid={Boolean(fieldErrors.password)}
-                aria-describedby={
-                  fieldErrors.password ? "admin-password-error" : undefined
-                }
+                aria-describedby={fieldErrors.password ? "admin-password-error" : undefined}
                 className="mt-1.5 h-11"
               />
               {fieldErrors.password ? (
-                <p
-                  id="admin-password-error"
-                  className="mt-1.5 text-xs font-medium text-red-600"
-                >
+                <p id="admin-password-error" className="mt-1.5 text-xs font-medium text-red-600">
                   {fieldErrors.password}
                 </p>
               ) : null}

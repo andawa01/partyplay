@@ -8,11 +8,7 @@ import {
   useDeleteOffer,
   useSaveOffer,
 } from "../../../hooks/use-admin-catalogue";
-import type {
-  AdminOffer,
-  FieldErrors,
-  OfferFormValues,
-} from "../../../lib/admin-catalogue";
+import type { AdminOffer, FieldErrors, OfferFormValues } from "../../../lib/admin-catalogue";
 import {
   emptyOfferForm,
   formFieldErrors,
@@ -29,14 +25,7 @@ import { Button } from "../../ui/button";
 import { ErrorState } from "../../ui/error-state";
 import { Input } from "../../ui/input";
 import { Textarea } from "../../ui/textarea";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../../ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
 import {
   CatalogueDialog,
   CatalogueTableSkeleton,
@@ -123,17 +112,13 @@ export function OffersPanel({ currency }: { currency: string }) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <p className="font-medium text-slate-800">
-                      {discountLabel(offer, currency)}
-                    </p>
+                    <p className="font-medium text-slate-800">{discountLabel(offer, currency)}</p>
                     <p className="text-xs text-slate-500">
                       {offer.discountType === "PERCENTAGE" ? "Percentage" : "Fixed amount"}
                     </p>
                   </TableCell>
                   <TableCell>
-                    <p className="text-sm text-slate-800">
-                      {offerAppliesToLabel(offer.appliesTo)}
-                    </p>
+                    <p className="text-sm text-slate-800">{offerAppliesToLabel(offer.appliesTo)}</p>
                     {offer.appliesToId ? (
                       <p className="text-xs text-slate-500">Specific item</p>
                     ) : null}
@@ -249,10 +234,7 @@ export function OfferFormDialog({
   const [errors, setErrors] = useState<FieldErrors<OfferFormValues>>({});
   const save = useSaveOffer();
 
-  function setField<K extends keyof OfferFormValues>(
-    field: K,
-    value: OfferFormValues[K],
-  ) {
+  function setField<K extends keyof OfferFormValues>(field: K, value: OfferFormValues[K]) {
     setValues((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
     if (save.error) {
@@ -268,10 +250,8 @@ export function OfferFormDialog({
     }
   }
 
-  const needsTarget =
-    values.appliesTo === "ONE_EQUIPMENT" || values.appliesTo === "ONE_PACKAGE";
-  const targetOptions =
-    values.appliesTo === "ONE_EQUIPMENT" ? equipment : packages;
+  const needsTarget = values.appliesTo === "ONE_EQUIPMENT" || values.appliesTo === "ONE_PACKAGE";
+  const targetOptions = values.appliesTo === "ONE_EQUIPMENT" ? equipment : packages;
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -326,7 +306,11 @@ export function OfferFormDialog({
             htmlFor="offer-slug"
             required={!offer}
             error={errors.slug}
-            hint={offer ? "The public URL keeps its original slug." : "Lowercase words separated by hyphens."}
+            hint={
+              offer
+                ? "The public URL keeps its original slug."
+                : "Lowercase words separated by hyphens."
+            }
           >
             <Input
               id="offer-slug"
@@ -351,10 +335,7 @@ export function OfferFormDialog({
               id="offer-discount-type"
               value={values.discountType}
               onChange={(event) =>
-                setField(
-                  "discountType",
-                  event.target.value as "PERCENTAGE" | "FIXED_AMOUNT",
-                )
+                setField("discountType", event.target.value as "PERCENTAGE" | "FIXED_AMOUNT")
               }
               className={nativeSelectClassName}
             >
@@ -375,9 +356,7 @@ export function OfferFormDialog({
               onChange={(event) => setField("discountValue", event.target.value)}
               placeholder={values.discountType === "PERCENTAGE" ? "10" : "0.00"}
               aria-invalid={Boolean(errors.discountValue)}
-              aria-describedby={
-                errors.discountValue ? "offer-discount-value-error" : undefined
-              }
+              aria-describedby={errors.discountValue ? "offer-discount-value-error" : undefined}
             />
           </FormField>
         </div>
@@ -493,9 +472,7 @@ export function OfferFormDialog({
             maxLength={2000}
             placeholder="What is the offer, and what should the customer know?"
             aria-invalid={Boolean(errors.description)}
-            aria-describedby={
-              errors.description ? "offer-description-error" : undefined
-            }
+            aria-describedby={errors.description ? "offer-description-error" : undefined}
           />
         </FormField>
 

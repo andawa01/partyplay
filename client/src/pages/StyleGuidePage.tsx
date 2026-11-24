@@ -74,9 +74,7 @@ function Scale({
       <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
         {steps.map((colour) => (
           <li key={colour.step}>
-            <div
-              className={`h-14 rounded-md border border-slate-200 ${colour.className}`}
-            />
+            <div className={`h-14 rounded-md border border-slate-200 ${colour.className}`} />
             <p className="mt-1 text-xs font-medium text-slate-900">
               {name.toLowerCase()}-{colour.step}
             </p>
@@ -105,8 +103,8 @@ export default function StyleGuidePage() {
       <h1 className="text-3xl font-bold text-slate-900">Style guide</h1>
       <p className="mt-2 max-w-2xl text-slate-600">
         The shared palette and primitives every slice reuses. Values live in{" "}
-        <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">src/index.css</code>; sky
-        blue carries primary actions, links and focus, baby pink is an accent only.
+        <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">src/index.css</code>; sky blue
+        carries primary actions, links and focus, baby pink is an accent only.
       </p>
 
       <Section
@@ -257,11 +255,7 @@ export default function StyleGuidePage() {
             <h3 className="text-sm font-medium text-slate-900">With retry</h3>
             <ErrorState
               error={
-                new ApiError(
-                  409,
-                  "INVALID_TRANSITION",
-                  "A completed booking cannot be cancelled.",
-                )
+                new ApiError(409, "INVALID_TRANSITION", "A completed booking cannot be cancelled.")
               }
               onRetry={handleDemoRetry}
               isRetrying={retrying}
@@ -302,11 +296,7 @@ export default function StyleGuidePage() {
             variant="outline"
             onClick={() =>
               toastError(
-                new ApiError(
-                  409,
-                  "INVALID_TRANSITION",
-                  "A completed booking cannot be cancelled.",
-                ),
+                new ApiError(409, "INVALID_TRANSITION", "A completed booking cannot be cancelled."),
               )
             }
           >
@@ -329,8 +319,8 @@ export default function StyleGuidePage() {
           </Button>
         </div>
         <p className="mt-4 text-xs text-slate-500">
-          Toasts sit top-right and are announced, not just shown. A toast never replaces an
-          inline field error, and a page that failed to load uses ErrorState instead.
+          Toasts sit top-right and are announced, not just shown. A toast never replaces an inline
+          field error, and a page that failed to load uses ErrorState instead.
         </p>
       </Section>
     </section>

@@ -10,9 +10,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       {children}
       <Toaster />
-      {import.meta.env.DEV ? (
-        <ReactQueryDevtools initialIsOpen />
-      ) : null}
+      {import.meta.env.DEV ? <ReactQueryDevtools initialIsOpen /> : null}
     </QueryClientProvider>
   );
 }

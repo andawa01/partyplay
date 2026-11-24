@@ -11,7 +11,10 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
-import { AdminBookingStatusBadge, PaymentStatusBadge } from "../../components/admin/bookings/BookingStatusBadge";
+import {
+  AdminBookingStatusBadge,
+  PaymentStatusBadge,
+} from "../../components/admin/bookings/BookingStatusBadge";
 import { BookingsFilters } from "../../components/admin/bookings/BookingsFilters";
 import { Pagination } from "../../components/catalogue/Pagination";
 import { Badge } from "../../components/ui/badge";
@@ -26,15 +29,9 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table";
-import {
-  useAdminBookingCounts,
-  useAdminBookings,
-} from "../../hooks/use-admin-bookings";
+import { useAdminBookingCounts, useAdminBookings } from "../../hooks/use-admin-bookings";
 import type { BookingListFilters } from "../../lib/admin-bookings";
-import {
-  ADMIN_BOOKING_STATUSES,
-  hasBookingFilters,
-} from "../../lib/admin-bookings";
+import { ADMIN_BOOKING_STATUSES, hasBookingFilters } from "../../lib/admin-bookings";
 import type { BookingStatus } from "../../lib/bookings";
 import { formatDateTime, formatLongDate } from "../../lib/dates";
 import { formatMoney } from "../../lib/money";
@@ -63,7 +60,11 @@ export default function AdminBookingsPage() {
   };
 
   const list = useAdminBookings(filters);
-  const counts = useAdminBookingCounts({ from: from || undefined, to: to || undefined, q: q || undefined });
+  const counts = useAdminBookingCounts({
+    from: from || undefined,
+    to: to || undefined,
+    q: q || undefined,
+  });
   const [search, setSearch] = useState(q);
 
   const patchParams = useCallback(
@@ -154,9 +155,7 @@ export default function AdminBookingsPage() {
                 className="rounded-xl bg-white/80 px-3 py-2.5 ring-1 ring-white"
               >
                 <dt className="text-xs font-medium text-slate-500">{item.label}</dt>
-                <dd className="mt-0.5 text-xl font-semibold text-slate-900">
-                  {item.value ?? "—"}
-                </dd>
+                <dd className="mt-0.5 text-xl font-semibold text-slate-900">{item.value ?? "—"}</dd>
               </div>
             ))}
           </dl>
@@ -198,9 +197,7 @@ export default function AdminBookingsPage() {
         <BookingTableSkeleton />
       ) : pageOutOfRange ? (
         <div className="rounded-2xl border border-dashed border-brand-200 bg-brand-50 p-8 text-center">
-          <h2 className="text-lg font-semibold text-slate-900">
-            That page is past the end
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-900">That page is past the end</h2>
           <p className="mt-1 text-sm text-slate-600">
             These filters have {totalPages} page{totalPages === 1 ? "" : "s"}.
           </p>
@@ -245,18 +242,14 @@ export default function AdminBookingsPage() {
                       </p>
                     </TableCell>
                     <TableCell>
-                      <p className="font-medium text-slate-900">
-                        {booking.customer.name}
-                      </p>
+                      <p className="font-medium text-slate-900">{booking.customer.name}</p>
                       <p className="flex items-center gap-1 text-xs text-slate-500">
                         <Phone aria-hidden="true" className="size-3" />
                         {booking.customer.phone ?? "No phone"}
                       </p>
                     </TableCell>
                     <TableCell>
-                      <p className="text-sm text-slate-800">
-                        {formatLongDate(booking.startDate)}
-                      </p>
+                      <p className="text-sm text-slate-800">{formatLongDate(booking.startDate)}</p>
                       <p className="text-xs text-slate-500">
                         to {formatLongDate(booking.endDate)} · {booking.rentalDays} day
                         {booking.rentalDays === 1 ? "" : "s"}
@@ -296,9 +289,7 @@ export default function AdminBookingsPage() {
                         ) : (
                           <Store aria-hidden="true" className="size-3.5 text-brand-700" />
                         )}
-                        {booking.fulfilmentMethod === "DELIVERY"
-                          ? "Delivery"
-                          : "Collection"}
+                        {booking.fulfilmentMethod === "DELIVERY" ? "Delivery" : "Collection"}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -329,9 +320,7 @@ export default function AdminBookingsPage() {
           <Pagination
             page={page}
             totalPages={totalPages}
-            onChange={(nextPage) =>
-              patchParams({ page: nextPage <= 1 ? null : String(nextPage) })
-            }
+            onChange={(nextPage) => patchParams({ page: nextPage <= 1 ? null : String(nextPage) })}
             label="Booking pages"
           />
         </>
@@ -340,13 +329,7 @@ export default function AdminBookingsPage() {
   );
 }
 
-function EmptyBookings({
-  filtered,
-  onClear,
-}: {
-  filtered: boolean;
-  onClear: () => void;
-}) {
+function EmptyBookings({ filtered, onClear }: { filtered: boolean; onClear: () => void }) {
   return (
     <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
       <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-blush-50 text-blush-700 ring-1 ring-blush-100">

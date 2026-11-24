@@ -80,9 +80,9 @@ describe("email validation", () => {
   });
 
   it("validates login and contact emails", () => {
-    expect(loginSchema.safeParse({ email: "owner@partyplay.co.ke", password: "secret" }).success).toBe(
-      true,
-    );
+    expect(
+      loginSchema.safeParse({ email: "owner@partyplay.co.ke", password: "secret" }).success,
+    ).toBe(true);
     expect(loginSchema.safeParse({ email: "not-an-email", password: "secret" }).success).toBe(
       false,
     );
@@ -139,9 +139,7 @@ describe("password reset validation", () => {
   const token = "a".repeat(43);
 
   it("accepts a strong password with a valid token", () => {
-    expect(resetPasswordSchema.safeParse({ token, newPassword: "Password1" }).success).toBe(
-      true,
-    );
+    expect(resetPasswordSchema.safeParse({ token, newPassword: "Password1" }).success).toBe(true);
   });
 
   it("rejects malformed tokens and weak passwords", () => {
@@ -149,11 +147,8 @@ describe("password reset validation", () => {
       resetPasswordSchema.safeParse({ token: "short", newPassword: "Password1" }).success,
     ).toBe(false);
     expect(
-      resetPasswordSchema.safeParse({ token: "not a token", newPassword: "Password1" })
-        .success,
+      resetPasswordSchema.safeParse({ token: "not a token", newPassword: "Password1" }).success,
     ).toBe(false);
-    expect(resetPasswordSchema.safeParse({ token, newPassword: "password" }).success).toBe(
-      false,
-    );
+    expect(resetPasswordSchema.safeParse({ token, newPassword: "password" }).success).toBe(false);
   });
 });

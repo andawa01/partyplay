@@ -1,35 +1,28 @@
-import {
-  ArrowLeft,
-  Boxes,
-  CalendarDays,
-  ChevronRight,
-  Info,
-  PartyPopper,
-} from 'lucide-react'
-import { Link, useParams } from 'react-router-dom'
+import { ArrowLeft, Boxes, CalendarDays, ChevronRight, Info, PartyPopper } from "lucide-react";
+import { Link, useParams } from "react-router-dom";
 
-import { EquipmentImage } from '../../components/catalogue/EquipmentImage'
-import { Badge } from '../../components/ui/badge'
-import { Button } from '../../components/ui/button'
-import { ErrorState } from '../../components/ui/error-state'
-import { Skeleton } from '../../components/ui/skeleton'
-import { useEquipmentDetail } from '../../hooks/use-catalogue'
-import { useSite } from '../../hooks/use-site'
-import { isApiError } from '../../lib/api'
-import { priceLabel, stockLabel, weeklyPriceLabel } from '../../lib/catalogue'
+import { EquipmentImage } from "../../components/catalogue/EquipmentImage";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { ErrorState } from "../../components/ui/error-state";
+import { Skeleton } from "../../components/ui/skeleton";
+import { useEquipmentDetail } from "../../hooks/use-catalogue";
+import { useSite } from "../../hooks/use-site";
+import { isApiError } from "../../lib/api";
+import { priceLabel, stockLabel, weeklyPriceLabel } from "../../lib/catalogue";
 
 export default function EquipmentDetailPage() {
-  const { slug = '' } = useParams()
-  const detail = useEquipmentDetail(slug)
-  const site = useSite()
-  const currency = site.data?.currency ?? 'KES'
+  const { slug = "" } = useParams();
+  const detail = useEquipmentDetail(slug);
+  const site = useSite();
+  const currency = site.data?.currency ?? "KES";
 
   if (detail.isPending) {
-    return <DetailSkeleton />
+    return <DetailSkeleton />;
   }
 
   if (detail.isError) {
-    const notFound = isApiError(detail.error) && detail.error.status === 404
+    const notFound = isApiError(detail.error) && detail.error.status === 404;
 
     return (
       <section className="mx-auto max-w-6xl px-4 py-12">
@@ -42,8 +35,8 @@ export default function EquipmentDetailPage() {
               We could not find that item
             </h1>
             <p className="mt-2 text-slate-600">
-              It may have been renamed or taken out of the catalogue. The rest of the fleet is
-              still here.
+              It may have been renamed or taken out of the catalogue. The rest of the fleet is still
+              here.
             </p>
             <Button asChild className="mt-6">
               <Link to="/equipment">Browse all equipment</Link>
@@ -58,22 +51,28 @@ export default function EquipmentDetailPage() {
           />
         )}
       </section>
-    )
+    );
   }
 
-  const equipment = detail.data
-  const price = priceLabel(equipment, currency)
-  const weekly = weeklyPriceLabel(equipment, currency)
-  const stock = stockLabel(equipment.total)
+  const equipment = detail.data;
+  const price = priceLabel(equipment, currency);
+  const weekly = weeklyPriceLabel(equipment, currency);
+  const stock = stockLabel(equipment.total);
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-10">
       <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-slate-500">
-        <Link to="/" className="rounded-sm hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300">
+        <Link
+          to="/"
+          className="rounded-sm hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+        >
           Home
         </Link>
         <ChevronRight aria-hidden="true" className="size-3.5 text-slate-400" />
-        <Link to="/equipment" className="rounded-sm hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300">
+        <Link
+          to="/equipment"
+          className="rounded-sm hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+        >
           Equipment
         </Link>
         <ChevronRight aria-hidden="true" className="size-3.5 text-slate-400" />
@@ -135,7 +134,7 @@ export default function EquipmentDetailPage() {
                   In the fleet
                 </dt>
                 <dd className="font-medium text-slate-900">
-                  {equipment.total} unit{equipment.total === 1 ? '' : 's'}
+                  {equipment.total} unit{equipment.total === 1 ? "" : "s"}
                 </dd>
               </div>
               <div className="flex items-center justify-between gap-3">
@@ -169,7 +168,7 @@ export default function EquipmentDetailPage() {
         </div>
       </div>
     </section>
-  )
+  );
 }
 
 function DetailSkeleton() {
@@ -191,5 +190,5 @@ function DetailSkeleton() {
       </div>
       <span className="sr-only">Loading equipment details…</span>
     </section>
-  )
+  );
 }

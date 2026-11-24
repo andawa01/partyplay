@@ -103,7 +103,9 @@ interface MappedPrismaError {
   details?: unknown;
 }
 
-function mapPrismaError(error: Prisma.PrismaClientKnownRequestError): MappedPrismaError | undefined {
+function mapPrismaError(
+  error: Prisma.PrismaClientKnownRequestError,
+): MappedPrismaError | undefined {
   switch (error.code) {
     case "P2002": {
       const fields = uniqueTargetFields(error);

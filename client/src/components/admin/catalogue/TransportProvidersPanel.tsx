@@ -23,14 +23,7 @@ import { Button } from "../../ui/button";
 import { ErrorState } from "../../ui/error-state";
 import { Input } from "../../ui/input";
 import { Textarea } from "../../ui/textarea";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../../ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
 import {
   CatalogueDialog,
   CatalogueTableSkeleton,
@@ -164,10 +157,7 @@ export function TransportProvidersPanel() {
       )}
 
       {creating ? (
-        <TransportProviderFormDialog
-          key="new-provider"
-          onClose={() => setCreating(false)}
-        />
+        <TransportProviderFormDialog key="new-provider" onClose={() => setCreating(false)} />
       ) : null}
 
       {editing ? (
@@ -218,9 +208,7 @@ function TransportProviderFormDialog({
   onClose: () => void;
 }) {
   const [values, setValues] = useState<TransportProviderFormValues>(() =>
-    provider
-      ? transportProviderToForm(provider)
-      : emptyTransportProviderForm(),
+    provider ? transportProviderToForm(provider) : emptyTransportProviderForm(),
   );
   const [errors, setErrors] = useState<FieldErrors<TransportProviderFormValues>>({});
   const save = useSaveTransportProvider();
@@ -272,12 +260,7 @@ function TransportProviderFormDialog({
         <FormError error={save.error} />
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
-            label="Name"
-            htmlFor="provider-name"
-            required
-            error={errors.name}
-          >
+          <FormField label="Name" htmlFor="provider-name" required error={errors.name}>
             <Input
               id="provider-name"
               value={values.name}
@@ -288,12 +271,7 @@ function TransportProviderFormDialog({
               autoFocus
             />
           </FormField>
-          <FormField
-            label="Phone"
-            htmlFor="provider-phone"
-            required
-            error={errors.phone}
-          >
+          <FormField label="Phone" htmlFor="provider-phone" required error={errors.phone}>
             <Input
               id="provider-phone"
               inputMode="numeric"
@@ -319,9 +297,7 @@ function TransportProviderFormDialog({
             onChange={(event) => setField("serviceArea", event.target.value)}
             placeholder="e.g. Nairobi and Kiambu"
             aria-invalid={Boolean(errors.serviceArea)}
-            aria-describedby={
-              errors.serviceArea ? "provider-service-area-error" : undefined
-            }
+            aria-describedby={errors.serviceArea ? "provider-service-area-error" : undefined}
           />
         </FormField>
 

@@ -1,85 +1,85 @@
-import { PartyPopper, Search, X } from 'lucide-react'
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { PartyPopper, Search, X } from "lucide-react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 
-import { EquipmentCard, EquipmentCardSkeleton } from '../../components/catalogue/EquipmentCard'
-import { Pagination } from '../../components/catalogue/Pagination'
-import { Button } from '../../components/ui/button'
-import { ErrorState } from '../../components/ui/error-state'
-import { Input } from '../../components/ui/input'
-import { Skeleton } from '../../components/ui/skeleton'
-import { useCategories, useEquipmentList } from '../../hooks/use-catalogue'
-import { useSite } from '../../hooks/use-site'
+import { EquipmentCard, EquipmentCardSkeleton } from "../../components/catalogue/EquipmentCard";
+import { Pagination } from "../../components/catalogue/Pagination";
+import { Button } from "../../components/ui/button";
+import { ErrorState } from "../../components/ui/error-state";
+import { Input } from "../../components/ui/input";
+import { Skeleton } from "../../components/ui/skeleton";
+import { useCategories, useEquipmentList } from "../../hooks/use-catalogue";
+import { useSite } from "../../hooks/use-site";
 
-const PAGE_SIZE = 12
+const PAGE_SIZE = 12;
 
 export default function EquipmentPage() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const q = searchParams.get('q') ?? ''
-  const category = searchParams.get('category') ?? ''
-  const rawPage = Number(searchParams.get('page') ?? '1')
-  const page = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1
+  const [searchParams, setSearchParams] = useSearchParams();
+  const q = searchParams.get("q") ?? "";
+  const category = searchParams.get("category") ?? "";
+  const rawPage = Number(searchParams.get("page") ?? "1");
+  const page = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1;
 
-  const site = useSite()
-  const currency = site.data?.currency ?? 'KES'
-  const categories = useCategories()
+  const site = useSite();
+  const currency = site.data?.currency ?? "KES";
+  const categories = useCategories();
   const list = useEquipmentList({
     category: category || undefined,
     q: q || undefined,
     page,
     pageSize: PAGE_SIZE,
-  })
+  });
 
-  const [search, setSearch] = useState(q)
+  const [search, setSearch] = useState(q);
 
   const patchParams = useCallback(
     (patch: Record<string, string | null>, replace = false) => {
       setSearchParams(
         (previous) => {
-          const next = new URLSearchParams(previous)
+          const next = new URLSearchParams(previous);
           for (const [key, value] of Object.entries(patch)) {
-            if (value === null || value === '') {
-              next.delete(key)
+            if (value === null || value === "") {
+              next.delete(key);
             } else {
-              next.set(key, value)
+              next.set(key, value);
             }
           }
-          return next
+          return next;
         },
         { replace },
-      )
+      );
     },
     [setSearchParams],
-  )
+  );
 
   // The URL is the source of truth: a back/forward navigation or a shared link updates the
   // field, and typing updates the URL after a short pause.
   useEffect(() => {
-    setSearch(q)
-  }, [q])
+    setSearch(q);
+  }, [q]);
 
   useEffect(() => {
-    const term = search.trim()
+    const term = search.trim();
     if (term === q) {
-      return
+      return;
     }
     const timer = window.setTimeout(() => {
-      patchParams({ q: term || null, page: null }, true)
-    }, 300)
-    return () => window.clearTimeout(timer)
-  }, [patchParams, q, search])
+      patchParams({ q: term || null, page: null }, true);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [patchParams, q, search]);
 
-  const total = list.data?.total ?? 0
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const pageOutOfRange = !list.isPending && total > 0 && page > totalPages
-  const from = total === 0 || pageOutOfRange ? 0 : (page - 1) * PAGE_SIZE + 1
-  const to = pageOutOfRange ? 0 : Math.min(page * PAGE_SIZE, total)
-  const hasFilters = Boolean(q || category)
-  const items = list.data?.items
+  const total = list.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pageOutOfRange = !list.isPending && total > 0 && page > totalPages;
+  const from = total === 0 || pageOutOfRange ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const to = pageOutOfRange ? 0 : Math.min(page * PAGE_SIZE, total);
+  const hasFilters = Boolean(q || category);
+  const items = list.data?.items;
 
   function clearFilters() {
-    setSearch('')
-    patchParams({ q: null, category: null, page: null })
+    setSearch("");
+    patchParams({ q: null, category: null, page: null });
   }
 
   return (
@@ -137,8 +137,8 @@ export default function EquipmentPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setSearch('')
-                    patchParams({ q: null, page: null }, true)
+                    setSearch("");
+                    patchParams({ q: null, page: null }, true);
                   }}
                   aria-label="Clear search"
                   className="absolute right-1.5 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
@@ -158,7 +158,7 @@ export default function EquipmentPage() {
               ) : (
                 <>
                   <CategoryPill
-                    active={category === ''}
+                    active={category === ""}
                     onClick={() => patchParams({ category: null, page: null })}
                   >
                     All
@@ -183,14 +183,14 @@ export default function EquipmentPage() {
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-sm text-slate-600">
             <p aria-live="polite">
               {list.isPending
-                ? 'Loading the catalogue…'
+                ? "Loading the catalogue…"
                 : pageOutOfRange
-                  ? 'That page is past the end of the catalogue'
+                  ? "That page is past the end of the catalogue"
                   : total === 0
                     ? hasFilters
-                      ? 'No matches for these filters'
-                      : 'The catalogue is empty'
-                    : `Showing ${from}–${to} of ${total} item${total === 1 ? '' : 's'}`}
+                      ? "No matches for these filters"
+                      : "The catalogue is empty"
+                    : `Showing ${from}–${to} of ${total} item${total === 1 ? "" : "s"}`}
               {list.isFetching && !list.isPending ? (
                 <span className="ml-2 text-slate-400">Updating…</span>
               ) : null}
@@ -241,12 +241,10 @@ export default function EquipmentPage() {
 
           {pageOutOfRange ? (
             <div className="rounded-2xl border border-dashed border-brand-200 bg-brand-50 p-8 text-center sm:p-12">
-              <h3 className="text-xl font-semibold text-slate-900">
-                That page is past the end
-              </h3>
+              <h3 className="text-xl font-semibold text-slate-900">That page is past the end</h3>
               <p className="mx-auto mt-2 max-w-md text-slate-600">
-                The catalogue has {totalPages} page{totalPages === 1 ? '' : 's'} with these
-                filters. Jump back to the beginning.
+                The catalogue has {totalPages} page{totalPages === 1 ? "" : "s"} with these filters.
+                Jump back to the beginning.
               </p>
               <Button
                 type="button"
@@ -269,8 +267,8 @@ export default function EquipmentPage() {
                   No equipment matches those filters
                 </h3>
                 <p className="mx-auto mt-2 max-w-md text-slate-600">
-                  Try a shorter search term or a different category — the rest of the fleet is
-                  one click away.
+                  Try a shorter search term or a different category — the rest of the fleet is one
+                  click away.
                 </p>
                 <Button type="button" variant="outline" className="mt-5" onClick={clearFilters}>
                   Clear filters
@@ -299,13 +297,15 @@ export default function EquipmentPage() {
             <Pagination
               page={page}
               totalPages={totalPages}
-              onChange={(nextPage) => patchParams({ page: nextPage <= 1 ? null : String(nextPage) })}
+              onChange={(nextPage) =>
+                patchParams({ page: nextPage <= 1 ? null : String(nextPage) })
+              }
             />
           ) : null}
         </div>
       </section>
     </div>
-  )
+  );
 }
 
 function CategoryPill({
@@ -313,9 +313,9 @@ function CategoryPill({
   onClick,
   children,
 }: {
-  active: boolean
-  onClick: () => void
-  children: ReactNode
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
 }) {
   return (
     <button
@@ -324,11 +324,11 @@ function CategoryPill({
       aria-pressed={active}
       className={
         active
-          ? 'whitespace-nowrap rounded-full bg-brand-700 px-3.5 py-1.5 text-sm font-medium text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2'
-          : 'whitespace-nowrap rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-600 transition hover:border-brand-300 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2'
+          ? "whitespace-nowrap rounded-full bg-brand-700 px-3.5 py-1.5 text-sm font-medium text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2"
+          : "whitespace-nowrap rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-600 transition hover:border-brand-300 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-2"
       }
     >
       {children}
     </button>
-  )
+  );
 }

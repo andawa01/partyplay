@@ -97,15 +97,9 @@ describe("AdminDashboardPage", () => {
     expect(
       await screen.findByRole("heading", { name: /Good to see you, Owner/ }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Pending requests").parentElement).toHaveTextContent(
-      "4",
-    );
-    expect(
-      screen.getByText("Confirmed this month").parentElement,
-    ).toHaveTextContent("7");
-    expect(screen.getByText("Completed jobs").parentElement).toHaveTextContent(
-      "12",
-    );
+    expect(screen.getByText("Pending requests").parentElement).toHaveTextContent("4");
+    expect(screen.getByText("Confirmed this month").parentElement).toHaveTextContent("7");
+    expect(screen.getByText("Completed jobs").parentElement).toHaveTextContent("12");
     expect(screen.getByText(/12,500\.00/)).toBeInTheDocument();
     expect(screen.getByText(/4,200\.00/)).toBeInTheDocument();
     expect(screen.getByText(/3,100\.00/)).toBeInTheDocument();

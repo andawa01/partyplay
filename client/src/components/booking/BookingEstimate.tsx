@@ -56,9 +56,7 @@ export function BookingEstimate({
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-slate-900">
-              Your estimate
-            </h2>
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900">Your estimate</h2>
             <p className="mt-1 text-sm text-slate-600">Calculated on the server.</p>
           </div>
           <Badge variant="outline" className="shrink-0 bg-blush-50">
@@ -69,9 +67,7 @@ export function BookingEstimate({
         <div className="mt-4 rounded-xl bg-slate-50 p-3.5 ring-1 ring-slate-100">
           {hasRange ? (
             <>
-              <p className="text-sm font-semibold text-slate-900">
-                {formatLongDate(startDate)}
-              </p>
+              <p className="text-sm font-semibold text-slate-900">{formatLongDate(startDate)}</p>
               <p className="text-sm text-slate-600">to {formatLongDate(endDate)}</p>
             </>
           ) : (
@@ -170,8 +166,8 @@ export function BookingEstimate({
         </Button>
         <p className="mt-3 flex items-start gap-1.5 text-xs leading-relaxed text-slate-500">
           <Lock aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-brand-700" />
-          No payment is taken now. The owner confirms availability, transport and the final
-          total before the booking is held.
+          No payment is taken now. The owner confirms availability, transport and the final total
+          before the booking is held.
         </p>
       </div>
     </div>
@@ -264,9 +260,7 @@ function AvailabilityList({
 }) {
   if (rows.length === 0) {
     return (
-      <p className="mt-3 text-sm text-slate-600">
-        No stock rows came back for this selection.
-      </p>
+      <p className="mt-3 text-sm text-slate-600">No stock rows came back for this selection.</p>
     );
   }
 
@@ -286,10 +280,7 @@ function AvailabilityList({
                 {row.available} free · {required} needed
               </p>
             </div>
-            <Badge
-              variant={enough ? "success" : "destructive"}
-              className="shrink-0"
-            >
+            <Badge variant={enough ? "success" : "destructive"} className="shrink-0">
               {enough ? "Enough" : "Short"}
             </Badge>
           </li>
@@ -298,5 +289,3 @@ function AvailabilityList({
     </ul>
   );
 }
-
-

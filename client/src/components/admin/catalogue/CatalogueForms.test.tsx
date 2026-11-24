@@ -23,9 +23,7 @@ function renderWithClient(children: React.ReactNode) {
     },
   });
 
-  return render(
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
-  );
+  return render(<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>);
 }
 
 const category: AdminCategory = {
@@ -93,12 +91,11 @@ describe("admin catalogue forms", () => {
   });
 
   it("keeps the form values and shows the server message on a slug conflict", async () => {
-    const fetchMock = vi.fn(
-      async (_input: RequestInfo | URL, _init?: RequestInit) =>
-        jsonResponse(409, {
-          error: 'A record with this slug already exists',
-          code: "CONFLICT",
-        }),
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      jsonResponse(409, {
+        error: "A record with this slug already exists",
+        code: "CONFLICT",
+      }),
     );
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
@@ -117,9 +114,7 @@ describe("admin catalogue forms", () => {
     await user.click(screen.getByRole("button", { name: "Add equipment" }));
 
     expect(await screen.findByText("Could not save changes")).toBeInTheDocument();
-    expect(
-      screen.getByText("A record with this slug already exists"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("A record with this slug already exists")).toBeInTheDocument();
 
     // The operator's input is still on screen so they can change the slug and retry.
     expect(screen.getByLabelText(/^Name/)).toHaveValue("Test chairs");
@@ -138,35 +133,33 @@ describe("admin catalogue forms", () => {
   });
 
   it("uploads an image and saves its Cloudinary reference", async () => {
-    const fetchMock = vi.fn(
-      async (input: RequestInfo | URL, _init?: RequestInit) => {
-        const url = String(input);
-        if (url === "/api/admin/uploads/sign") {
-          return jsonResponse(200, {
-            data: {
-              cloudName: "demo",
-              apiKey: "123456789",
-              timestamp: 1_764_000_000,
-              signature: "a".repeat(40),
-              folder: "partyplay/equipment",
-              uploadUrl: "https://api.cloudinary.com/v1_1/demo/image/upload",
-              allowedFormats: ["jpg", "jpeg", "png", "webp"],
-              maxFileSize: 8 * 1024 * 1024,
-            },
-          });
-        }
-        if (url.startsWith("https://api.cloudinary.com")) {
-          return jsonResponse(200, {
-            secure_url:
-              "https://res.cloudinary.com/demo/image/upload/v1/partyplay/equipment/chairs.jpg",
-            public_id: "partyplay/equipment/chairs",
-            width: 1200,
-            height: 800,
-          });
-        }
-        return jsonResponse(201, { data: equipmentRow("eq-new", "Test chairs") });
-      },
-    );
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
+      const url = String(input);
+      if (url === "/api/admin/uploads/sign") {
+        return jsonResponse(200, {
+          data: {
+            cloudName: "demo",
+            apiKey: "123456789",
+            timestamp: 1_764_000_000,
+            signature: "a".repeat(40),
+            folder: "partyplay/equipment",
+            uploadUrl: "https://api.cloudinary.com/v1_1/demo/image/upload",
+            allowedFormats: ["jpg", "jpeg", "png", "webp"],
+            maxFileSize: 8 * 1024 * 1024,
+          },
+        });
+      }
+      if (url.startsWith("https://api.cloudinary.com")) {
+        return jsonResponse(200, {
+          secure_url:
+            "https://res.cloudinary.com/demo/image/upload/v1/partyplay/equipment/chairs.jpg",
+          public_id: "partyplay/equipment/chairs",
+          width: 1200,
+          height: 800,
+        });
+      }
+      return jsonResponse(201, { data: equipmentRow("eq-new", "Test chairs") });
+    });
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
 
@@ -196,8 +189,7 @@ describe("admin catalogue forms", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
     const saveInit = fetchMock.mock.calls[2]?.[1] as RequestInit;
     expect(JSON.parse(String(saveInit.body))).toMatchObject({
-      imageUrl:
-        "https://res.cloudinary.com/demo/image/upload/v1/partyplay/equipment/chairs.jpg",
+      imageUrl: "https://res.cloudinary.com/demo/image/upload/v1/partyplay/equipment/chairs.jpg",
       imagePublicId: "partyplay/equipment/chairs",
     });
   });
@@ -209,10 +201,7 @@ describe("admin catalogue forms", () => {
 
     renderWithClient(
       <PackageFormDialog
-        equipment={[
-          equipmentRow("eq-chairs", "Chairs"),
-          equipmentRow("eq-tables", "Tables"),
-        ]}
+        equipment={[equipmentRow("eq-chairs", "Chairs"), equipmentRow("eq-tables", "Tables")]}
         onClose={vi.fn()}
       />,
     );
@@ -230,9 +219,7 @@ describe("admin catalogue forms", () => {
 
     await user.click(screen.getByRole("button", { name: "Add package" }));
 
-    expect(
-      await screen.findByText("Each equipment item can only appear once"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Each equipment item can only appear once")).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -252,16 +239,11 @@ describe("admin catalogue forms", () => {
     await user.type(screen.getByLabelText(/^Name/), "Test offer");
     await user.type(screen.getByLabelText(/^Slug/), "test-offer");
     await user.type(screen.getByLabelText(/percentage off/i), "10");
-    await user.selectOptions(
-      screen.getByLabelText(/^Applies to/),
-      "ONE_EQUIPMENT",
-    );
+    await user.selectOptions(screen.getByLabelText(/^Applies to/), "ONE_EQUIPMENT");
 
     await user.click(screen.getByRole("button", { name: "Add offer" }));
 
-    expect(
-      await screen.findByText("Choose what this offer applies to"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Choose what this offer applies to")).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

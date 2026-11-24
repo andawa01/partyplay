@@ -32,10 +32,9 @@ export function assertTransition(from: BookingStatus, to: BookingStatus): void {
     return;
   }
 
-  throw new ApiError(
-    409,
-    "INVALID_TRANSITION",
-    `A booking cannot move from ${from} to ${to}`,
-    { from, to, allowed: ALLOWED_TRANSITIONS[from] },
-  );
+  throw new ApiError(409, "INVALID_TRANSITION", `A booking cannot move from ${from} to ${to}`, {
+    from,
+    to,
+    allowed: ALLOWED_TRANSITIONS[from],
+  });
 }

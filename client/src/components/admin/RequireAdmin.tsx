@@ -20,9 +20,7 @@ export function RequireAdmin() {
 
   if (session.isError) {
     if (isApiError(session.error) && session.error.status === 401) {
-      return (
-        <Navigate to="/admin/login" replace state={{ from: location }} />
-      );
+      return <Navigate to="/admin/login" replace state={{ from: location }} />;
     }
 
     return (

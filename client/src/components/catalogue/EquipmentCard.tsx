@@ -22,21 +22,14 @@ export function EquipmentCard({
       className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2"
     >
       <div className="relative aspect-[4/3]">
-        <EquipmentImage
-          src={equipment.imageUrl}
-          alt={equipment.name}
-          className="size-full"
-        />
+        <EquipmentImage src={equipment.imageUrl} alt={equipment.name} className="size-full" />
         <Badge
           variant="outline"
           className="absolute left-3 top-3 border-white/70 bg-white/90 text-brand-800 backdrop-blur"
         >
           {equipment.category.name}
         </Badge>
-        <Badge
-          variant={stock.variant}
-          className="absolute right-3 top-3 shadow-sm"
-        >
+        <Badge variant={stock.variant} className="absolute right-3 top-3 shadow-sm">
           {stock.label}
         </Badge>
       </div>

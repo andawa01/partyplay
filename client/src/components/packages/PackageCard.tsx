@@ -2,21 +2,11 @@ import { ArrowUpRight, Check, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import type { PartyPackage } from "../../lib/packages";
-import {
-  itemLabel,
-  packageDurationLabel,
-  packagePriceLabel,
-} from "../../lib/packages";
+import { itemLabel, packageDurationLabel, packagePriceLabel } from "../../lib/packages";
 import { Badge } from "../ui/badge";
 import { PackageImage } from "./PackageImage";
 
-export function PackageCard({
-  pkg,
-  currency,
-}: {
-  pkg: PartyPackage;
-  currency: string;
-}) {
+export function PackageCard({ pkg, currency }: { pkg: PartyPackage; currency: string }) {
   const duration = packageDurationLabel(pkg.duration);
   const visibleItems = pkg.items.slice(0, 3);
   const extraItems = pkg.items.length - visibleItems.length;
@@ -61,9 +51,7 @@ export function PackageCard({
             ))}
           </ul>
           {extraItems > 0 ? (
-            <p className="mt-2 pl-5.5 text-sm text-slate-500">
-              + {extraItems} more included
-            </p>
+            <p className="mt-2 pl-5.5 text-sm text-slate-500">+ {extraItems} more included</p>
           ) : null}
         </div>
 

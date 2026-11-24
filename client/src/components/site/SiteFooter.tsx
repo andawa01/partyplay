@@ -18,10 +18,10 @@ const linkClass =
 export function SiteFooter({ site = SITE_FALLBACK }: { site?: SiteSettings }) {
   const hasContact = Boolean(
     site.contactPhone ||
-      site.contactWhatsApp ||
-      site.contactEmail ||
-      site.address ||
-      site.transportProviders.length > 0,
+    site.contactWhatsApp ||
+    site.contactEmail ||
+    site.address ||
+    site.transportProviders.length > 0,
   );
 
   return (
@@ -99,7 +99,10 @@ export function SiteFooter({ site = SITE_FALLBACK }: { site?: SiteSettings }) {
               <ul className="mt-4 space-y-3 text-sm">
                 {site.contactPhone ? (
                   <li>
-                    <a href={telHref(site.contactPhone)} className={`flex items-center gap-2.5 ${linkClass}`}>
+                    <a
+                      href={telHref(site.contactPhone)}
+                      className={`flex items-center gap-2.5 ${linkClass}`}
+                    >
                       <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white text-brand-700 ring-1 ring-blush-100">
                         <Phone aria-hidden="true" className="size-4" />
                       </span>
@@ -126,7 +129,10 @@ export function SiteFooter({ site = SITE_FALLBACK }: { site?: SiteSettings }) {
                 ) : null}
                 {site.contactEmail ? (
                   <li>
-                    <a href={mailtoHref(site.contactEmail)} className={`flex items-center gap-2.5 ${linkClass}`}>
+                    <a
+                      href={mailtoHref(site.contactEmail)}
+                      className={`flex items-center gap-2.5 ${linkClass}`}
+                    >
                       <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white text-brand-700 ring-1 ring-blush-100">
                         <Mail aria-hidden="true" className="size-4" />
                       </span>

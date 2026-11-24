@@ -15,33 +15,25 @@ import { paymentEditPayload } from "../lib/admin-payments";
 import type { AdminBookingDetail } from "../lib/admin-bookings";
 import { queryKeys } from "../lib/query-keys";
 
-function applyPaymentSummary(
-  queryClient: QueryClient,
-  summary: BookingPaymentSummary,
-): void {
-  queryClient.setQueryData<AdminBookingDetail>(
-    queryKeys.admin.booking(summary.id),
-    (current) =>
-      current
-        ? {
-            ...current,
+function applyPaymentSummary(queryClient: QueryClient, summary: BookingPaymentSummary): void {
+  queryClient.setQueryData<AdminBookingDetail>(queryKeys.admin.booking(summary.id), (current) =>
+    current
+      ? {
+          ...current,
+          paidAmount: summary.paidAmount,
+          paymentStatus: summary.paymentStatus,
+          totals: {
+            ...current.totals,
             paidAmount: summary.paidAmount,
-            paymentStatus: summary.paymentStatus,
-            totals: {
-              ...current.totals,
-              paidAmount: summary.paidAmount,
-              amountDue: summary.amountDue,
-              overpaidBy: summary.overpaidBy,
-            },
-          }
-        : current,
+            amountDue: summary.amountDue,
+            overpaidBy: summary.overpaidBy,
+          },
+        }
+      : current,
   );
 }
 
-function refreshAfterPayment(
-  queryClient: QueryClient,
-  bookingId: string,
-): Promise<unknown> {
+function refreshAfterPayment(queryClient: QueryClient, bookingId: string): Promise<unknown> {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: queryKeys.admin.payments(bookingId) }),
     queryClient.invalidateQueries({ queryKey: ["admin", "bookings"] }),
@@ -71,21 +63,12 @@ export function useRecordPayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      bookingId,
-      input,
-    }: {
-      bookingId: string;
-      input: PaymentWriteInput;
-    }) =>
+    mutationFn: async ({ bookingId, input }: { bookingId: string; input: PaymentWriteInput }) =>
       (
-        await apiFetch<PaymentMutationResult>(
-          `/api/admin/bookings/${bookingId}/payments`,
-          {
-            method: "POST",
-            body: JSON.stringify(input),
-          },
-        )
+        await apiFetch<PaymentMutationResult>(`/api/admin/bookings/${bookingId}/payments`, {
+          method: "POST",
+          body: JSON.stringify(input),
+        })
       ).data,
     onSuccess: (result) => {
       applyPaymentSummary(queryClient, result.booking);
@@ -98,13 +81,7 @@ export function useUpdatePayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      paymentId,
-      input,
-    }: {
-      paymentId: string;
-      input: PaymentEditFormValues;
-    }) =>
+    mutationFn: async ({ paymentId, input }: { paymentId: string; input: PaymentEditFormValues }) =>
       (
         await apiFetch<PaymentMutationResult>(`/api/admin/payments/${paymentId}`, {
           method: "PATCH",

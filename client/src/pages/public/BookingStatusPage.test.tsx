@@ -49,17 +49,13 @@ describe("BookingStatusPage", () => {
 
     expect(await screen.findByText("Too many lookups")).toBeInTheDocument();
     expect(
-      screen.getByText(
-        "Too many booking lookups. Please wait a few minutes and try again.",
-      ),
+      screen.getByText("Too many booking lookups. Please wait a few minutes and try again."),
     ).toBeInTheDocument();
     expect(screen.getByText("RATE_LIMITED")).toBeInTheDocument();
     expect(
       screen.getByText(/please wait a few minutes before checking again/i),
     ).toBeInTheDocument();
-    expect(
-      await screen.findByRole("button", { name: /too many lookups/i }),
-    ).toBeDisabled();
+    expect(await screen.findByRole("button", { name: /too many lookups/i })).toBeDisabled();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/bookings/PP-4ITSLZ");

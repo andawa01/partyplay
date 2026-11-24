@@ -3,14 +3,8 @@ import { createPortal } from "react-dom";
 
 import { useSite } from "../../../hooks/use-site";
 import type { AdminBookingDetail } from "../../../lib/admin-bookings";
-import type {
-  BookingPaymentSummary,
-  PaymentRow,
-} from "../../../lib/admin-payments";
-import {
-  paymentMethodLabel,
-  paymentReceiptNumber,
-} from "../../../lib/admin-payments";
+import type { BookingPaymentSummary, PaymentRow } from "../../../lib/admin-payments";
+import { paymentMethodLabel, paymentReceiptNumber } from "../../../lib/admin-payments";
 import { formatDateTime, formatLongDate } from "../../../lib/dates";
 import { formatMoney } from "../../../lib/money";
 import { SITE_FALLBACK } from "../../../lib/site";
@@ -156,9 +150,7 @@ function ReceiptDocument({
             <p className="mt-0.5 text-sm text-slate-600">{booking.customer.phone}</p>
           ) : null}
           {booking.customer.email ? (
-            <p className="mt-0.5 break-all text-sm text-slate-600">
-              {booking.customer.email}
-            </p>
+            <p className="mt-0.5 break-all text-sm text-slate-600">{booking.customer.email}</p>
           ) : null}
         </section>
 
@@ -213,12 +205,8 @@ function ReceiptDocument({
         </div>
         {payment.description ? (
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-              Note
-            </p>
-            <p className="mt-1 text-sm leading-relaxed text-slate-700">
-              {payment.description}
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Note</p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-700">{payment.description}</p>
           </div>
         ) : null}
       </div>
@@ -226,8 +214,8 @@ function ReceiptDocument({
       <footer className="mt-6 border-t border-dashed border-slate-200 pt-4 text-xs leading-relaxed text-slate-500">
         <p>Thank you for choosing {businessName}.</p>
         <p className="mt-1">
-          This receipt confirms the payment recorded against booking {booking.code}. The
-          balance shown reflects the booking when this receipt was printed.
+          This receipt confirms the payment recorded against booking {booking.code}. The balance
+          shown reflects the booking when this receipt was printed.
         </p>
       </footer>
     </article>
@@ -246,7 +234,11 @@ function ReceiptLine({
   return (
     <div className="flex justify-between gap-3">
       <dt className="text-slate-500">{label}</dt>
-      <dd className={mono ? "break-all text-right font-mono text-slate-800" : "text-right text-slate-800"}>
+      <dd
+        className={
+          mono ? "break-all text-right font-mono text-slate-800" : "text-right text-slate-800"
+        }
+      >
         {value}
       </dd>
     </div>

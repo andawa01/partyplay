@@ -24,9 +24,7 @@ const UPCOMING_LIMIT = 5;
  * Calendar dates (`startDate`) stay UTC dates; only timestamps need this shift.
  */
 function nairobiMonthStart(today: Date): Date {
-  return new Date(
-    Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1) - 3 * 60 * 60 * 1000,
-  );
+  return new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1) - 3 * 60 * 60 * 1000);
 }
 
 function addDays(date: Date, days: number): Date {

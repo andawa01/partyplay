@@ -19,10 +19,7 @@ vi.mock("./lib/email", () => ({
 import { createApp } from "./app";
 import { db, ensureClient } from "./config/db";
 import { formatCalendarDate, todayInNairobi } from "./lib/dates";
-import {
-  issuePasswordResetToken,
-  PASSWORD_RESET_RETENTION_MS,
-} from "./services/auth";
+import { issuePasswordResetToken, PASSWORD_RESET_RETENTION_MS } from "./services/auth";
 
 /**
  * HTTP smoke tests: the real app, middleware and routes against the configured database.

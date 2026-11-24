@@ -1,16 +1,16 @@
-import { ArrowRight, PartyPopper, Sparkles } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { ArrowRight, PartyPopper, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 
-import { PackageCard, PackageCardSkeleton } from '../../components/packages/PackageCard'
-import { Button } from '../../components/ui/button'
-import { ErrorState } from '../../components/ui/error-state'
-import { usePackages } from '../../hooks/use-packages'
-import { useSite } from '../../hooks/use-site'
+import { PackageCard, PackageCardSkeleton } from "../../components/packages/PackageCard";
+import { Button } from "../../components/ui/button";
+import { ErrorState } from "../../components/ui/error-state";
+import { usePackages } from "../../hooks/use-packages";
+import { useSite } from "../../hooks/use-site";
 
 export default function PackagesPage() {
-  const packages = usePackages()
-  const site = useSite()
-  const currency = site.data?.currency ?? 'KES'
+  const packages = usePackages();
+  const site = useSite();
+  const currency = site.data?.currency ?? "KES";
 
   return (
     <div className="pb-4">
@@ -33,8 +33,8 @@ export default function PackagesPage() {
               Everything for the party, in one booking
             </h1>
             <p className="mt-4 max-w-xl text-lg leading-relaxed text-slate-600">
-              A castle, the seating, the tables and the sound — put together so you can plan
-              less and celebrate more.
+              A castle, the seating, the tables and the sound — put together so you can plan less
+              and celebrate more.
             </p>
           </div>
         </div>
@@ -43,7 +43,10 @@ export default function PackagesPage() {
       <section className="mx-auto mt-10 max-w-6xl px-4" aria-labelledby="packages-heading">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 id="packages-heading" className="text-2xl font-semibold tracking-tight text-slate-900">
+            <h2
+              id="packages-heading"
+              className="text-2xl font-semibold tracking-tight text-slate-900"
+            >
               Choose your setup
             </h2>
             <p className="mt-1 text-slate-600">
@@ -93,8 +96,8 @@ export default function PackagesPage() {
                 No packages are published yet
               </h3>
               <p className="mx-auto mt-2 max-w-md text-slate-600">
-                The owner is putting the bundles together. You can still browse individual
-                items or tell us what you are planning.
+                The owner is putting the bundles together. You can still browse individual items or
+                tell us what you are planning.
               </p>
               <div className="mt-5 flex flex-wrap justify-center gap-2">
                 <Button asChild>
@@ -128,5 +131,5 @@ export default function PackagesPage() {
         </div>
       </section>
     </div>
-  )
+  );
 }

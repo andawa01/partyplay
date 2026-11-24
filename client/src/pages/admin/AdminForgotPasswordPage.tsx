@@ -67,12 +67,11 @@ export default function AdminForgotPasswordPage() {
               </span>
               <h1 className="mt-4 text-2xl font-bold tracking-tight">Check your inbox</h1>
               <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                If that email belongs to an admin account, a one-time reset link is on its
-                way. It expires after 30 minutes.
+                If that email belongs to an admin account, a one-time reset link is on its way. It
+                expires after 30 minutes.
               </p>
               <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                Check your spam folder if it does not arrive. Only the latest link will
-                work.
+                Check your spam folder if it does not arrive. Only the latest link will work.
               </p>
               <Button asChild size="lg" className="mt-6 w-full">
                 <Link to="/admin/login">Back to sign in</Link>
@@ -87,8 +86,8 @@ export default function AdminForgotPasswordPage() {
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight">Forgot password?</h1>
                   <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                    Enter the admin email address and we&apos;ll send a one-time link to
-                    choose a new password.
+                    Enter the admin email address and we&apos;ll send a one-time link to choose a
+                    new password.
                   </p>
                 </div>
               </div>
@@ -103,9 +102,7 @@ export default function AdminForgotPasswordPage() {
                         : "Could not send the reset email"}
                   </AlertTitle>
                   <AlertDescription>
-                    {isApiError(error)
-                      ? error.message
-                      : "Check your connection and try again."}
+                    {isApiError(error) ? error.message : "Check your connection and try again."}
                   </AlertDescription>
                   {notConfigured ? (
                     <p className="mt-2 text-xs">
@@ -138,10 +135,7 @@ export default function AdminForgotPasswordPage() {
                     className="mt-1.5 h-11"
                   />
                   {fieldError ? (
-                    <p
-                      id="forgot-email-error"
-                      className="mt-1.5 text-xs font-medium text-red-600"
-                    >
+                    <p id="forgot-email-error" className="mt-1.5 text-xs font-medium text-red-600">
                       {fieldError}
                     </p>
                   ) : null}
@@ -166,8 +160,8 @@ export default function AdminForgotPasswordPage() {
               </form>
 
               <p className="mt-4 text-xs leading-relaxed text-slate-500">
-                For security, we do not confirm whether an email address has an account.
-                Only the newest link works.
+                For security, we do not confirm whether an email address has an account. Only the
+                newest link works.
               </p>
             </>
           )}

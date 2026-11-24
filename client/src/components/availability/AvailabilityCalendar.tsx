@@ -2,12 +2,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import type { CalendarDay } from "../../lib/availability";
 import { cn } from "../../lib/cn";
-import {
-  addMonths,
-  formatLongDate,
-  formatMonthLabel,
-  monthCells,
-} from "../../lib/dates";
+import { addMonths, formatLongDate, formatMonthLabel, monthCells } from "../../lib/dates";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -110,10 +105,7 @@ export function AvailabilityCalendar({
             const isEnd = date === endDate;
             const isEndpoint = isStart || isEnd;
             const isInRange =
-              startDate !== "" &&
-              endDate !== "" &&
-              date > startDate &&
-              date < endDate;
+              startDate !== "" && endDate !== "" && date > startDate && date < endDate;
 
             const unavailableReason = isPast
               ? "Past date"
@@ -144,15 +136,9 @@ export function AvailabilityCalendar({
                   isPending &&
                     !isEndpoint &&
                     "animate-pulse cursor-wait bg-slate-50 text-slate-300",
-                  date === today &&
-                    !isEndpoint &&
-                    !isInRange &&
-                    "ring-1 ring-brand-300",
-                  isEndpoint &&
-                    "bg-brand-700 text-white shadow-sm hover:bg-brand-800",
-                  !isEndpoint &&
-                    isInRange &&
-                    "bg-brand-50 text-brand-900 hover:bg-brand-100",
+                  date === today && !isEndpoint && !isInRange && "ring-1 ring-brand-300",
+                  isEndpoint && "bg-brand-700 text-white shadow-sm hover:bg-brand-800",
+                  !isEndpoint && isInRange && "bg-brand-50 text-brand-900 hover:bg-brand-100",
                   !isEndpoint &&
                     !isInRange &&
                     !isUnavailable &&
@@ -185,12 +171,14 @@ export function AvailabilityCalendar({
           Selected
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full border border-slate-300 bg-white" />
+          <span
+            aria-hidden="true"
+            className="h-2.5 w-2.5 rounded-full border border-slate-300 bg-white"
+          />
           Available
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true" className="size-2.5 rounded-full bg-blush-400" />
-          2 or fewer left
+          <span aria-hidden="true" className="size-2.5 rounded-full bg-blush-400" />2 or fewer left
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span
@@ -202,10 +190,7 @@ export function AvailabilityCalendar({
           Fully booked
         </span>
       </div>
-      <p className="mt-3 text-xs text-slate-500">
-        Fully booked and past days cannot be selected.
-      </p>
+      <p className="mt-3 text-xs text-slate-500">Fully booked and past days cannot be selected.</p>
     </div>
   );
 }
-

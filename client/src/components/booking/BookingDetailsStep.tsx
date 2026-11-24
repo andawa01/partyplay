@@ -52,12 +52,7 @@ export function BookingDetailsStep({
       </fieldset>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <Field
-          label="Your name"
-          htmlFor="booking-name"
-          error={errors.name}
-          required
-        >
+        <Field label="Your name" htmlFor="booking-name" error={errors.name} required>
           <Input
             id="booking-name"
             value={details.name}
@@ -170,8 +165,8 @@ export function BookingDetailsStep({
       </div>
 
       <p className="mt-5 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-500">
-        We use these details only to confirm this request. Sending it does not confirm the
-        booking or take payment — the owner will be in touch.
+        We use these details only to confirm this request. Sending it does not confirm the booking
+        or take payment — the owner will be in touch.
       </p>
     </section>
   );
@@ -221,9 +216,7 @@ function FulfilmentOption({
       </span>
       <span>
         <span className="block text-sm font-semibold text-slate-900">{title}</span>
-        <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">
-          {description}
-        </span>
+        <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">{description}</span>
       </span>
     </label>
   );

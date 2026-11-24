@@ -42,9 +42,7 @@ export function useBookingQuote(request: BookingQuoteRequest | null) {
 export function useBookingLookup() {
   return useMutation({
     mutationFn: async (code: string) =>
-      (
-        await apiFetch<PublicBooking>(`/api/bookings/${encodeURIComponent(code)}`)
-      ).data,
+      (await apiFetch<PublicBooking>(`/api/bookings/${encodeURIComponent(code)}`)).data,
     retry: false,
   });
 }
