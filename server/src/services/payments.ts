@@ -14,10 +14,7 @@ import type { CreatePaymentInput, UpdatePaymentInput } from "../schemas/payments
 export type DerivedPaymentStatus = "UNPAID" | "PARTIALLY_PAID" | "PAID";
 
 /** D2: derived from the amount, never stored, so it cannot disagree with the rows. */
-export function derivePaymentStatus(
-  paidAmount: number,
-  totalAmount: number,
-): DerivedPaymentStatus {
+export function derivePaymentStatus(paidAmount: number, totalAmount: number): DerivedPaymentStatus {
   if (paidAmount <= 0) {
     return "UNPAID";
   }
@@ -117,11 +114,7 @@ async function recomputePaidAmount(
  * Records a payment. Cash, M-Pesa and bank transfers are PAID immediately when the caller
  * supplies `paidAt`; MANUAL/OTHER start PENDING and are confirmed with PATCH.
  */
-export async function recordPayment(
-  bookingId: string,
-  input: CreatePaymentInput,
-  adminId: string,
-) {
+export async function recordPayment(bookingId: string, input: CreatePaymentInput, adminId: string) {
   const result = await db.$transaction(async (tx) => {
     const booking = await loadBooking(tx, bookingId);
 

@@ -4,13 +4,7 @@ import { cn } from "../../lib/cn";
 import { siteSocialLinks, type SiteSettings } from "../../lib/site";
 
 /** Renders nothing when the owner has not filled in any profile. */
-export function SocialLinks({
-  site,
-  className,
-}: {
-  site: SiteSettings;
-  className?: string;
-}) {
+export function SocialLinks({ site, className }: { site: SiteSettings; className?: string }) {
   const links = siteSocialLinks(site);
   if (links.length === 0) {
     return null;

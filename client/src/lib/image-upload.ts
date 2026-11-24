@@ -53,16 +53,15 @@ export async function uploadCatalogueImage(
     throw new Error(validationError);
   }
 
-  const { data: signature } = await apiFetch<ImageUploadSignature>(
-    "/api/admin/uploads/sign",
-    {
-      method: "POST",
-      body: JSON.stringify({ kind }),
-    },
-  );
+  const { data: signature } = await apiFetch<ImageUploadSignature>("/api/admin/uploads/sign", {
+    method: "POST",
+    body: JSON.stringify({ kind }),
+  });
 
   if (file.size > signature.maxFileSize) {
-    throw new Error(`Choose an image smaller than ${Math.round(signature.maxFileSize / 1024 / 1024)} MB.`);
+    throw new Error(
+      `Choose an image smaller than ${Math.round(signature.maxFileSize / 1024 / 1024)} MB.`,
+    );
   }
 
   const form = new FormData();

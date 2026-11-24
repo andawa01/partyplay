@@ -40,9 +40,7 @@ export function BookingSuccess({
           >
             Your request is in
           </h1>
-          <p className="mx-auto mt-2 max-w-lg leading-relaxed text-slate-600">
-            {booking.notice}
-          </p>
+          <p className="mx-auto mt-2 max-w-lg leading-relaxed text-slate-600">{booking.notice}</p>
 
           <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -92,8 +90,8 @@ export function BookingSuccess({
               <li className="flex gap-2.5">
                 <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-brand-700" />
                 <span>
-                  The owner checks the request and contacts you to confirm delivery,
-                  transport and the final total.
+                  The owner checks the request and contacts you to confirm delivery, transport and
+                  the final total.
                 </span>
               </li>
               <li className="flex gap-2.5">

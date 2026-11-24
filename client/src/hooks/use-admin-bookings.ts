@@ -1,10 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import {
-  useMutation,
-  useQueries,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "../lib/api";
 import type {
@@ -14,10 +9,7 @@ import type {
   BookingAvailabilityCheck,
   BookingListFilters,
 } from "../lib/admin-bookings";
-import {
-  ADMIN_BOOKING_STATUSES,
-  adminBookingsPath,
-} from "../lib/admin-bookings";
+import { ADMIN_BOOKING_STATUSES, adminBookingsPath } from "../lib/admin-bookings";
 import type { BookingStatus } from "../lib/bookings";
 import { queryKeys } from "../lib/query-keys";
 
@@ -33,9 +25,7 @@ export function useAdminBookings(filters: BookingListFilters) {
   return useQuery({
     queryKey: queryKeys.admin.bookings(filters),
     queryFn: async () => {
-      const result = await apiFetch<AdminBookingSummary[]>(
-        adminBookingsPath(filters),
-      );
+      const result = await apiFetch<AdminBookingSummary[]>(adminBookingsPath(filters));
       return {
         items: result.data,
         total: result.meta?.total ?? result.data.length,
@@ -50,19 +40,14 @@ export function useAdminBookings(filters: BookingListFilters) {
 export function useAdminBooking(id: string) {
   return useQuery({
     queryKey: queryKeys.admin.booking(id),
-    queryFn: async () =>
-      (await apiFetch<AdminBookingDetail>(`/api/admin/bookings/${id}`)).data,
+    queryFn: async () => (await apiFetch<AdminBookingDetail>(`/api/admin/bookings/${id}`)).data,
     enabled: id !== "",
     retry: false,
     staleTime: 15_000,
   });
 }
 
-export function useAdminBookingCounts(filters: {
-  from?: string;
-  to?: string;
-  q?: string;
-}) {
+export function useAdminBookingCounts(filters: { from?: string; to?: string; q?: string }) {
   const results = useQueries({
     queries: ADMIN_BOOKING_STATUSES.map((status) => ({
       queryKey: queryKeys.admin.bookingCounts({ ...filters, status }),
@@ -84,14 +69,9 @@ export function useAdminBookingCounts(filters: {
     }
   });
 
-  const allLoaded = ADMIN_BOOKING_STATUSES.every(
-    (status) => counts[status] !== undefined,
-  );
+  const allLoaded = ADMIN_BOOKING_STATUSES.every((status) => counts[status] !== undefined);
   const total = allLoaded
-    ? ADMIN_BOOKING_STATUSES.reduce(
-        (sum, status) => sum + (counts[status] ?? 0),
-        0,
-      )
+    ? ADMIN_BOOKING_STATUSES.reduce((sum, status) => sum + (counts[status] ?? 0), 0)
     : undefined;
 
   return {
@@ -141,20 +121,15 @@ export function useUpdateTransportCharge() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      id,
-      transportCharge,
-    }: {
-      id: string;
-      transportCharge: number;
-    }) => {
+    mutationFn: async ({ id, transportCharge }: { id: string; transportCharge: number }) => {
       return (
-        await apiFetch<
-          AdminBookingDetail & { totalChanged: boolean; changedBy: string }
-        >(`/api/admin/bookings/${id}/transport`, {
-          method: "PATCH",
-          body: JSON.stringify({ transportCharge }),
-        })
+        await apiFetch<AdminBookingDetail & { totalChanged: boolean; changedBy: string }>(
+          `/api/admin/bookings/${id}/transport`,
+          {
+            method: "PATCH",
+            body: JSON.stringify({ transportCharge }),
+          },
+        )
       ).data;
     },
     onSuccess: (booking) => {
@@ -169,10 +144,9 @@ export function useCheckBookingAvailability() {
   return useMutation({
     mutationFn: async (id: string) =>
       (
-        await apiFetch<BookingAvailabilityCheck>(
-          `/api/admin/bookings/${id}/availability`,
-          { method: "POST" },
-        )
+        await apiFetch<BookingAvailabilityCheck>(`/api/admin/bookings/${id}/availability`, {
+          method: "POST",
+        })
       ).data,
     retry: false,
   });

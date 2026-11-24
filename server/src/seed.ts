@@ -392,8 +392,7 @@ async function main() {
     data: {
       slug: "festive-package-offer",
       name: "Festive Package Offer",
-      description:
-        "Save KES 2,000 on any package booked for December and January celebrations.",
+      description: "Save KES 2,000 on any package booked for December and January celebrations.",
       discountType: "FIXED_AMOUNT",
       discountValue: 2000,
       appliesTo: "ALL_PACKAGES",

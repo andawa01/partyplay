@@ -15,10 +15,7 @@ import { queryKeys } from "../lib/query-keys";
  * entry. Previous page results are kept on screen while the next page loads to avoid a
  * layout jump.
  */
-export function useEquipmentList(
-  params: EquipmentListParams,
-  options?: { enabled?: boolean },
-) {
+export function useEquipmentList(params: EquipmentListParams, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: queryKeys.equipment({
       category: params.category,

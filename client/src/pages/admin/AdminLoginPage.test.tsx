@@ -70,9 +70,7 @@ describe("AdminLoginPage", () => {
     await user.type(screen.getByLabelText("Password"), "wrong-password");
     await user.click(screen.getByRole("button", { name: /sign in to admin/i }));
 
-    expect(
-      await screen.findByText("Email or password not recognised"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Email or password not recognised")).toBeInTheDocument();
     expect(screen.getByText("Invalid email or password")).toBeInTheDocument();
   });
 
@@ -148,7 +146,9 @@ describe("AdminLoginPage", () => {
     await user.type(screen.getByLabelText("Password"), "partyplay-admin-2024");
     await user.click(screen.getByRole("button", { name: /sign in to admin/i }));
 
-    expect(await screen.findByText("Attempted page /admin/dashboard?tab=bookings")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Attempted page /admin/dashboard?tab=bookings"),
+    ).toBeInTheDocument();
   });
 
   it("keeps the guard between an unauthenticated visitor and the dashboard", async () => {

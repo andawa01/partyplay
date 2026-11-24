@@ -34,8 +34,7 @@ const STATUS_META: Record<
     label: "Pending confirmation",
     badge: "warning",
     title: "Waiting for confirmation",
-    description:
-      "The owner is checking availability and will contact you to confirm the details.",
+    description: "The owner is checking availability and will contact you to confirm the details.",
     tone: "from-amber-50 via-white to-brand-50",
   },
   CONFIRMED: {
@@ -50,8 +49,7 @@ const STATUS_META: Record<
     label: "Not accepted",
     badge: "destructive",
     title: "This request was not accepted",
-    description:
-      "Contact us and we will help you find another date or a different setup.",
+    description: "Contact us and we will help you find another date or a different setup.",
     tone: "from-red-50 via-white to-blush-50",
   },
   CANCELLED: {
@@ -99,9 +97,7 @@ export function BookingStatusView({
       ? "The hold expired before this request was confirmed. The dates are no longer held."
       : (booking.notice ?? meta.description);
   const address =
-    booking.fulfilmentMethod === "DELIVERY"
-      ? booking.dropoffAddress
-      : booking.pickupAddress;
+    booking.fulfilmentMethod === "DELIVERY" ? booking.dropoffAddress : booking.pickupAddress;
   const hasNotes = Boolean(booking.notes || booking.specialRequests);
 
   return (
@@ -156,10 +152,7 @@ export function BookingStatusView({
               </h3>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
-                  <CalendarDays
-                    aria-hidden="true"
-                    className="size-5 text-brand-700"
-                  />
+                  <CalendarDays aria-hidden="true" className="size-5 text-brand-700" />
                   <p className="mt-2 text-xs font-medium uppercase tracking-[0.12em] text-slate-500">
                     Rental dates
                   </p>
@@ -179,9 +172,7 @@ export function BookingStatusView({
                     <Store aria-hidden="true" className="size-5 text-brand-700" />
                   )}
                   <p className="mt-2 text-xs font-medium uppercase tracking-[0.12em] text-slate-500">
-                    {booking.fulfilmentMethod === "DELIVERY"
-                      ? "Delivery"
-                      : "Collection"}
+                    {booking.fulfilmentMethod === "DELIVERY" ? "Delivery" : "Collection"}
                   </p>
                   <p className="mt-1 font-semibold text-slate-900">
                     {booking.fulfilmentMethod === "DELIVERY"
@@ -214,16 +205,11 @@ export function BookingStatusView({
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="flex items-center gap-2 font-medium text-slate-900">
-                          <Package
-                            aria-hidden="true"
-                            className="size-4 shrink-0 text-blush-700"
-                          />
+                          <Package aria-hidden="true" className="size-4 shrink-0 text-blush-700" />
                           {pkg.packageName}
                           {pkg.quantity > 1 ? ` × ${pkg.quantity}` : ""}
                         </p>
-                        <p className="mt-0.5 text-xs text-slate-500">
-                          Package · included items
-                        </p>
+                        <p className="mt-0.5 text-xs text-slate-500">Package · included items</p>
                       </div>
                       <span className="shrink-0 text-sm font-medium text-slate-900">
                         {formatMoney(pkg.lineTotal, booking.currency)}
@@ -249,10 +235,7 @@ export function BookingStatusView({
                   >
                     <div>
                       <p className="flex items-center gap-2 font-medium text-slate-900">
-                        <Boxes
-                          aria-hidden="true"
-                          className="size-4 shrink-0 text-brand-700"
-                        />
+                        <Boxes aria-hidden="true" className="size-4 shrink-0 text-brand-700" />
                         {line.equipmentName}
                         {line.quantity > 1 ? ` × ${line.quantity}` : ""}
                       </p>
@@ -281,9 +264,7 @@ export function BookingStatusView({
                   {booking.notes ? <p>{booking.notes}</p> : null}
                   {booking.specialRequests ? (
                     <p>
-                      <span className="font-medium text-slate-900">
-                        Special requests:{" "}
-                      </span>
+                      <span className="font-medium text-slate-900">Special requests: </span>
                       {booking.specialRequests}
                     </p>
                   ) : null}
@@ -297,17 +278,12 @@ export function BookingStatusView({
               <div
                 className={cn(
                   "rounded-2xl border p-5",
-                  booking.holdExpired
-                    ? "border-red-200 bg-red-50"
-                    : "border-amber-200 bg-amber-50",
+                  booking.holdExpired ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50",
                 )}
               >
                 <Timer
                   aria-hidden="true"
-                  className={cn(
-                    "size-5",
-                    booking.holdExpired ? "text-red-700" : "text-amber-700",
-                  )}
+                  className={cn("size-5", booking.holdExpired ? "text-red-700" : "text-amber-700")}
                 />
                 <p
                   className={cn(
@@ -391,8 +367,7 @@ export function BookingStatusView({
       </div>
 
       <p className="mt-3 text-center text-xs text-slate-500">
-        This page does not update automatically. Use “Refresh status” after speaking with
-        the owner.
+        This page does not update automatically. Use “Refresh status” after speaking with the owner.
       </p>
     </section>
   );

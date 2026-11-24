@@ -86,12 +86,16 @@ describe("priceEquipmentLine", () => {
       unitPrice: 599.97,
       priceForPeriod: 599.97,
     });
-    expect(priceEquipmentLine({ equipment: cheap, quantity: 3, days: DAYS }).priceForPeriod).toBe(1799.91);
+    expect(priceEquipmentLine({ equipment: cheap, quantity: 3, days: DAYS }).priceForPeriod).toBe(
+      1799.91,
+    );
   });
 
   it("prices a fractional daily rate without losing a cent", () => {
     const cheap: PricedEquipment = { ...castle, pricePerDay: 33.33 };
-    expect(priceEquipmentLine({ equipment: cheap, quantity: 3, days: 3 }).priceForPeriod).toBe(299.97);
+    expect(priceEquipmentLine({ equipment: cheap, quantity: 3, days: 3 }).priceForPeriod).toBe(
+      299.97,
+    );
   });
 
   it("refuses an item with no price for its mode instead of silently charging zero", () => {
@@ -152,7 +156,9 @@ describe("expandPackages", () => {
   });
 
   it("rejects a package quantity below one", () => {
-    expectBadRequest(() => expandPackages([{ packageId: silverCombo.id, quantity: 0 }], [silverCombo]));
+    expectBadRequest(() =>
+      expandPackages([{ packageId: silverCombo.id, quantity: 0 }], [silverCombo]),
+    );
   });
 });
 
@@ -322,5 +328,4 @@ describe("priceBooking", () => {
       }),
     );
   });
-
 });

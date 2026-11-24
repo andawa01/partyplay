@@ -36,8 +36,7 @@ export function TransportChargeDialog({
     const parsed = transportChargeSchema.safeParse({ transportCharge: value });
     if (!parsed.success) {
       setError(
-        parsed.error.flatten().fieldErrors.transportCharge?.[0] ??
-          "Enter a valid transport charge",
+        parsed.error.flatten().fieldErrors.transportCharge?.[0] ?? "Enter a valid transport charge",
       );
       return;
     }
@@ -71,8 +70,8 @@ export function TransportChargeDialog({
         <DialogHeader>
           <DialogTitle>Transport charge · {booking.code}</DialogTitle>
           <DialogDescription>
-            Set the delivery or collection charge. The server recalculates the booking
-            total; this screen never adds the amount itself.
+            Set the delivery or collection charge. The server recalculates the booking total; this
+            screen never adds the amount itself.
           </DialogDescription>
         </DialogHeader>
 
@@ -115,10 +114,7 @@ export function TransportChargeDialog({
               className="mt-1.5"
             />
             {error ? (
-              <p
-                id="transport-charge-error"
-                className="mt-1.5 text-xs font-medium text-red-600"
-              >
+              <p id="transport-charge-error" className="mt-1.5 text-xs font-medium text-red-600">
                 {error}
               </p>
             ) : (
@@ -129,12 +125,7 @@ export function TransportChargeDialog({
           </div>
 
           <DialogFooter className="border-t border-slate-100 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={update.isPending}
-            >
+            <Button type="button" variant="outline" onClick={onClose} disabled={update.isPending}>
               Cancel
             </Button>
             <Button type="submit" disabled={update.isPending} aria-busy={update.isPending}>

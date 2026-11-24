@@ -41,12 +41,8 @@ export default function HomePage() {
         </div>
       </section>
 
-
       {featuredPackages.length > 0 ? (
-        <section
-          className="mx-auto max-w-6xl px-4"
-          aria-labelledby="featured-packages-heading"
-        >
+        <section className="mx-auto max-w-6xl px-4" aria-labelledby="featured-packages-heading">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-blush-700">
@@ -60,8 +56,8 @@ export default function HomePage() {
                 The setups our customers book most
               </h2>
               <p className="mt-2 max-w-xl text-slate-600">
-                Complete party bundles with the castle, seating, tables and sound already
-                worked out — one price, one booking.
+                Complete party bundles with the castle, seating, tables and sound already worked out
+                — one price, one booking.
               </p>
             </div>
             <Button asChild variant="outline" className="shrink-0">

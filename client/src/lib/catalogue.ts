@@ -76,10 +76,7 @@ export interface PriceLabel {
  * shown as a secondary note rather than replacing the daily price.
  */
 export function priceLabel(
-  equipment: Pick<
-    EquipmentSummary,
-    "pricingMode" | "pricePerDay" | "pricePerWeek" | "flatPrice"
-  >,
+  equipment: Pick<EquipmentSummary, "pricingMode" | "pricePerDay" | "pricePerWeek" | "flatPrice">,
   currency: string,
 ): PriceLabel {
   if (equipment.pricingMode === "FLAT") {

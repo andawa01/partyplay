@@ -34,9 +34,7 @@ export function createApp(): Express {
   app.use(requestLogger);
   // `credentials` lets the client send the session cookie when it calls the API on a
   // different origin (it is same-origin behind the Vite proxy and Caddy in production).
-  app.use(
-    cors({ origin: process.env.CLIENT_URL ?? "http://localhost:5173", credentials: true }),
-  );
+  app.use(cors({ origin: process.env.CLIENT_URL ?? "http://localhost:5173", credentials: true }));
   app.use(cookieParser());
   app.use(express.json());
 

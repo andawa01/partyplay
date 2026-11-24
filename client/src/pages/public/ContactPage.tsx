@@ -7,25 +7,25 @@ import {
   Phone,
   Sparkles,
   Truck,
-} from 'lucide-react'
-import { Link } from 'react-router-dom'
+} from "lucide-react";
+import { Link } from "react-router-dom";
 
-import { SocialLinks } from '../../components/site/SocialLinks'
-import { Button } from '../../components/ui/button'
-import { ErrorState } from '../../components/ui/error-state'
-import { Skeleton } from '../../components/ui/skeleton'
-import { useSite } from '../../hooks/use-site'
-import { mailtoHref, siteSocialLinks, telHref, whatsAppHref } from '../../lib/site'
+import { SocialLinks } from "../../components/site/SocialLinks";
+import { Button } from "../../components/ui/button";
+import { ErrorState } from "../../components/ui/error-state";
+import { Skeleton } from "../../components/ui/skeleton";
+import { useSite } from "../../hooks/use-site";
+import { mailtoHref, siteSocialLinks, telHref, whatsAppHref } from "../../lib/site";
 
 const cardClass =
-  'group relative flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300'
+  "group relative flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300";
 
 function IconBadge({ icon: Icon }: { icon: typeof Phone }) {
   return (
     <span className="grid size-11 place-items-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-100 transition group-hover:bg-brand-100">
       <Icon aria-hidden="true" className="size-5" />
     </span>
-  )
+  );
 }
 
 function ContactCard({
@@ -35,16 +35,16 @@ function ContactCard({
   href,
   external,
 }: {
-  icon: typeof Phone
-  label: string
-  value: string
-  href: string
-  external?: boolean
+  icon: typeof Phone;
+  label: string;
+  value: string;
+  href: string;
+  external?: boolean;
 }) {
   return (
     <a
       href={href}
-      {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+      {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
       className={cardClass}
     >
       <IconBadge icon={icon} />
@@ -58,7 +58,7 @@ function ContactCard({
       </span>
       {external ? <span className="sr-only">(opens in a new tab)</span> : null}
     </a>
-  )
+  );
 }
 
 function ContactPageSkeleton() {
@@ -86,23 +86,21 @@ function ContactPageSkeleton() {
       </div>
       <span className="sr-only">Loading contact details…</span>
     </section>
-  )
+  );
 }
 
 export default function ContactPage() {
-  const { data: site, isPending, isError, error, refetch, isFetching } = useSite()
+  const { data: site, isPending, isError, error, refetch, isFetching } = useSite();
 
   if (isPending) {
-    return <ContactPageSkeleton />
+    return <ContactPageSkeleton />;
   }
 
   if (isError && !site) {
     return (
       <section className="mx-auto max-w-6xl px-4 py-10">
         <div className="rounded-3xl bg-linear-to-br from-brand-50 via-white to-blush-100 p-8 ring-1 ring-blush-100 sm:p-12">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">
-            Contact
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">Contact</p>
           <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-900">
             We are almost reachable
           </h1>
@@ -119,17 +117,17 @@ export default function ContactPage() {
           isRetrying={isFetching}
         />
       </section>
-    )
+    );
   }
 
   if (!site) {
-    return null
+    return null;
   }
 
   const hasDetails = Boolean(
     site.contactPhone || site.contactWhatsApp || site.contactEmail || site.address,
-  )
-  const hasSocials = siteSocialLinks(site).length > 0
+  );
+  const hasSocials = siteSocialLinks(site).length > 0;
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-10">
@@ -153,7 +151,7 @@ export default function ContactPage() {
           </h1>
           <p className="mt-4 max-w-xl text-lg leading-relaxed text-slate-600">
             {site.aboutText ??
-              'Bouncy castles, sound systems, tables and chairs — tell us what the day needs and we will help you build it.'}
+              "Bouncy castles, sound systems, tables and chairs — tell us what the day needs and we will help you build it."}
           </p>
 
           <div className="mt-7 flex flex-wrap gap-3">
@@ -186,9 +184,7 @@ export default function ContactPage() {
 
       <div className="mt-12 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Ways to reach us
-          </h2>
+          <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Ways to reach us</h2>
           <p className="mt-1 text-slate-600">
             Pick whichever is easiest — we answer calls, WhatsApp and email through the day.
           </p>
@@ -238,8 +234,8 @@ export default function ContactPage() {
           <div>
             <p className="font-semibold text-slate-900">Contact details are on the way</p>
             <p className="mt-1 text-sm text-slate-600">
-              Phone, WhatsApp, email and address are being updated. Send a booking request in
-              the meantime and we will reply with the details.
+              Phone, WhatsApp, email and address are being updated. Send a booking request in the
+              meantime and we will reply with the details.
             </p>
             <Button asChild variant="link" className="mt-2 h-auto px-0">
               <Link to="/booking">Start a booking</Link>
@@ -250,7 +246,10 @@ export default function ContactPage() {
 
       {site.transportProviders.length > 0 ? (
         <section className="mt-12" aria-labelledby="transport-heading">
-          <h2 id="transport-heading" className="text-2xl font-semibold tracking-tight text-slate-900">
+          <h2
+            id="transport-heading"
+            className="text-2xl font-semibold tracking-tight text-slate-900"
+          >
             Transport partners
           </h2>
           <p className="mt-1 text-slate-600">
@@ -286,12 +285,15 @@ export default function ContactPage() {
 
       {hasSocials ? (
         <section className="mt-12 border-t border-blush-100 pt-8" aria-labelledby="social-heading">
-          <h2 id="social-heading" className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <h2
+            id="social-heading"
+            className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500"
+          >
             Follow the setup
           </h2>
           <SocialLinks site={site} className="mt-3" />
         </section>
       ) : null}
     </section>
-  )
+  );
 }

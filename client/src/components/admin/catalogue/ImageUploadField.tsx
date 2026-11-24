@@ -2,11 +2,7 @@ import { Image as ImageIcon, Loader2, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { useUploadImage } from "../../../hooks/use-admin-catalogue";
-import {
-  IMAGE_ACCEPT,
-  validateImageFile,
-  type ImageUploadKind,
-} from "../../../lib/image-upload";
+import { IMAGE_ACCEPT, validateImageFile, type ImageUploadKind } from "../../../lib/image-upload";
 import { Button } from "../../ui/button";
 import { Label } from "../../ui/label";
 

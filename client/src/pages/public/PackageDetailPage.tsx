@@ -1,39 +1,28 @@
-import {
-  ArrowLeft,
-  CalendarDays,
-  Check,
-  ChevronRight,
-  Clock,
-  PartyPopper,
-} from 'lucide-react'
-import { Link, useParams } from 'react-router-dom'
+import { ArrowLeft, CalendarDays, Check, ChevronRight, Clock, PartyPopper } from "lucide-react";
+import { Link, useParams } from "react-router-dom";
 
-import { PackageImage } from '../../components/packages/PackageImage'
-import { Badge } from '../../components/ui/badge'
-import { Button } from '../../components/ui/button'
-import { ErrorState } from '../../components/ui/error-state'
-import { Skeleton } from '../../components/ui/skeleton'
-import { usePackageDetail } from '../../hooks/use-packages'
-import { useSite } from '../../hooks/use-site'
-import { isApiError } from '../../lib/api'
-import {
-  itemLabel,
-  packageDurationLabel,
-  packagePriceLabel,
-} from '../../lib/packages'
+import { PackageImage } from "../../components/packages/PackageImage";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { ErrorState } from "../../components/ui/error-state";
+import { Skeleton } from "../../components/ui/skeleton";
+import { usePackageDetail } from "../../hooks/use-packages";
+import { useSite } from "../../hooks/use-site";
+import { isApiError } from "../../lib/api";
+import { itemLabel, packageDurationLabel, packagePriceLabel } from "../../lib/packages";
 
 export default function PackageDetailPage() {
-  const { slug = '' } = useParams()
-  const detail = usePackageDetail(slug)
-  const site = useSite()
-  const currency = site.data?.currency ?? 'KES'
+  const { slug = "" } = useParams();
+  const detail = usePackageDetail(slug);
+  const site = useSite();
+  const currency = site.data?.currency ?? "KES";
 
   if (detail.isPending) {
-    return <PackageDetailSkeleton />
+    return <PackageDetailSkeleton />;
   }
 
   if (detail.isError) {
-    const notFound = isApiError(detail.error) && detail.error.status === 404
+    const notFound = isApiError(detail.error) && detail.error.status === 404;
 
     return (
       <section className="mx-auto max-w-6xl px-4 py-12">
@@ -61,11 +50,11 @@ export default function PackageDetailPage() {
           />
         )}
       </section>
-    )
+    );
   }
 
-  const pkg = detail.data
-  const duration = packageDurationLabel(pkg.duration)
+  const pkg = detail.data;
+  const duration = packageDurationLabel(pkg.duration);
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-10">
@@ -168,7 +157,7 @@ export default function PackageDetailPage() {
         </div>
       </div>
     </section>
-  )
+  );
 }
 
 function PackageDetailSkeleton() {
@@ -191,5 +180,5 @@ function PackageDetailSkeleton() {
       </div>
       <span className="sr-only">Loading package details…</span>
     </section>
-  )
+  );
 }

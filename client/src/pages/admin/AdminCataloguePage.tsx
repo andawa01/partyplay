@@ -1,12 +1,4 @@
-import {
-  ArrowUpRight,
-  BadgePercent,
-  Boxes,
-  Folder,
-  Package,
-  Sparkles,
-  Truck,
-} from "lucide-react";
+import { ArrowUpRight, BadgePercent, Boxes, Folder, Package, Sparkles, Truck } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { CategoriesPanel } from "../../components/admin/catalogue/CategoriesPanel";
@@ -66,9 +58,7 @@ const tabIds = new Set<TabId>(tabs.map((tab) => tab.id));
 export default function AdminCataloguePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requested = searchParams.get("tab");
-  const activeTab: TabId = tabIds.has(requested as TabId)
-    ? (requested as TabId)
-    : "equipment";
+  const activeTab: TabId = tabIds.has(requested as TabId) ? (requested as TabId) : "equipment";
 
   const site = useSite();
   const currency = site.data?.currency ?? "KES";
@@ -113,8 +103,8 @@ export default function AdminCataloguePage() {
               The public catalogue, without a rebuild.
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
-              Add equipment, build packages, publish offers and keep delivery
-              providers reachable. Saving a change refreshes the public catalogue.
+              Add equipment, build packages, publish offers and keep delivery providers reachable.
+              Saving a change refreshes the public catalogue.
             </p>
           </div>
           <Button asChild variant="outline" className="shrink-0 bg-white">
@@ -133,25 +123,16 @@ export default function AdminCataloguePage() {
             { label: "Offers", value: counts.offers },
             { label: "Providers", value: counts.transport },
           ].map((item) => (
-            <div
-              key={item.label}
-              className="rounded-xl bg-white/80 px-3 py-2.5 ring-1 ring-white"
-            >
+            <div key={item.label} className="rounded-xl bg-white/80 px-3 py-2.5 ring-1 ring-white">
               <dt className="text-xs font-medium text-slate-500">{item.label}</dt>
-              <dd className="mt-0.5 text-xl font-semibold text-slate-900">
-                {item.value ?? "—"}
-              </dd>
+              <dd className="mt-0.5 text-xl font-semibold text-slate-900">{item.value ?? "—"}</dd>
             </div>
           ))}
         </dl>
       </section>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
-        <div
-          role="tablist"
-          aria-label="Catalogue sections"
-          className="flex gap-1 overflow-x-auto"
-        >
+        <div role="tablist" aria-label="Catalogue sections" className="flex gap-1 overflow-x-auto">
           {tabs.map(({ id, label, icon: Icon, description }) => {
             const selected = id === activeTab;
             return (
@@ -185,9 +166,7 @@ export default function AdminCataloguePage() {
                       {counts[id] ?? "…"}
                     </Badge>
                   </span>
-                  <span className="hidden text-xs text-slate-500 sm:block">
-                    {description}
-                  </span>
+                  <span className="hidden text-xs text-slate-500 sm:block">{description}</span>
                 </span>
               </button>
             );

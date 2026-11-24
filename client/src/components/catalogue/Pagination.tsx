@@ -19,7 +19,10 @@ export function Pagination({
     return null;
   }
 
-  const start = Math.max(1, Math.min(page - Math.floor(WINDOW_SIZE / 2), totalPages - WINDOW_SIZE + 1));
+  const start = Math.max(
+    1,
+    Math.min(page - Math.floor(WINDOW_SIZE / 2), totalPages - WINDOW_SIZE + 1),
+  );
   const end = Math.min(totalPages, start + WINDOW_SIZE - 1);
   const pages = Array.from({ length: end - start + 1 }, (_, index) => start + index);
 

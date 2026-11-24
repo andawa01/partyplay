@@ -2,7 +2,7 @@
 
 **Prepared:** 15 November 2026
 **Updated:** 24 November 2026 — O1 operations package
-**Scope:** backend and deployment, as merged to `main` at `07e173f` plus the T1 branch
+**Scope:** backend and deployment, as merged to `main` at `07e173f` plus the T1/T2 branches
 **Purpose:** a plain list of what the backend does *not* do yet, so the owner can decide
 what is worth paying for next. Nothing here is a bug report against finished work — it is
 the boundary of the current build.
@@ -118,20 +118,17 @@ roles, but nothing creates or manages additional accounts.
 
 ## 7. Testing and code quality
 
-The HTTP smoke suite now runs in the CI job that owns Postgres, and the last-unit race is
-a committed test rather than a one-off script.
+No testing or code-quality gaps remain in this section.
 
-These remain:
-
-| Gap | Why it matters | Risk | Effort |
-|---|---|---|---|
-| No lint or format configuration | No ESLint/Prettier config, so style and obvious mistakes rely on review. | Low | S |
-| No coverage threshold | Nothing prevents a future change from dropping test coverage. | Low | S |
-
-**Done in T1:** the `Migrations` job runs `src/app.test.ts` against an empty migrated
+**Done in T1:** the `Migrations` job runs the HTTP suite against an empty migrated
 database with `PARTYPLAY_REQUIRE_SMOKE_DB=1`, so a missing connection fails the job instead
 of skipping. The suite also fires two concurrent requests for the last unit and asserts
 one `201` and one `409`.
+
+**Done in T2:** ESLint covers the server, client and tooling files; Prettier is checked in
+CI; client tests run in CI; and both workspaces enforce all-source coverage floors. The
+current floors are server 58% statements / 44% branches / 47% functions / 58% lines and
+client 27% / 19% / 25% / 27%.
 
 ---
 
@@ -184,4 +181,5 @@ unit of work:
 8. **Reports and CSV export** — needed at month end. *(§8)*
 
 The next item is maintenance blackout dates, which protects against renting out a broken
-item.
+item. Code-quality gates are now in place, so new work has lint, format and coverage
+feedback from CI.

@@ -296,7 +296,10 @@ async function assertEquipmentExists(
 }
 
 async function assertCategoryExists(categoryId: string): Promise<void> {
-  const category = await db.category.findUnique({ where: { id: categoryId }, select: { id: true } });
+  const category = await db.category.findUnique({
+    where: { id: categoryId },
+    select: { id: true },
+  });
   if (!category) {
     throw notFound(`Category "${categoryId}" was not found`);
   }

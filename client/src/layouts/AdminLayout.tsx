@@ -92,9 +92,7 @@ export default function AdminLayout() {
                 {initial}
               </span>
               <div className="max-w-40 leading-tight">
-                <p className="truncate text-sm font-semibold text-slate-900">
-                  {displayName}
-                </p>
+                <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
                 <p className="truncate text-xs text-slate-500">
                   {admin?.role === "OWNER" ? "Owner" : "Staff"}
                 </p>
@@ -137,9 +135,7 @@ export default function AdminLayout() {
               className={({ isActive }) =>
                 cn(
                   "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300",
-                  isActive
-                    ? "bg-brand-50 text-brand-800"
-                    : "text-slate-600 hover:bg-slate-50",
+                  isActive ? "bg-brand-50 text-brand-800" : "text-slate-600 hover:bg-slate-50",
                 )
               }
             >

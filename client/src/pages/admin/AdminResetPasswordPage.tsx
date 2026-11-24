@@ -8,10 +8,7 @@ import { Button } from "../../components/ui/button";
 import { Label } from "../../components/ui/label";
 import { useResetPassword } from "../../hooks/use-auth";
 import { isApiError } from "../../lib/api";
-import {
-  resetPasswordFormSchema,
-  type ResetPasswordFormValues,
-} from "../../lib/auth";
+import { resetPasswordFormSchema, type ResetPasswordFormValues } from "../../lib/auth";
 
 function readResetToken(): string {
   // The token lives in the fragment so it never reaches server logs or a Referer header.
@@ -28,9 +25,7 @@ export default function AdminResetPasswordPage() {
     newPassword: "",
     confirmPassword: "",
   });
-  const [fieldErrors, setFieldErrors] = useState<
-    Partial<Record<PasswordField, string>>
-  >({});
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<PasswordField, string>>>({});
   const [formError, setFormError] = useState<unknown>(null);
 
   const succeeded = resetPassword.isSuccess;
@@ -59,9 +54,7 @@ export default function AdminResetPasswordPage() {
     const parsed = resetPasswordFormSchema.safeParse(values);
     if (!parsed.success) {
       const nextErrors: Partial<Record<PasswordField, string>> = {};
-      for (const [field, messages] of Object.entries(
-        parsed.error.flatten().fieldErrors,
-      )) {
+      for (const [field, messages] of Object.entries(parsed.error.flatten().fieldErrors)) {
         if (messages?.[0]) {
           nextErrors[field as PasswordField] = messages[0];
         }
@@ -111,12 +104,10 @@ export default function AdminResetPasswordPage() {
               <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
                 <CheckCircle2 aria-hidden="true" className="size-7" />
               </span>
-              <h1 className="mt-4 text-2xl font-bold tracking-tight">
-                Password updated
-              </h1>
+              <h1 className="mt-4 text-2xl font-bold tracking-tight">Password updated</h1>
               <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                This reset link cannot be used again. Sign in with your new password.
-                Existing admin sessions have been signed out.
+                This reset link cannot be used again. Sign in with your new password. Existing admin
+                sessions have been signed out.
               </p>
               <Button asChild size="lg" className="mt-6 w-full">
                 <Link to="/admin/login">Go to sign in</Link>
@@ -131,8 +122,8 @@ export default function AdminResetPasswordPage() {
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight">Set a new password</h1>
                   <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                    Use the one-time link sent to your admin email. It expires after 30
-                    minutes and works once.
+                    Use the one-time link sent to your admin email. It expires after 30 minutes and
+                    works once.
                   </p>
                 </div>
               </div>
@@ -163,9 +154,7 @@ export default function AdminResetPasswordPage() {
                         : "Could not reset the password"}
                   </AlertTitle>
                   <AlertDescription>
-                    {isApiError(error)
-                      ? error.message
-                      : "Check your connection and try again."}
+                    {isApiError(error) ? error.message : "Check your connection and try again."}
                   </AlertDescription>
                   {invalidLink ? (
                     <p className="mt-2 text-xs">
@@ -219,15 +208,11 @@ export default function AdminResetPasswordPage() {
                       id="reset-password-confirm"
                       label="password confirmation"
                       value={values.confirmPassword}
-                      onChange={(event) =>
-                        updateField("confirmPassword", event.target.value)
-                      }
+                      onChange={(event) => updateField("confirmPassword", event.target.value)}
                       autoComplete="new-password"
                       aria-invalid={Boolean(fieldErrors.confirmPassword)}
                       aria-describedby={
-                        fieldErrors.confirmPassword
-                          ? "reset-password-confirm-error"
-                          : undefined
+                        fieldErrors.confirmPassword ? "reset-password-confirm-error" : undefined
                       }
                       className="mt-1.5 h-11"
                     />

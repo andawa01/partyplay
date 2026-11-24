@@ -2,12 +2,7 @@ import { z } from "zod";
 
 import type { BookingStatus, PaymentStatus } from "./bookings";
 
-export type PaymentMethod =
-  | "MANUAL"
-  | "MPESA"
-  | "BANK_TRANSFER"
-  | "CASH"
-  | "OTHER";
+export type PaymentMethod = "MANUAL" | "MPESA" | "BANK_TRANSFER" | "CASH" | "OTHER";
 
 export type PaymentRowStatus = "PENDING" | "PAID" | "FAILED";
 
@@ -52,10 +47,7 @@ export interface PaymentDeleteResult {
   booking: BookingPaymentSummary;
 }
 
-export const paymentMethodMeta: Record<
-  PaymentMethod,
-  { label: string; hint: string }
-> = {
+export const paymentMethodMeta: Record<PaymentMethod, { label: string; hint: string }> = {
   CASH: {
     label: "Cash",
     hint: "Recorded as paid when a paid date is supplied.",
@@ -93,7 +85,10 @@ export function paymentMethodLabel(method: PaymentMethod): string {
 
 /** A stable, printable reference derived from the payment row's immutable id. */
 export function paymentReceiptNumber(payment: Pick<PaymentRow, "id">): string {
-  const suffix = payment.id.replace(/[^a-z0-9]/gi, "").slice(-8).toUpperCase();
+  const suffix = payment.id
+    .replace(/[^a-z0-9]/gi, "")
+    .slice(-8)
+    .toUpperCase();
   return `RCPT-${suffix || "PAYMENT"}`;
 }
 
@@ -112,19 +107,20 @@ export const paymentFormSchema = z.object({
     .min(1, "Enter the amount received")
     .refine(
       (value) =>
-        /^\d+(?:\.\d{1,2})?$/.test(value) &&
-        Number(value) > 0 &&
-        Number(value) <= 99_999_999.99,
+        /^\d+(?:\.\d{1,2})?$/.test(value) && Number(value) > 0 && Number(value) <= 99_999_999.99,
       "Use an amount greater than 0 with up to 2 decimals",
     ),
   method: z.enum(["MANUAL", "MPESA", "BANK_TRANSFER", "CASH", "OTHER"]),
   providerRef: z.string().trim().max(128, "Keep the reference to 128 characters"),
-  paidAt: z.string().trim().refine((value) => {
-    if (value === "") {
-      return true;
-    }
-    return !Number.isNaN(new Date(value).getTime());
-  }, "Enter a valid date and time"),
+  paidAt: z
+    .string()
+    .trim()
+    .refine((value) => {
+      if (value === "") {
+        return true;
+      }
+      return !Number.isNaN(new Date(value).getTime());
+    }, "Enter a valid date and time"),
   description: z.string().trim().max(500, "Keep the note to 500 characters"),
 });
 
@@ -165,12 +161,15 @@ export type PaymentEditFormValues = {
 export const paymentEditSchema = z.object({
   status: z.enum(["PAID", "FAILED"]),
   providerRef: z.string().trim().max(128, "Keep the reference to 128 characters"),
-  paidAt: z.string().trim().refine((value) => {
-    if (value === "") {
-      return true;
-    }
-    return !Number.isNaN(new Date(value).getTime());
-  }, "Enter a valid date and time"),
+  paidAt: z
+    .string()
+    .trim()
+    .refine((value) => {
+      if (value === "") {
+        return true;
+      }
+      return !Number.isNaN(new Date(value).getTime());
+    }, "Enter a valid date and time"),
 });
 
 export function paymentEditToForm(payment: PaymentRow): PaymentEditFormValues {

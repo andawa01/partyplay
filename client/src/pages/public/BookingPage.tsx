@@ -11,10 +11,7 @@ import { Button } from "../../components/ui/button";
 import { ErrorState } from "../../components/ui/error-state";
 import { Skeleton } from "../../components/ui/skeleton";
 import { useCalendarForDemands, useSelectionAvailability } from "../../hooks/use-availability";
-import {
-  useBookingQuote,
-  useCreateBooking,
-} from "../../hooks/use-bookings";
+import { useBookingQuote, useCreateBooking } from "../../hooks/use-bookings";
 import { useEquipmentList } from "../../hooks/use-catalogue";
 import { usePackages } from "../../hooks/use-packages";
 import { useSite } from "../../hooks/use-site";
@@ -57,15 +54,13 @@ export default function BookingPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [details, setDetails] = useState<BookingDetails>(EMPTY_DETAILS);
-  const [fieldErrors, setFieldErrors] = useState<
-    Partial<Record<keyof BookingDetails, string>>
-  >({});
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof BookingDetails, string>>>({});
   const [submitError, setSubmitError] = useState<unknown>(null);
   const [seedNote, setSeedNote] = useState("");
   const seededKey = useRef("");
 
   const packages = packagesQuery.data ?? [];
-  const equipment = catalogueQuery.data?.items ?? [];
+  const equipment = useMemo(() => catalogueQuery.data?.items ?? [], [catalogueQuery.data]);
   const selectedPackage = packages.find((pkg) => pkg.id === selectedPackageId);
 
   const equipmentById = useMemo(
@@ -145,10 +140,7 @@ export default function BookingPage() {
     setSelectedPackageId(matchedPackage?.id ?? "");
     setPackageQuantity(1);
     const seedQuantity = matchedEquipment
-      ? Math.min(
-          Math.max(1, matchedEquipment.minQuantity),
-          matchedEquipment.maxQuantity,
-        )
+      ? Math.min(Math.max(1, matchedEquipment.minQuantity), matchedEquipment.maxQuantity)
       : 0;
     setEquipmentQuantities(
       matchedEquipment && seedQuantity > 0 ? { [matchedEquipment.id]: seedQuantity } : {},
@@ -214,8 +206,7 @@ export default function BookingPage() {
 
   const isCataloguePending = packagesQuery.isPending || catalogueQuery.isPending;
   const catalogueError = packagesQuery.error ?? catalogueQuery.error;
-  const isCatalogueError =
-    Boolean(catalogueError) && (!packagesQuery.data || !catalogueQuery.data);
+  const isCatalogueError = Boolean(catalogueError) && (!packagesQuery.data || !catalogueQuery.data);
 
   function choosePackage(packageId: string) {
     setSelectedPackageId(packageId);
@@ -243,10 +234,7 @@ export default function BookingPage() {
     });
   }
 
-  function updateDetail<K extends keyof BookingDetails>(
-    field: K,
-    value: BookingDetails[K],
-  ) {
+  function updateDetail<K extends keyof BookingDetails>(field: K, value: BookingDetails[K]) {
     setDetails((current) => ({ ...current, [field]: value }));
     setFieldErrors((current) => ({ ...current, [field]: undefined }));
     setSubmitError(null);
@@ -284,17 +272,13 @@ export default function BookingPage() {
     const parsed = bookingDetailsSchema.safeParse(details);
     if (!parsed.success) {
       const nextErrors: Partial<Record<keyof BookingDetails, string>> = {};
-      for (const [field, messages] of Object.entries(
-        parsed.error.flatten().fieldErrors,
-      )) {
+      for (const [field, messages] of Object.entries(parsed.error.flatten().fieldErrors)) {
         if (messages?.[0]) {
           nextErrors[field as keyof BookingDetails] = messages[0];
         }
       }
       setFieldErrors(nextErrors);
-      setSubmitError(
-        new BookingValidationError("Check the highlighted fields and try again."),
-      );
+      setSubmitError(new BookingValidationError("Check the highlighted fields and try again."));
       return;
     }
 
@@ -422,9 +406,9 @@ export default function BookingPage() {
           ) : null}
           {unresolvedPackageItems.length > 0 ? (
             <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-              This package includes {unresolvedPackageItems.join(", ")}, which is not in the
-              current catalogue. We can still price the rest, but mention it in your notes
-              so the owner can check.
+              This package includes {unresolvedPackageItems.join(", ")}, which is not in the current
+              catalogue. We can still price the rest, but mention it in your notes so the owner can
+              check.
             </p>
           ) : null}
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
@@ -482,11 +466,7 @@ export default function BookingPage() {
                 )}
               </section>
 
-              <BookingDetailsStep
-                details={details}
-                errors={fieldErrors}
-                onChange={updateDetail}
-              />
+              <BookingDetailsStep details={details} errors={fieldErrors} onChange={updateDetail} />
             </div>
 
             <div className="space-y-4 lg:sticky lg:top-6">
@@ -499,9 +479,7 @@ export default function BookingPage() {
                 onRetryQuote={() => void quote.refetch()}
                 isRetryingQuote={quote.isFetching}
                 availability={availability.data}
-                availabilityPending={
-                  validDates && hasItems && availability.isPending
-                }
+                availabilityPending={validDates && hasItems && availability.isPending}
                 availabilityError={availability.error}
                 requiredUnits={requiredUnits}
                 onRetryAvailability={() => void availability.refetch()}
@@ -524,9 +502,7 @@ export default function BookingPage() {
                 <span className="grid size-10 place-items-center rounded-xl bg-white text-blush-700 ring-1 ring-blush-100">
                   <LifeBuoy aria-hidden="true" className="size-5" />
                 </span>
-                <h2 className="mt-3 text-sm font-semibold text-slate-900">
-                  Not sure what fits?
-                </h2>
+                <h2 className="mt-3 text-sm font-semibold text-slate-900">Not sure what fits?</h2>
                 <p className="mt-1 text-sm leading-relaxed text-slate-600">
                   Tell us about the venue and the day — we can suggest a setup or check a
                   combination that is not listed.

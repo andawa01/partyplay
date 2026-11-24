@@ -1,13 +1,13 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet } from "react-router-dom";
 
-import { SiteFooter } from '../components/site/SiteFooter'
-import { useSite } from '../hooks/use-site'
-import { publicLinks } from '../lib/navigation'
-import { SITE_FALLBACK } from '../lib/site'
+import { SiteFooter } from "../components/site/SiteFooter";
+import { useSite } from "../hooks/use-site";
+import { publicLinks } from "../lib/navigation";
+import { SITE_FALLBACK } from "../lib/site";
 
 export default function PublicLayout() {
-  const { data } = useSite()
-  const site = data ?? SITE_FALLBACK
+  const { data } = useSite();
+  const site = data ?? SITE_FALLBACK;
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-slate-800">
@@ -21,11 +21,11 @@ export default function PublicLayout() {
               <li key={link.to}>
                 <NavLink
                   to={link.to}
-                  end={link.to === '/'}
+                  end={link.to === "/"}
                   className={({ isActive }) =>
                     isActive
-                      ? 'rounded-sm text-brand-700 underline decoration-blush-300 decoration-2 underline-offset-4'
-                      : 'rounded-sm text-slate-600 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200'
+                      ? "rounded-sm text-brand-700 underline decoration-blush-300 decoration-2 underline-offset-4"
+                      : "rounded-sm text-slate-600 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
                   }
                 >
                   {link.label}
@@ -42,5 +42,5 @@ export default function PublicLayout() {
 
       <SiteFooter site={site} />
     </div>
-  )
+  );
 }

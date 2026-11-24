@@ -10,10 +10,7 @@ import { Button } from "../../components/ui/button";
 import { Label } from "../../components/ui/label";
 import { useAdminSession, useChangePassword } from "../../hooks/use-auth";
 import { isApiError } from "../../lib/api";
-import {
-  changePasswordFormSchema,
-  type ChangePasswordFormValues,
-} from "../../lib/auth";
+import { changePasswordFormSchema, type ChangePasswordFormValues } from "../../lib/auth";
 import { clearSession } from "../../lib/session";
 import { toast } from "../../lib/toast";
 
@@ -32,9 +29,7 @@ export default function AdminSettingsPage() {
   const changePassword = useChangePassword();
 
   const [values, setValues] = useState(emptyPasswords);
-  const [fieldErrors, setFieldErrors] = useState<
-    Partial<Record<PasswordField, string>>
-  >({});
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<PasswordField, string>>>({});
   const [formError, setFormError] = useState<unknown>(null);
 
   const admin = session.data;
@@ -55,9 +50,7 @@ export default function AdminSettingsPage() {
     const parsed = changePasswordFormSchema.safeParse(values);
     if (!parsed.success) {
       const nextErrors: Partial<Record<PasswordField, string>> = {};
-      for (const [field, messages] of Object.entries(
-        parsed.error.flatten().fieldErrors,
-      )) {
+      for (const [field, messages] of Object.entries(parsed.error.flatten().fieldErrors)) {
         if (messages?.[0]) {
           nextErrors[field as PasswordField] = messages[0];
         }
@@ -98,9 +91,7 @@ export default function AdminSettingsPage() {
           <ShieldCheck aria-hidden="true" className="size-3.5" />
           Account and security
         </p>
-        <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">
-          Settings
-        </h1>
+        <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">Settings</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
           Review the account behind this session and change the password used to sign in.
         </p>
@@ -146,15 +137,10 @@ export default function AdminSettingsPage() {
               </div>
             </div>
             <div className="flex items-start gap-2.5">
-              <ShieldCheck
-                aria-hidden="true"
-                className="mt-0.5 size-4 shrink-0 text-brand-700"
-              />
+              <ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-brand-700" />
               <div>
                 <dt className="text-xs text-slate-500">Session</dt>
-                <dd className="font-medium text-slate-800">
-                  Protected by an http-only cookie
-                </dd>
+                <dd className="font-medium text-slate-800">Protected by an http-only cookie</dd>
               </div>
             </div>
           </dl>
@@ -173,7 +159,8 @@ export default function AdminSettingsPage() {
                 Change password
               </h2>
               <p className="mt-0.5 text-sm text-slate-600">
-                Use at least 8 characters with uppercase, lowercase and a number. Choose something unique to this account.
+                Use at least 8 characters with uppercase, lowercase and a number. Choose something
+                unique to this account.
               </p>
             </div>
           </div>
@@ -186,9 +173,7 @@ export default function AdminSettingsPage() {
                   : "Could not update the password"}
               </AlertTitle>
               <AlertDescription>
-                {isApiError(formError)
-                  ? formError.message
-                  : "Check your connection and try again."}
+                {isApiError(formError) ? formError.message : "Check your connection and try again."}
               </AlertDescription>
             </Alert>
           ) : null}

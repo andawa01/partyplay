@@ -29,14 +29,7 @@ import { ErrorState } from "../../ui/error-state";
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
 import { Textarea } from "../../ui/textarea";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../../ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
 import {
   CatalogueDialog,
   CatalogueTableSkeleton,
@@ -61,9 +54,7 @@ export function EquipmentPanel({ currency }: { currency: string }) {
   const [deactivating, setDeactivating] = useState<AdminEquipment | null>(null);
 
   const flatCategories = flattenCategories(categories.data ?? []);
-  const categoryIdBySlug = new Map(
-    flatCategories.map((category) => [category.slug, category.id]),
-  );
+  const categoryIdBySlug = new Map(flatCategories.map((category) => [category.slug, category.id]));
   const rows = equipment.data?.items ?? [];
 
   return (
@@ -125,11 +116,7 @@ export function EquipmentPanel({ currency }: { currency: string }) {
                     <div className="flex items-center gap-3">
                       <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-100">
                         {item.imageUrl ? (
-                          <img
-                            src={item.imageUrl}
-                            alt=""
-                            className="size-full object-cover"
-                          />
+                          <img src={item.imageUrl} alt="" className="size-full object-cover" />
                         ) : (
                           <Boxes aria-hidden="true" className="size-5" />
                         )}
@@ -143,12 +130,8 @@ export function EquipmentPanel({ currency }: { currency: string }) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <p className="font-medium text-slate-800">
-                      {priceForItem(item, currency)}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {pricingModeLabel(item.pricingMode)}
-                    </p>
+                    <p className="font-medium text-slate-800">{priceForItem(item, currency)}</p>
+                    <p className="text-xs text-slate-500">{pricingModeLabel(item.pricingMode)}</p>
                   </TableCell>
                   <TableCell>
                     <span
@@ -242,10 +225,7 @@ export function EquipmentPanel({ currency }: { currency: string }) {
       ) : null}
 
       {inventoryItem ? (
-        <InventoryDialog
-          item={inventoryItem}
-          onClose={() => setInventoryItem(null)}
-        />
+        <InventoryDialog item={inventoryItem} onClose={() => setInventoryItem(null)} />
       ) : null}
 
       <ConfirmDialog
@@ -292,8 +272,8 @@ export function EquipmentFormDialog({
   onClose: () => void;
 }) {
   const initialCategoryId = equipment
-    ? categoryIdBySlug.get(equipment.category?.slug ?? "") ?? ""
-    : categories[0]?.id ?? "";
+    ? (categoryIdBySlug.get(equipment.category?.slug ?? "") ?? "")
+    : (categories[0]?.id ?? "");
   const [values, setValues] = useState<EquipmentFormValues>(() =>
     equipment
       ? equipmentToForm(equipment, initialCategoryId)
@@ -303,10 +283,7 @@ export function EquipmentFormDialog({
   const [imageUploading, setImageUploading] = useState(false);
   const save = useSaveEquipment();
 
-  function setField<K extends keyof EquipmentFormValues>(
-    field: K,
-    value: EquipmentFormValues[K],
-  ) {
+  function setField<K extends keyof EquipmentFormValues>(field: K, value: EquipmentFormValues[K]) {
     setValues((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
     if (save.error) {
@@ -365,12 +342,7 @@ export function EquipmentFormDialog({
         <FormError error={save.error} />
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
-            label="Name"
-            htmlFor="equipment-name"
-            required
-            error={errors.name}
-          >
+          <FormField label="Name" htmlFor="equipment-name" required error={errors.name}>
             <Input
               id="equipment-name"
               value={values.name}
@@ -387,7 +359,11 @@ export function EquipmentFormDialog({
             htmlFor="equipment-slug"
             required={!equipment}
             error={errors.slug}
-            hint={equipment ? "The public URL keeps its original slug." : "Lowercase words separated by hyphens."}
+            hint={
+              equipment
+                ? "The public URL keeps its original slug."
+                : "Lowercase words separated by hyphens."
+            }
           >
             <Input
               id="equipment-slug"
@@ -414,9 +390,7 @@ export function EquipmentFormDialog({
               onChange={(event) => setField("categoryId", event.target.value)}
               className={nativeSelectClassName}
               aria-invalid={Boolean(errors.categoryId)}
-              aria-describedby={
-                errors.categoryId ? "equipment-category-error" : undefined
-              }
+              aria-describedby={errors.categoryId ? "equipment-category-error" : undefined}
             >
               <option value="">Choose a category</option>
               {categories.map((category) => (
@@ -460,9 +434,7 @@ export function EquipmentFormDialog({
             maxLength={2000}
             placeholder="What is included, colour options, setup notes…"
             aria-invalid={Boolean(errors.description)}
-            aria-describedby={
-              errors.description ? "equipment-description-error" : undefined
-            }
+            aria-describedby={errors.description ? "equipment-description-error" : undefined}
           />
         </FormField>
 
@@ -489,9 +461,7 @@ export function EquipmentFormDialog({
               onChange={(event) => setField("pricePerDay", event.target.value)}
               placeholder="0.00"
               aria-invalid={Boolean(errors.pricePerDay)}
-              aria-describedby={
-                errors.pricePerDay ? "equipment-price-day-error" : undefined
-              }
+              aria-describedby={errors.pricePerDay ? "equipment-price-day-error" : undefined}
             />
           </FormField>
           <FormField
@@ -507,9 +477,7 @@ export function EquipmentFormDialog({
               onChange={(event) => setField("pricePerWeek", event.target.value)}
               placeholder="0.00"
               aria-invalid={Boolean(errors.pricePerWeek)}
-              aria-describedby={
-                errors.pricePerWeek ? "equipment-price-week-error" : undefined
-              }
+              aria-describedby={errors.pricePerWeek ? "equipment-price-week-error" : undefined}
             />
           </FormField>
           <FormField
@@ -525,9 +493,7 @@ export function EquipmentFormDialog({
               onChange={(event) => setField("flatPrice", event.target.value)}
               placeholder="0.00"
               aria-invalid={Boolean(errors.flatPrice)}
-              aria-describedby={
-                errors.flatPrice ? "equipment-price-flat-error" : undefined
-              }
+              aria-describedby={errors.flatPrice ? "equipment-price-flat-error" : undefined}
             />
           </FormField>
         </div>
@@ -545,9 +511,7 @@ export function EquipmentFormDialog({
               value={values.minQuantity}
               onChange={(event) => setField("minQuantity", event.target.value)}
               aria-invalid={Boolean(errors.minQuantity)}
-              aria-describedby={
-                errors.minQuantity ? "equipment-min-quantity-error" : undefined
-              }
+              aria-describedby={errors.minQuantity ? "equipment-min-quantity-error" : undefined}
             />
           </FormField>
           <FormField
@@ -562,9 +526,7 @@ export function EquipmentFormDialog({
               value={values.maxQuantity}
               onChange={(event) => setField("maxQuantity", event.target.value)}
               aria-invalid={Boolean(errors.maxQuantity)}
-              aria-describedby={
-                errors.maxQuantity ? "equipment-max-quantity-error" : undefined
-              }
+              aria-describedby={errors.maxQuantity ? "equipment-max-quantity-error" : undefined}
             />
           </FormField>
         </div>
@@ -604,13 +566,7 @@ export function EquipmentFormDialog({
   );
 }
 
-function InventoryDialog({
-  item,
-  onClose,
-}: {
-  item: AdminEquipment;
-  onClose: () => void;
-}) {
+function InventoryDialog({ item, onClose }: { item: AdminEquipment; onClose: () => void }) {
   const [total, setTotal] = useState(String(item.total));
   const [error, setError] = useState("");
   const setInventory = useSetInventory();
@@ -671,11 +627,7 @@ function InventoryDialog({
             aria-describedby={error ? "inventory-total-error" : undefined}
           />
         </FormField>
-        <FormActions
-          pending={setInventory.isPending}
-          submitLabel="Save stock"
-          onCancel={onClose}
-        />
+        <FormActions pending={setInventory.isPending} submitLabel="Save stock" onCancel={onClose} />
       </form>
     </CatalogueDialog>
   );

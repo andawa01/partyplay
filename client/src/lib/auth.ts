@@ -26,7 +26,8 @@ export interface ForgotPasswordInput {
 export interface ResetPasswordInput {
   token: string;
   newPassword: string;
-}export const emailFieldSchema = z
+}
+export const emailFieldSchema = z
   .string()
   .trim()
   .toLowerCase()
@@ -120,9 +121,7 @@ export function adminReturnPath(from: unknown): string {
       ? from.search
       : "";
   const hash =
-    "hash" in from && typeof from.hash === "string" && from.hash.startsWith("#")
-      ? from.hash
-      : "";
+    "hash" in from && typeof from.hash === "string" && from.hash.startsWith("#") ? from.hash : "";
 
   return `${pathname}${search}${hash}`;
 }

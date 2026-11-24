@@ -123,20 +123,14 @@ export function ToggleField({
       />
       <span>
         <span className="block text-sm font-medium text-slate-900">{label}</span>
-        <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">
-          {description}
-        </span>
+        <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">{description}</span>
       </span>
     </label>
   );
 }
 
 export function StatusBadge({ active }: { active: boolean }) {
-  return (
-    <Badge variant={active ? "success" : "warning"}>
-      {active ? "Active" : "Inactive"}
-    </Badge>
-  );
+  return <Badge variant={active ? "success" : "warning"}>{active ? "Active" : "Inactive"}</Badge>;
 }
 
 export function FormError({ error }: { error: unknown }) {
@@ -199,9 +193,7 @@ export function PanelHeader({
           <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
           <Badge variant="outline">{count}</Badge>
         </div>
-        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
-          {description}
-        </p>
+        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">{description}</p>
       </div>
       <Button type="button" onClick={onCreate} className="shrink-0 self-start">
         <Plus aria-hidden="true" className="size-4" />
@@ -221,10 +213,7 @@ export function CatalogueTableSkeleton({ columns = 5 }: { columns?: number }) {
         {Array.from({ length: 5 }, (_, row) => (
           <div key={row} className="flex gap-4 px-4 py-4">
             {Array.from({ length: columns }, (_, column) => (
-              <Skeleton
-                key={column}
-                className={cn("h-4", column === 0 ? "w-1/3" : "flex-1")}
-              />
+              <Skeleton key={column} className={cn("h-4", column === 0 ? "w-1/3" : "flex-1")} />
             ))}
           </div>
         ))}
@@ -252,9 +241,7 @@ export function EmptyCatalogueState({
         <Icon aria-hidden className="size-6" />
       </span>
       <h3 className="mt-4 font-semibold text-slate-900">{title}</h3>
-      <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-slate-500">
-        {description}
-      </p>
+      <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-slate-500">{description}</p>
       {actionLabel && onAction ? (
         <Button type="button" size="sm" onClick={onAction} className="mt-4">
           <Plus aria-hidden="true" className="size-3.5" />

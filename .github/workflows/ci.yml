@@ -40,6 +40,12 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate --schema server/prisma/schema.prisma
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
       - name: Typecheck client and server
         run: npm run typecheck
 
@@ -47,6 +53,11 @@ jobs:
       # tests need no database, so they belong in the job that has none.
       - name: Test server
         run: npm test --workspace server
+
+      # Client tests do not need Postgres; coverage enforces the floor from the
+      # all-source baseline configured in client/vite.config.ts.
+      - name: Test client with coverage
+        run: npm test --workspace client -- --coverage
 
   migrations:
     name: Migrations apply from empty
@@ -106,6 +117,7 @@ jobs:
           --exit-code
 
       # The HTTP suite needs the real database. PARTYPLAY_REQUIRE_SMOKE_DB makes a
-      # missing connection a failure here instead of reducing coverage silently.
-      - name: Run HTTP smoke tests
-        run: npm test --workspace server -- src/app.test.ts
+      # missing connection a failure here instead of reducing coverage silently. The
+      # coverage floor is configured in server/vitest.config.ts.
+      - name: Run server tests with coverage
+        run: npm test --workspace server -- --coverage

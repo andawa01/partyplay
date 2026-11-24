@@ -28,14 +28,7 @@ import { Button } from "../../ui/button";
 import { ErrorState } from "../../ui/error-state";
 import { Input } from "../../ui/input";
 import { Textarea } from "../../ui/textarea";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../../ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../ui/table";
 import {
   CatalogueDialog,
   CatalogueTableSkeleton,
@@ -117,11 +110,7 @@ export function PackagesPanel({ currency }: { currency: string }) {
                     <div className="flex items-center gap-3">
                       <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-blush-50 text-blush-700 ring-1 ring-blush-100">
                         {pkg.imageUrl ? (
-                          <img
-                            src={pkg.imageUrl}
-                            alt=""
-                            className="size-full object-cover"
-                          />
+                          <img src={pkg.imageUrl} alt="" className="size-full object-cover" />
                         ) : (
                           <Package aria-hidden="true" className="size-5" />
                         )}
@@ -129,9 +118,7 @@ export function PackagesPanel({ currency }: { currency: string }) {
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <p className="font-medium text-slate-900">{pkg.name}</p>
-                          {pkg.isFeatured ? (
-                            <Badge variant="secondary">Featured</Badge>
-                          ) : null}
+                          {pkg.isFeatured ? <Badge variant="secondary">Featured</Badge> : null}
                         </div>
                         <p className="truncate text-xs text-slate-500">
                           {pkg.slug}
@@ -141,9 +128,7 @@ export function PackagesPanel({ currency }: { currency: string }) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <p className="font-medium text-slate-800">
-                      {formatMoney(pkg.price, currency)}
-                    </p>
+                    <p className="font-medium text-slate-800">{formatMoney(pkg.price, currency)}</p>
                     <p className="text-xs text-slate-500">per package</p>
                   </TableCell>
                   <TableCell>
@@ -258,10 +243,7 @@ export function PackageFormDialog({
   const [imageUploading, setImageUploading] = useState(false);
   const save = useSavePackage();
 
-  function setField<K extends keyof PackageFormValues>(
-    field: K,
-    value: PackageFormValues[K],
-  ) {
+  function setField<K extends keyof PackageFormValues>(field: K, value: PackageFormValues[K]) {
     setValues((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
     if (save.error) {
@@ -269,16 +251,10 @@ export function PackageFormDialog({
     }
   }
 
-  function updateItem(
-    key: string,
-    field: "equipmentId" | "quantity",
-    value: string,
-  ) {
+  function updateItem(key: string, field: "equipmentId" | "quantity", value: string) {
     setValues((current) => ({
       ...current,
-      items: current.items.map((item) =>
-        item.key === key ? { ...item, [field]: value } : item,
-      ),
+      items: current.items.map((item) => (item.key === key ? { ...item, [field]: value } : item)),
     }));
     setErrors((current) => ({ ...current, items: undefined }));
     if (save.error) {
@@ -376,7 +352,11 @@ export function PackageFormDialog({
             htmlFor="package-slug"
             required={!pkg}
             error={errors.slug}
-            hint={pkg ? "The public URL keeps its original slug." : "Lowercase words separated by hyphens."}
+            hint={
+              pkg
+                ? "The public URL keeps its original slug."
+                : "Lowercase words separated by hyphens."
+            }
           >
             <Input
               id="package-slug"
@@ -414,9 +394,7 @@ export function PackageFormDialog({
               value={values.minQuantity}
               onChange={(event) => setField("minQuantity", event.target.value)}
               aria-invalid={Boolean(errors.minQuantity)}
-              aria-describedby={
-                errors.minQuantity ? "package-min-quantity-error" : undefined
-              }
+              aria-describedby={errors.minQuantity ? "package-min-quantity-error" : undefined}
             />
           </FormField>
           <FormField
@@ -431,9 +409,7 @@ export function PackageFormDialog({
               value={values.maxQuantity}
               onChange={(event) => setField("maxQuantity", event.target.value)}
               aria-invalid={Boolean(errors.maxQuantity)}
-              aria-describedby={
-                errors.maxQuantity ? "package-max-quantity-error" : undefined
-              }
+              aria-describedby={errors.maxQuantity ? "package-max-quantity-error" : undefined}
             />
           </FormField>
           <FormField
@@ -448,9 +424,7 @@ export function PackageFormDialog({
               value={values.duration}
               onChange={(event) => setField("duration", event.target.value)}
               aria-invalid={Boolean(errors.duration)}
-              aria-describedby={
-                errors.duration ? "package-duration-error" : undefined
-              }
+              aria-describedby={errors.duration ? "package-duration-error" : undefined}
             />
           </FormField>
         </div>
@@ -468,9 +442,7 @@ export function PackageFormDialog({
             maxLength={2000}
             placeholder="What makes this bundle useful?"
             aria-invalid={Boolean(errors.description)}
-            aria-describedby={
-              errors.description ? "package-description-error" : undefined
-            }
+            aria-describedby={errors.description ? "package-description-error" : undefined}
           />
         </FormField>
 
@@ -486,12 +458,9 @@ export function PackageFormDialog({
         <fieldset className="rounded-2xl border border-slate-200 p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <legend className="text-sm font-semibold text-slate-900">
-                Included equipment
-              </legend>
+              <legend className="text-sm font-semibold text-slate-900">Included equipment</legend>
               <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
-                Each item can appear once. The quantity is how many units are in one
-                package.
+                Each item can appear once. The quantity is how many units are in one package.
               </p>
             </div>
             <Button
@@ -533,9 +502,7 @@ export function PackageFormDialog({
                     <select
                       id={`package-item-${item.key}`}
                       value={item.equipmentId}
-                      onChange={(event) =>
-                        updateItem(item.key, "equipmentId", event.target.value)
-                      }
+                      onChange={(event) => updateItem(item.key, "equipmentId", event.target.value)}
                       className={`${nativeSelectClassName} mt-1 bg-white`}
                     >
                       <option value="">Choose equipment</option>
@@ -558,9 +525,7 @@ export function PackageFormDialog({
                       id={`package-quantity-${item.key}`}
                       inputMode="numeric"
                       value={item.quantity}
-                      onChange={(event) =>
-                        updateItem(item.key, "quantity", event.target.value)
-                      }
+                      onChange={(event) => updateItem(item.key, "quantity", event.target.value)}
                       className="mt-1 bg-white"
                     />
                   </div>

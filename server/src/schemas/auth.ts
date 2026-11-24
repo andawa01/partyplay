@@ -20,7 +20,10 @@ export const loginSchema = z.object({
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, "Current password is required").max(200, "Password is too long"),
+    currentPassword: z
+      .string()
+      .min(1, "Current password is required")
+      .max(200, "Password is too long"),
     newPassword: passwordSchema,
   })
   .refine((input) => input.currentPassword !== input.newPassword, {

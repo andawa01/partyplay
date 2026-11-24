@@ -10,10 +10,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
-import {
-  BookingStatusView,
-  bookingStatusLabel,
-} from "../../components/booking/BookingStatusView";
+import { BookingStatusView, bookingStatusLabel } from "../../components/booking/BookingStatusView";
 import { Button } from "../../components/ui/button";
 import { ErrorState } from "../../components/ui/error-state";
 import { Input } from "../../components/ui/input";
@@ -126,8 +123,8 @@ export default function BookingStatusPage() {
                 Your booking, at a glance
               </h1>
               <p className="mt-3 max-w-xl text-lg leading-relaxed text-slate-600">
-                Enter the reference from your confirmation to see the latest status, your
-                dates, the items you requested and what happens next.
+                Enter the reference from your confirmation to see the latest status, your dates, the
+                items you requested and what happens next.
               </p>
 
               <ul className="mt-6 space-y-2.5 text-sm text-slate-700">

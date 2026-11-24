@@ -67,7 +67,9 @@ export function isValidRange(startDate: Date, endDate: Date): boolean {
  * Sum of units reserved per equipment for the given range.
  * Equipment with no reservations are absent from the map.
  */
-export async function getReservedQuantities(input: AvailabilityInput): Promise<Map<string, number>> {
+export async function getReservedQuantities(
+  input: AvailabilityInput,
+): Promise<Map<string, number>> {
   const { equipmentIds, excludeBookingId, now = new Date() } = input;
   const client = input.client ?? db;
   const startDate = toDateOnly(input.startDate);

@@ -41,8 +41,7 @@ function withoutSlug<T extends { slug?: string }>(input: T): Omit<T, "slug"> {
 export function useAdminCategories() {
   return useQuery({
     queryKey: queryKeys.admin.categories(),
-    queryFn: async () =>
-      (await apiFetch<AdminCategory[]>("/api/categories")).data,
+    queryFn: async () => (await apiFetch<AdminCategory[]>("/api/categories")).data,
   });
 }
 
@@ -86,13 +85,7 @@ export function useTransportProviders() {
 export function useSaveEquipment() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      id,
-      input,
-    }: {
-      id?: string;
-      input: EquipmentWriteInput;
-    }) => {
+    mutationFn: async ({ id, input }: { id?: string; input: EquipmentWriteInput }) => {
       const path = id ? `/api/admin/equipment/${id}` : "/api/admin/equipment";
       return (
         await apiFetch<AdminEquipment>(path, {
@@ -131,13 +124,7 @@ export function useSetInventory() {
 export function useSavePackage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      id,
-      input,
-    }: {
-      id?: string;
-      input: PackageWriteInput;
-    }) => {
+    mutationFn: async ({ id, input }: { id?: string; input: PackageWriteInput }) => {
       const { items, ...packageInput } = input;
       const path = id ? `/api/admin/packages/${id}` : "/api/admin/packages";
       const saved = (
@@ -223,16 +210,8 @@ export function useDeleteCategory() {
 export function useSaveTransportProvider() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({
-      id,
-      input,
-    }: {
-      id?: string;
-      input: TransportProviderWriteInput;
-    }) => {
-      const path = id
-        ? `/api/admin/transport-providers/${id}`
-        : "/api/admin/transport-providers";
+    mutationFn: async ({ id, input }: { id?: string; input: TransportProviderWriteInput }) => {
+      const path = id ? `/api/admin/transport-providers/${id}` : "/api/admin/transport-providers";
       return (
         await apiFetch<TransportProvider>(path, {
           method: id ? "PATCH" : "POST",

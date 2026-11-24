@@ -1,35 +1,31 @@
-import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
-import PublicLayout from './layouts/PublicLayout'
-import AdminLayout from './layouts/AdminLayout'
-import HomePage from './pages/public/HomePage'
-import EquipmentPage from './pages/public/EquipmentPage'
-import EquipmentDetailPage from './pages/public/EquipmentDetailPage'
-import PackagesPage from './pages/public/PackagesPage'
-import PackageDetailPage from './pages/public/PackageDetailPage'
-import OffersPage from './pages/public/OffersPage'
-import ContactPage from './pages/public/ContactPage'
-import AdminDashboardPage from './pages/admin/AdminDashboardPage'
-import NotFoundPage from './pages/NotFoundPage'
-import { AdminSessionLoading } from './components/admin/AdminSessionLoading'
-import { RequireAdmin } from './components/admin/RequireAdmin'
+import { lazy, Suspense } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+import PublicLayout from "./layouts/PublicLayout";
+import AdminLayout from "./layouts/AdminLayout";
+import HomePage from "./pages/public/HomePage";
+import EquipmentPage from "./pages/public/EquipmentPage";
+import EquipmentDetailPage from "./pages/public/EquipmentDetailPage";
+import PackagesPage from "./pages/public/PackagesPage";
+import PackageDetailPage from "./pages/public/PackageDetailPage";
+import OffersPage from "./pages/public/OffersPage";
+import ContactPage from "./pages/public/ContactPage";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
+import NotFoundPage from "./pages/NotFoundPage";
+import { AdminSessionLoading } from "./components/admin/AdminSessionLoading";
+import { RequireAdmin } from "./components/admin/RequireAdmin";
 
 // Reference page, kept out of the main bundle because it pulls the full select primitive.
-const StyleGuidePage = lazy(() => import('./pages/StyleGuidePage'))
+const StyleGuidePage = lazy(() => import("./pages/StyleGuidePage"));
 // The booking form pulls zod and the full form/calendar surface; load it on demand.
-const BookingPage = lazy(() => import('./pages/public/BookingPage'))
-const BookingStatusPage = lazy(() => import('./pages/public/BookingStatusPage'))
-const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'))
-const AdminForgotPasswordPage = lazy(
-  () => import('./pages/admin/AdminForgotPasswordPage'),
-)
-const AdminResetPasswordPage = lazy(
-  () => import('./pages/admin/AdminResetPasswordPage'),
-)
-const AdminBookingsPage = lazy(() => import('./pages/admin/AdminBookingsPage'))
-const AdminBookingDetailPage = lazy(() => import('./pages/admin/AdminBookingDetailPage'))
-const AdminCataloguePage = lazy(() => import('./pages/admin/AdminCataloguePage'))
-const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'))
+const BookingPage = lazy(() => import("./pages/public/BookingPage"));
+const BookingStatusPage = lazy(() => import("./pages/public/BookingStatusPage"));
+const AdminLoginPage = lazy(() => import("./pages/admin/AdminLoginPage"));
+const AdminForgotPasswordPage = lazy(() => import("./pages/admin/AdminForgotPasswordPage"));
+const AdminResetPasswordPage = lazy(() => import("./pages/admin/AdminResetPasswordPage"));
+const AdminBookingsPage = lazy(() => import("./pages/admin/AdminBookingsPage"));
+const AdminBookingDetailPage = lazy(() => import("./pages/admin/AdminBookingDetailPage"));
+const AdminCataloguePage = lazy(() => import("./pages/admin/AdminCataloguePage"));
+const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
 
 export default function App() {
   return (
@@ -115,7 +111,8 @@ export default function App() {
           }
         />
         <Route element={<RequireAdmin />}>
-          <Route element={<AdminLayout />}>            <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route element={<AdminLayout />}>
+            <Route path="dashboard" element={<AdminDashboardPage />} />
             <Route
               path="bookings"
               element={
@@ -158,7 +155,8 @@ export default function App() {
                 </Suspense>
               }
             />
-            <Route path="settings"
+            <Route
+              path="settings"
               element={
                 <Suspense
                   fallback={
@@ -177,5 +175,5 @@ export default function App() {
 
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
-  )
+  );
 }

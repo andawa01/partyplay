@@ -36,11 +36,7 @@ function readSettings(): CloudinarySettings {
   );
 
   if (!cloudName || !apiKey || !apiSecret) {
-    throw new ApiError(
-      503,
-      "CLOUDINARY_NOT_CONFIGURED",
-      "Image uploads are not configured yet.",
-    );
+    throw new ApiError(503, "CLOUDINARY_NOT_CONFIGURED", "Image uploads are not configured yet.");
   }
 
   return { cloudName, apiKey, apiSecret, baseFolder };
@@ -49,8 +45,8 @@ function readSettings(): CloudinarySettings {
 export function isCloudinaryConfigured(): boolean {
   return Boolean(
     process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
-      process.env.CLOUDINARY_API_KEY?.trim() &&
-      process.env.CLOUDINARY_API_SECRET?.trim(),
+    process.env.CLOUDINARY_API_KEY?.trim() &&
+    process.env.CLOUDINARY_API_SECRET?.trim(),
   );
 }
 

@@ -60,12 +60,7 @@ export interface CreatedBooking extends BookingQuote {
 }
 
 export type BookingStatus =
-  | "PENDING"
-  | "CONFIRMED"
-  | "REJECTED"
-  | "CANCELLED"
-  | "COMPLETED"
-  | "EXPIRED";
+  "PENDING" | "CONFIRMED" | "REJECTED" | "CANCELLED" | "COMPLETED" | "EXPIRED";
 
 export type PaymentStatus = "UNPAID" | "PARTIALLY_PAID" | "PAID";
 
@@ -172,7 +167,7 @@ const serverFieldMap: Record<string, keyof BookingDetails> = {
   "customer.name": "name",
   "customer.phone": "phone",
   "customer.email": "email",
-  "fulfilmentMethod": "fulfilmentMethod",
+  fulfilmentMethod: "fulfilmentMethod",
   dropoffAddress: "dropoffAddress",
   pickupAddress: "pickupAddress",
   notes: "notes",

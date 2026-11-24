@@ -25,11 +25,7 @@ export interface PartyPackage {
 }
 
 export type OfferAppliesTo =
-  | "ALL_BOOKINGS"
-  | "ALL_EQUIPMENT"
-  | "ALL_PACKAGES"
-  | "ONE_EQUIPMENT"
-  | "ONE_PACKAGE";
+  "ALL_BOOKINGS" | "ALL_EQUIPMENT" | "ALL_PACKAGES" | "ONE_EQUIPMENT" | "ONE_PACKAGE";
 
 export interface Offer {
   id: string;
@@ -74,9 +70,7 @@ export function packageDurationLabel(duration: number | null): string | null {
 }
 
 export function itemLabel(item: PackageItem): string {
-  return item.quantity === 1
-    ? item.equipment.name
-    : `${item.quantity} × ${item.equipment.name}`;
+  return item.quantity === 1 ? item.equipment.name : `${item.quantity} × ${item.equipment.name}`;
 }
 
 export function offerDiscountLabel(offer: Offer, currency: string): string {

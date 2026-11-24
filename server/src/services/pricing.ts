@@ -162,7 +162,11 @@ function requirePrice(
  * PER_DAY: `pricePerDay × days × quantity`. FLAT: `flatPrice × quantity`, ignoring days
  * (a bouncy castle delivered for three days still costs one flat hire).
  */
-export function priceEquipmentLine({ equipment, quantity, days }: EquipmentLineInput): EquipmentPrice {
+export function priceEquipmentLine({
+  equipment,
+  quantity,
+  days,
+}: EquipmentLineInput): EquipmentPrice {
   assertQuantity(quantity, "quantity");
   assertDays(days);
 
@@ -288,7 +292,11 @@ export function priceBooking(input: BookingPriceInput): BookingPrice {
       continue;
     }
 
-    const { unitCents, totalCents } = equipmentLineCents(selection.equipment, chargeable, input.days);
+    const { unitCents, totalCents } = equipmentLineCents(
+      selection.equipment,
+      chargeable,
+      input.days,
+    );
     items.push({
       equipmentId: selection.equipment.id,
       equipmentName: selection.equipment.name,

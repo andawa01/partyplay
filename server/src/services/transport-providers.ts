@@ -28,10 +28,7 @@ export async function createTransportProvider(input: CreateTransportProviderInpu
 }
 
 /** A duplicate phone is a unique-constraint violation; the error middleware maps P2002. */
-export async function updateTransportProviderById(
-  id: string,
-  input: UpdateTransportProviderInput,
-) {
+export async function updateTransportProviderById(id: string, input: UpdateTransportProviderInput) {
   await assertProviderExists(id);
   return db.transportProvider.update({ where: { id }, data: input, select: providerFields });
 }

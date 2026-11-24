@@ -51,10 +51,7 @@ type Catalogue = {
 const SERIALIZATION_ATTEMPTS = 3;
 const CODE_ATTEMPTS = 5;
 
-async function loadCatalogue(
-  tx: CatalogueClient,
-  input: BookingSelection,
-): Promise<Catalogue> {
+async function loadCatalogue(tx: CatalogueClient, input: BookingSelection): Promise<Catalogue> {
   const equipmentIds = [...new Set(input.equipment.map((line) => line.equipmentId))];
   const packageIds = [...new Set(input.packages.map((line) => line.packageId))];
 
@@ -94,9 +91,7 @@ async function loadCatalogue(
   ]);
 
   const available = equipmentRows.filter((row) => row.isActive);
-  const missingEquipmentIds = equipmentIds.filter(
-    (id) => !available.some((row) => row.id === id),
-  );
+  const missingEquipmentIds = equipmentIds.filter((id) => !available.some((row) => row.id === id));
   if (missingEquipmentIds.length > 0) {
     throw notFound("Some equipment items were not found or are no longer available", {
       missingEquipmentIds,
@@ -106,7 +101,9 @@ async function loadCatalogue(
   const activePackages = packageRows.filter((row) => row.isActive);
   const missingPackageIds = packageIds.filter((id) => !activePackages.some((row) => row.id === id));
   if (missingPackageIds.length > 0) {
-    throw notFound("Some packages were not found or are no longer available", { missingPackageIds });
+    throw notFound("Some packages were not found or are no longer available", {
+      missingPackageIds,
+    });
   }
 
   // A package that still lists a retired item cannot be fulfilled; refuse rather than
@@ -688,7 +685,9 @@ const adminBookingSummarySelect = {
   customer: { select: { id: true, name: true, phone: true } },
 } satisfies Prisma.BookingSelect;
 
-type AdminBookingSummaryRow = Prisma.BookingGetPayload<{ select: typeof adminBookingSummarySelect }>;
+type AdminBookingSummaryRow = Prisma.BookingGetPayload<{
+  select: typeof adminBookingSummarySelect;
+}>;
 
 const adminBookingDetailSelect = {
   id: true,
@@ -1025,7 +1024,8 @@ export async function changeBookingStatus(
       const now = new Date();
       const demand = await bookingDemand(tx, id);
       const equipmentIds = demand.map((line) => line.equipmentId).sort();
-      const lapsed = booking.status === "PENDING" && holdLapsed(booking.holdExpiresAt, booking.stockHolds);
+      const lapsed =
+        booking.status === "PENDING" && holdLapsed(booking.holdExpiresAt, booking.stockHolds);
 
       if (input.status === "CONFIRMED") {
         if (equipmentIds.length > 0) {
@@ -1069,10 +1069,15 @@ export async function changeBookingStatus(
       });
 
       if (guard.count === 0) {
-        throw new ApiError(409, "INVALID_TRANSITION", "The booking changed while it was being updated", {
-          from: booking.status,
-          to: input.status,
-        });
+        throw new ApiError(
+          409,
+          "INVALID_TRANSITION",
+          "The booking changed while it was being updated",
+          {
+            from: booking.status,
+            to: input.status,
+          },
+        );
       }
 
       if (input.status === "CONFIRMED") {
@@ -1133,9 +1138,12 @@ export async function updateBookingTransportCharge(
   }
 
   if (booking.status !== "PENDING" && booking.status !== "CONFIRMED") {
-    throw conflict("The transport charge can only change before the booking is completed or closed", {
-      status: booking.status,
-    });
+    throw conflict(
+      "The transport charge can only change before the booking is completed or closed",
+      {
+        status: booking.status,
+      },
+    );
   }
 
   if (booking.fulfilmentMethod === "DELIVERY" && !booking.dropoffAddress) {

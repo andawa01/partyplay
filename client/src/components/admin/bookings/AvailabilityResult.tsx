@@ -46,9 +46,7 @@ export function AvailabilityResult({
         Not enough stock for these dates
       </AlertTitle>
       <AlertDescription>
-        <p>
-          The request cannot be confirmed for {range}. Shortfalls from the server:
-        </p>
+        <p>The request cannot be confirmed for {range}. Shortfalls from the server:</p>
         <ul className="mt-2 space-y-1.5">
           {check.shortages.map((line) => (
             <li
@@ -65,8 +63,8 @@ export function AvailabilityResult({
         </ul>
         {check.holdExpired ? (
           <p className="mt-2 text-xs font-medium">
-            The hold has also expired. Ask the customer to submit a new request or choose
-            different dates.
+            The hold has also expired. Ask the customer to submit a new request or choose different
+            dates.
           </p>
         ) : null}
       </AlertDescription>

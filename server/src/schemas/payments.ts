@@ -1,13 +1,7 @@
 import { z } from "zod";
 
 /** `PaymentMethod` values; MANUAL and OTHER never auto-approve a payment. */
-export const paymentMethodSchema = z.enum([
-  "MANUAL",
-  "MPESA",
-  "BANK_TRANSFER",
-  "CASH",
-  "OTHER",
-]);
+export const paymentMethodSchema = z.enum(["MANUAL", "MPESA", "BANK_TRANSFER", "CASH", "OTHER"]);
 
 /** ISO-8601 date-time string; a bare date is rejected because payments are instants. */
 const paidAtSchema = z

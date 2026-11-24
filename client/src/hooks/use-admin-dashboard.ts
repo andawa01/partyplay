@@ -7,8 +7,7 @@ import { queryKeys } from "../lib/query-keys";
 export function useAdminDashboard() {
   return useQuery({
     queryKey: queryKeys.admin.dashboard(),
-    queryFn: async () =>
-      (await apiFetch<AdminDashboard>("/api/admin/dashboard")).data,
+    queryFn: async () => (await apiFetch<AdminDashboard>("/api/admin/dashboard")).data,
     staleTime: 15_000,
   });
 }

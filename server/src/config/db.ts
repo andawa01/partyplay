@@ -3,7 +3,6 @@ import { PrismaClient } from "@prisma/client";
 let db: PrismaClient;
 
 declare global {
-  // eslint-disable-next-line no-var
   var __db__: PrismaClient | undefined;
 }
 
@@ -26,7 +25,10 @@ async function createClient() {
     console.log("database connected successfully");
   } catch (error) {
     console.error("database connection failed:", error);
-    throw new Error("PartyPlay API could not connect to the database. Check DATABASE_URL and that PostgreSQL is running.");
+    throw new Error(
+      "PartyPlay API could not connect to the database. Check DATABASE_URL and that PostgreSQL is running.",
+      { cause: error },
+    );
   }
 
   return client;

@@ -37,11 +37,7 @@ const forgotPasswordRateLimiter = createRateLimiter({
 
 router.post("/login", loginRateLimiter, asyncHandler(login));
 
-router.post(
-  "/forgot-password",
-  forgotPasswordRateLimiter,
-  asyncHandler(forgotPassword),
-);
+router.post("/forgot-password", forgotPasswordRateLimiter, asyncHandler(forgotPassword));
 
 router.post("/reset-password", resetRateLimiter, asyncHandler(resetPassword));
 
