@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { AdminBookingDetail } from "../../../lib/admin-bookings";
-import type { BookingPaymentSummary, PaymentRow } from "../../../lib/admin-payments";
+import type { BookingPaymentSummary, PaymentRefund, PaymentRow } from "../../../lib/admin-payments";
 import { SITE_FALLBACK } from "../../../lib/site";
 import { PaymentsPanel } from "./PaymentsPanel";
 
@@ -97,6 +97,9 @@ const payment: PaymentRow = {
   createdAt: "2026-11-22T09:00:00.000Z",
   updatedAt: "2026-11-22T09:00:00.000Z",
   paidBy: { id: "admin-1", name: "Owner", email: "owner@partyplay.co.ke" },
+  refundedAmount: "0.00",
+  refundableAmount: "500.00",
+  refunds: [],
 };
 
 afterEach(() => {
@@ -206,6 +209,67 @@ describe("PaymentsPanel", () => {
 
     await user.click(receipt.getByRole("button", { name: /Print \/ save PDF/ }));
     expect(printMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("records a refund against a paid payment", async () => {
+    const refund: PaymentRefund = {
+      id: "refund-1",
+      amount: "200.00",
+      reason: "Partial cancellation",
+      reference: "REF-001",
+      refundedAt: "2026-11-23T09:00:00.000Z",
+      createdAt: "2026-11-23T09:00:00.000Z",
+      refundedBy: { id: "admin-1", name: "Owner", email: "owner@partyplay.co.ke" },
+    };
+    const refundedPayment: PaymentRow = {
+      ...payment,
+      refundedAmount: "200.00",
+      refundableAmount: "300.00",
+      refunds: [refund],
+    };
+    const afterRefund: BookingPaymentSummary = {
+      ...summary,
+      paidAmount: "300.00",
+      amountDue: "900.00",
+    };
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        return jsonResponse(201, {
+          data: { payment: refundedPayment, booking: afterRefund },
+        });
+      }
+      return jsonResponse(200, {
+        data: [payment],
+        meta: { total: 1, paidTotal: "500.00", refundedTotal: "0.00", booking: summary },
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    renderWithClient(<PaymentsPanel booking={booking} />);
+    const table = within(await screen.findByRole("table"));
+    await user.click(table.getByRole("button", { name: "Refund payment payment-1" }));
+
+    const dialog = within(await screen.findByRole("dialog"));
+    await user.type(dialog.getByLabelText(/Amount refunded/), "200");
+    await user.type(dialog.getByLabelText(/Reason/), "Partial cancellation");
+    await user.click(dialog.getByRole("button", { name: "Record refund" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/admin/payments/payment-1/refunds",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === "POST");
+    const body = JSON.parse(String(postCall?.[1]?.body)) as Record<string, unknown>;
+    expect(body).toMatchObject({
+      amount: 200,
+      reason: "Partial cancellation",
+      reference: null,
+    });
+    expect(typeof body.refundedAt).toBe("string");
   });
 
   it("hides delete for bookings that are no longer pending", async () => {

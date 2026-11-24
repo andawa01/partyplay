@@ -26,6 +26,7 @@ model Admin {
   // requests can exist before an admin handles them.
   bookings               Booking[]              @relation("handledBy")
   payments               Payment[]              @relation("paidBy")
+  refunds                PaymentRefund[]        @relation("refundedBy")
   siteSettings           SiteSetting?
   bookingStatusHistories BookingStatusHistory[] @relation("statusHistoryBy")
   passwordResetTokens    PasswordResetToken[]
@@ -418,22 +419,41 @@ model BookingStatusHistory {
 // ---------------------------------------------------------------------------
 
 model Payment {
-  id          String        @id @default(uuid())
+  id          String          @id @default(uuid())
   bookingId   String
-  booking     Booking       @relation(fields: [bookingId], references: [id])
+  booking     Booking         @relation(fields: [bookingId], references: [id])
   paidById    String?
-  paidBy      Admin?        @relation("paidBy", fields: [paidById], references: [id])
-  amount      Decimal       @db.Decimal(10, 2)
+  paidBy      Admin?          @relation("paidBy", fields: [paidById], references: [id])
+  amount      Decimal         @db.Decimal(10, 2)
   method      PaymentMethod
-  status      PaymentStatus @default(PENDING)
+  status      PaymentStatus   @default(PENDING)
   providerRef String? // e.g. M-Pesa transaction id
   description String?
   paidAt      DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  refunds     PaymentRefund[]
 
   @@index([bookingId])
   @@index([status])
+}
+
+// Money returned against a paid payment. Refunds are immutable rows and can be partial;
+// the payment becomes REFUNDED only when the refunds cover its full amount.
+model PaymentRefund {
+  id           String   @id @default(uuid())
+  paymentId    String
+  payment      Payment  @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  amount       Decimal  @db.Decimal(10, 2)
+  reason       String
+  reference    String?  @db.VarChar(128)
+  refundedAt   DateTime @default(now())
+  refundedById String?
+  refundedBy   Admin?   @relation("refundedBy", fields: [refundedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+
+  @@index([paymentId])
+  @@index([refundedAt])
 }
 
 enum PaymentMethod {

@@ -189,7 +189,8 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
     });
     const bookingIds = bookings.map((row) => row.id);
 
-    // Payment -> Booking is a restricting FK; money rows must go first.
+    // Payment -> Booking is a restricting FK; refunds must go before their payments.
+    await db.paymentRefund.deleteMany({ where: { payment: { bookingId: { in: bookingIds } } } });
     await db.payment.deleteMany({ where: { bookingId: { in: bookingIds } } });
     await db.booking.deleteMany({ where: { id: { in: bookingIds } } });
     await db.customer.deleteMany({ where: { phone } });
@@ -468,6 +469,101 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
     expect(Number(data.revenue.collected)).toBeCloseTo(baseline.collected + 1500, 2);
     expect(Array.isArray(data.upcoming)).toBe(true);
     expect(data.upcoming).toEqual(baseline.upcoming);
+  }, 30_000);
+
+  it("rejects overpayment and records partial then full refunds", async () => {
+    const before = await api("GET", "/api/admin/dashboard", { cookie });
+    const beforeCollected = Number(
+      (before.body.data as { revenue: { collected: string } }).revenue.collected,
+    );
+
+    const created = await api("POST", "/api/bookings", {
+      body: {
+        ...bookingDates(futureDates),
+        equipment: [{ equipmentId, quantity: 1 }],
+      },
+    });
+    expect(created.status).toBe(201);
+    const code = (created.body.data as { code: string }).code;
+    const booking = await db.booking.findUniqueOrThrow({ where: { code } });
+    const paidAt = new Date().toISOString();
+
+    const overpaid = await api("POST", `/api/admin/bookings/${booking.id}/payments`, {
+      cookie,
+      body: { amount: 2500, method: "CASH", paidAt },
+    });
+    expect(overpaid.status).toBe(409);
+    expect(String(overpaid.body.error)).toContain("outstanding balance");
+
+    const paid = await api("POST", `/api/admin/bookings/${booking.id}/payments`, {
+      cookie,
+      body: { amount: 2000, method: "CASH", paidAt },
+    });
+    expect(paid.status).toBe(201);
+    expect(paid.body.data).toMatchObject({
+      booking: { paidAmount: "2000.00", paymentStatus: "PAID" },
+    });
+    const paymentId = (paid.body.data as { payment: { id: string } }).payment.id;
+
+    const partial = await api("POST", `/api/admin/payments/${paymentId}/refunds`, {
+      cookie,
+      body: {
+        amount: 500,
+        reason: "Customer reduced the guest count",
+        reference: "REF-001",
+        refundedAt: paidAt,
+      },
+    });
+    expect(partial.status).toBe(201);
+    expect(partial.body.data).toMatchObject({
+      payment: {
+        status: "PAID",
+        refundedAmount: "500.00",
+        refundableAmount: "1500.00",
+      },
+      booking: { paidAmount: "1500.00", paymentStatus: "PARTIALLY_PAID" },
+    });
+
+    const tooMuch = await api("POST", `/api/admin/payments/${paymentId}/refunds`, {
+      cookie,
+      body: { amount: 1600, reason: "Too much" },
+    });
+    expect(tooMuch.status).toBe(400);
+    expect(String(tooMuch.body.error)).toContain("unrefunded");
+
+    const full = await api("POST", `/api/admin/payments/${paymentId}/refunds`, {
+      cookie,
+      body: { amount: 1500, reason: "Booking cancelled" },
+    });
+    expect(full.status).toBe(201);
+    expect(full.body.data).toMatchObject({
+      payment: {
+        status: "REFUNDED",
+        refundedAmount: "2000.00",
+        refundableAmount: "0.00",
+      },
+      booking: { paidAmount: "0.00", paymentStatus: "UNPAID" },
+    });
+
+    const again = await api("POST", `/api/admin/payments/${paymentId}/refunds`, {
+      cookie,
+      body: { amount: 1, reason: "Already refunded" },
+    });
+    expect(again.status).toBe(409);
+
+    const listed = await api("GET", `/api/admin/bookings/${booking.id}/payments`, { cookie });
+    expect(listed.status).toBe(200);
+    expect(listed.body.meta).toMatchObject({
+      refundedTotal: "2000.00",
+      paidTotal: "0.00",
+      booking: { paidAmount: "0.00" },
+    });
+    expect((listed.body.data as Array<{ refunds: unknown[] }>)[0].refunds).toHaveLength(2);
+
+    const after = await api("GET", "/api/admin/dashboard", { cookie });
+    expect(
+      Number((after.body.data as { revenue: { collected: string } }).revenue.collected),
+    ).toBeCloseTo(beforeCollected, 2);
   }, 30_000);
 
   it("requests a reset email without revealing whether the account exists", async () => {

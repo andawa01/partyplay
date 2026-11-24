@@ -6,6 +6,7 @@ import {
   Plus,
   Printer,
   ReceiptText,
+  RotateCcw,
   Trash2,
 } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
@@ -14,6 +15,7 @@ import {
   useBookingPayments,
   useDeletePayment,
   useRecordPayment,
+  useRefundPayment,
   useUpdatePayment,
 } from "../../../hooks/use-admin-payments";
 import type { AdminBookingDetail } from "../../../lib/admin-bookings";
@@ -23,15 +25,19 @@ import type {
   PaymentFormValues,
   PaymentMutationResult,
   PaymentRow,
+  RefundFormValues,
 } from "../../../lib/admin-payments";
 import {
   emptyPaymentForm,
+  emptyRefundForm,
   paymentEditSchema,
   paymentEditToForm,
   paymentFormSchema,
   paymentMethodLabel,
   paymentMethodMeta,
   paymentPayload,
+  refundFormSchema,
+  refundPayload,
 } from "../../../lib/admin-payments";
 import { isApiError } from "../../../lib/api";
 import { formatDateTime } from "../../../lib/dates";
@@ -64,6 +70,7 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
   const remove = useDeletePayment();
   const [recording, setRecording] = useState(false);
   const [editing, setEditing] = useState<PaymentRow | null>(null);
+  const [refunding, setRefunding] = useState<PaymentRow | null>(null);
   const [deleting, setDeleting] = useState<PaymentRow | null>(null);
   const [receipt, setReceipt] = useState<{
     payment: PaymentRow;
@@ -76,6 +83,10 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
   const amountDue = summary?.amountDue ?? booking.totals.amountDue;
   const paymentStatus = summary?.paymentStatus ?? booking.paymentStatus;
   const canDelete = booking.status === "PENDING";
+  const refunds = rows.flatMap((payment) =>
+    payment.refunds.map((refund) => ({ ...refund, payment })),
+  );
+  const canRecord = Number(amountDue) > 0;
 
   function showReceipt(payment: PaymentRow) {
     setReceipt({
@@ -116,6 +127,8 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
           type="button"
           size="sm"
           onClick={() => setRecording(true)}
+          disabled={!canRecord}
+          title={canRecord ? undefined : "The booking has no outstanding balance"}
           className="shrink-0 self-start"
         >
           <Plus aria-hidden="true" className="size-4" />
@@ -170,6 +183,7 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
             variant="outline"
             className="mt-3"
             onClick={() => setRecording(true)}
+            disabled={!canRecord}
           >
             <Plus aria-hidden="true" className="size-3.5" />
             Record the first payment
@@ -208,6 +222,11 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
                           {payment.description}
                         </p>
                       ) : null}
+                      {Number(payment.refundedAmount) > 0 ? (
+                        <p className="text-xs text-rose-700">
+                          Refunded {formatMoney(payment.refundedAmount, booking.currency)}
+                        </p>
+                      ) : null}
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-slate-800">
@@ -229,17 +248,32 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-0.5">
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="size-8"
-                          onClick={() => setEditing(payment)}
-                          title="Update payment"
-                          aria-label={`Update payment ${payment.id}`}
-                        >
-                          <Pencil aria-hidden="true" className="size-3.5" />
-                        </Button>
+                        {payment.status === "PAID" && Number(payment.refundableAmount) > 0 ? (
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="size-8 text-rose-700 hover:bg-rose-50"
+                            onClick={() => setRefunding(payment)}
+                            title="Record refund"
+                            aria-label={`Refund payment ${payment.id}`}
+                          >
+                            <RotateCcw aria-hidden="true" className="size-3.5" />
+                          </Button>
+                        ) : null}
+                        {payment.status !== "REFUNDED" && Number(payment.refundedAmount) === 0 ? (
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="size-8"
+                            onClick={() => setEditing(payment)}
+                            title="Update payment"
+                            aria-label={`Update payment ${payment.id}`}
+                          >
+                            <Pencil aria-hidden="true" className="size-3.5" />
+                          </Button>
+                        ) : null}
                         {payment.status === "PAID" ? (
                           <Button
                             type="button"
@@ -286,6 +320,11 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
                       {paymentMethodLabel(payment.method)} ·{" "}
                       {formatDateTime(payment.paidAt ?? payment.createdAt)}
                     </p>
+                    {Number(payment.refundedAmount) > 0 ? (
+                      <p className="mt-1 text-xs font-medium text-rose-700">
+                        Refunded {formatMoney(payment.refundedAmount, booking.currency)}
+                      </p>
+                    ) : null}
                   </div>
                   <PaymentRowStatusBadge status={payment.status} />
                 </div>
@@ -325,17 +364,32 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
                       Receipt
                     </Button>
                   ) : null}
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 px-2"
-                    onClick={() => setEditing(payment)}
-                    aria-label={`Update payment ${payment.id}`}
-                  >
-                    <Pencil aria-hidden="true" className="size-3.5" />
-                    Update
-                  </Button>
+                  {payment.status === "PAID" && Number(payment.refundableAmount) > 0 ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 border-rose-200 px-2 text-rose-700 hover:bg-rose-50"
+                      onClick={() => setRefunding(payment)}
+                      aria-label={`Refund payment ${payment.id}`}
+                    >
+                      <RotateCcw aria-hidden="true" className="size-3.5" />
+                      Refund
+                    </Button>
+                  ) : null}
+                  {payment.status !== "REFUNDED" && Number(payment.refundedAmount) === 0 ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 px-2"
+                      onClick={() => setEditing(payment)}
+                      aria-label={`Update payment ${payment.id}`}
+                    >
+                      <Pencil aria-hidden="true" className="size-3.5" />
+                      Update
+                    </Button>
+                  ) : null}
                   {canDelete ? (
                     <Button
                       type="button"
@@ -356,9 +410,47 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
         </div>
       )}
 
+      {refunds.length > 0 ? (
+        <section
+          className="mt-4 rounded-xl border border-rose-100 bg-rose-50/50 p-3"
+          aria-label="Refund history"
+        >
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-rose-800">
+            Refunds · {formatMoney(payments.data?.meta?.refundedTotal ?? "0.00", booking.currency)}
+          </h3>
+          <ul className="mt-2 divide-y divide-rose-100">
+            {refunds.map((refund) => (
+              <li key={refund.id} className="py-2 first:pt-0 last:pb-0">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-900">
+                      {formatMoney(refund.amount, booking.currency)} ·{" "}
+                      {formatDateTime(refund.refundedAt)}
+                    </p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-slate-600">{refund.reason}</p>
+                    {refund.reference ? (
+                      <p className="mt-0.5 break-all font-mono text-xs text-slate-500">
+                        {refund.reference}
+                      </p>
+                    ) : null}
+                  </div>
+                  <p className="shrink-0 text-right text-xs text-slate-500">
+                    Against {formatMoney(refund.payment.amount, booking.currency)}{" "}
+                    {paymentMethodLabel(refund.payment.method)} payment
+                    <br />
+                    {refund.refundedBy?.name ?? refund.refundedBy?.email ?? "—"}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {!canDelete && rows.length > 0 ? (
         <p className="mt-2 text-right text-[0.7rem] text-slate-500">
-          Payments can only be deleted while the booking is pending.
+          Payments can only be deleted while the booking is pending. Record a refund once money has
+          been collected.
         </p>
       ) : null}
 
@@ -367,6 +459,7 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
           bookingId={booking.id}
           bookingCode={booking.code}
           currency={booking.currency}
+          amountDue={amountDue}
           onRecorded={(result) => {
             if (result.payment.status === "PAID") {
               setReceipt({ payment: result.payment, summary: result.booking });
@@ -381,6 +474,16 @@ export function PaymentsPanel({ booking }: { booking: AdminBookingDetail }) {
           payment={editing}
           currency={booking.currency}
           onClose={() => setEditing(null)}
+        />
+      ) : null}
+
+      {refunding ? (
+        <RefundPaymentDialog
+          payment={refunding}
+          currency={booking.currency}
+          onClose={() => {
+            setRefunding(null);
+          }}
         />
       ) : null}
 
@@ -469,12 +572,14 @@ function RecordPaymentDialog({
   bookingId,
   bookingCode,
   currency,
+  amountDue,
   onRecorded,
   onClose,
 }: {
   bookingId: string;
   bookingCode: string;
   currency: string;
+  amountDue: string;
   onRecorded: (result: PaymentMutationResult) => void;
   onClose: () => void;
 }) {
@@ -495,6 +600,12 @@ function RecordPaymentDialog({
     const parsed = paymentFormSchema.safeParse(values);
     if (!parsed.success) {
       setErrors(fieldErrors<PaymentFormValues>(parsed.error));
+      return;
+    }
+    if (Number(parsed.data.amount) > Number(amountDue)) {
+      setErrors({
+        amount: `Payment cannot exceed the remaining balance of ${formatMoney(amountDue, currency)}`,
+      });
       return;
     }
 
@@ -544,6 +655,7 @@ function RecordPaymentDialog({
               label="Amount received"
               required
               error={errors.amount}
+              hint={`Maximum remaining balance: ${formatMoney(amountDue, currency)}`}
             >
               <Input
                 id="payment-amount"
@@ -638,6 +750,183 @@ function RecordPaymentDialog({
                 </>
               ) : (
                 "Record payment"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RefundPaymentDialog({
+  payment,
+  currency,
+  onClose,
+}: {
+  payment: PaymentRow;
+  currency: string;
+  onClose: () => void;
+}) {
+  const [values, setValues] = useState<RefundFormValues>(emptyRefundForm);
+  const [errors, setErrors] = useState<Partial<Record<keyof RefundFormValues, string>>>({});
+  const refund = useRefundPayment();
+
+  function setField<K extends keyof RefundFormValues>(field: K, value: RefundFormValues[K]) {
+    setValues((current) => ({ ...current, [field]: value }));
+    setErrors((current) => ({ ...current, [field]: undefined }));
+    if (refund.error) {
+      refund.reset();
+    }
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const parsed = refundFormSchema.safeParse(values);
+    if (!parsed.success) {
+      setErrors(fieldErrors<RefundFormValues>(parsed.error));
+      return;
+    }
+    if (Number(parsed.data.amount) > Number(payment.refundableAmount)) {
+      setErrors({
+        amount: `Refund cannot exceed ${formatMoney(payment.refundableAmount, currency)}`,
+      });
+      return;
+    }
+
+    refund.mutate(
+      { paymentId: payment.id, input: refundPayload(parsed.data) },
+      {
+        onSuccess: (result) => {
+          toast.success("Refund recorded", {
+            description: `${formatMoney(result.payment.refunds.at(-1)?.amount ?? "0.00", currency)} returned. Paid to date is now ${formatMoney(result.booking.paidAmount, currency)}.`,
+          });
+          onClose();
+        },
+      },
+    );
+  }
+
+  return (
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+    >
+      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Record refund</DialogTitle>
+          <DialogDescription>
+            Return money against the {formatMoney(payment.amount, currency)}{" "}
+            {paymentMethodLabel(payment.method)} payment. Refunds are kept as history and cannot be
+            deleted.
+          </DialogDescription>
+        </DialogHeader>
+
+        {refund.error ? <PaymentError error={refund.error} /> : null}
+
+        <div className="rounded-xl bg-rose-50 p-3 text-sm ring-1 ring-rose-100">
+          <div className="flex justify-between gap-3">
+            <span className="text-slate-600">Already refunded</span>
+            <span className="font-semibold text-slate-900">
+              {formatMoney(payment.refundedAmount, currency)}
+            </span>
+          </div>
+          <div className="mt-1 flex justify-between gap-3">
+            <span className="text-slate-600">Still refundable</span>
+            <span className="font-semibold text-rose-900">
+              {formatMoney(payment.refundableAmount, currency)}
+            </span>
+          </div>
+        </div>
+
+        <form onSubmit={submit} className="space-y-4" noValidate>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <PaymentField id="refund-amount" label="Amount refunded" required error={errors.amount}>
+              <Input
+                id="refund-amount"
+                inputMode="decimal"
+                value={values.amount}
+                onChange={(event) => setField("amount", event.target.value)}
+                placeholder="0.00"
+                autoFocus
+                aria-invalid={Boolean(errors.amount)}
+                aria-describedby={errors.amount ? "refund-amount-error" : undefined}
+              />
+            </PaymentField>
+
+            <PaymentField
+              id="refund-date"
+              label="Refunded at"
+              error={errors.refundedAt}
+              hint="When the money left."
+            >
+              <Input
+                id="refund-date"
+                type="datetime-local"
+                value={values.refundedAt}
+                onChange={(event) => setField("refundedAt", event.target.value)}
+                aria-invalid={Boolean(errors.refundedAt)}
+                aria-describedby={errors.refundedAt ? "refund-date-error" : undefined}
+              />
+            </PaymentField>
+          </div>
+
+          <PaymentField
+            id="refund-reference"
+            label="Reference"
+            error={errors.reference}
+            hint="M-Pesa reversal code, bank reference or receipt number."
+          >
+            <Input
+              id="refund-reference"
+              value={values.reference}
+              onChange={(event) => setField("reference", event.target.value)}
+              placeholder="e.g. QJ72X8ABC"
+              aria-invalid={Boolean(errors.reference)}
+              aria-describedby={errors.reference ? "refund-reference-error" : undefined}
+            />
+          </PaymentField>
+
+          <PaymentField
+            id="refund-reason"
+            label="Reason"
+            required
+            error={errors.reason}
+            hint={`${values.reason.length}/500 characters`}
+          >
+            <Textarea
+              id="refund-reason"
+              value={values.reason}
+              onChange={(event) => setField("reason", event.target.value)}
+              maxLength={500}
+              placeholder="e.g. Customer cancelled after paying."
+              aria-invalid={Boolean(errors.reason)}
+              aria-describedby={errors.reason ? "refund-reason-error" : undefined}
+              className="min-h-20"
+            />
+          </PaymentField>
+
+          <DialogFooter className="border-t border-slate-100 pt-4">
+            <Button type="button" variant="outline" onClick={onClose} disabled={refund.isPending}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="destructive"
+              disabled={refund.isPending}
+              aria-busy={refund.isPending}
+            >
+              {refund.isPending ? (
+                <>
+                  <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+                  Refunding…
+                </>
+              ) : (
+                "Record refund"
               )}
             </Button>
           </DialogFooter>
@@ -887,7 +1176,7 @@ function PaymentField({
 function PaymentError({ error }: { error: unknown }) {
   return (
     <Alert variant="destructive">
-      <AlertTitle>Payment not updated</AlertTitle>
+      <AlertTitle>Payment action failed</AlertTitle>
       <AlertDescription>
         {isApiError(error) ? error.message : "Check your connection and try again."}
         {isApiError(error) ? (
