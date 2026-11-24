@@ -1,8 +1,8 @@
 # Backend gaps — what is not covered yet
 
 **Prepared:** 15 November 2026
-**Updated:** 24 November 2026 — O1 operations package
-**Scope:** backend and deployment, as merged to `main` at `07e173f` plus the T1/T2 branches
+**Updated:** 24 November 2026 — F11 maintenance blackouts and F12 refunds
+**Scope:** backend and deployment, as merged to `main` at `489a122` plus the F11/F12 branches
 **Purpose:** a plain list of what the backend does *not* do yet, so the owner can decide
 what is worth paying for next. Nothing here is a bug report against finished work — it is
 the boundary of the current build.
@@ -22,7 +22,7 @@ For context, the backend today covers:
 - Booking requests: guest submission with live server-side pricing, stock holds,
   hold expiry, lookup by reference.
 - Admin operations: approve, reject, cancel, complete, transport charge, payment
-  records, dashboard summary.
+  records, partial/full refunds, dashboard summary.
 - Admin auth: one owner account, session cookie, password change, rate-limited login.
 - Guard rails recently added: throttled public booking routes, committed HTTP smoke
   tests, idempotent seed.
@@ -53,14 +53,15 @@ database. That turns the working codebase into a working single-host service.
 
 ## 3. Money handling
 
-Payments are recorded correctly (rows are the source of truth, `paidAmount` is recomputed),
-but the surrounding money workflows are absent.
+Payments are recorded correctly, refunds are now first-class rows, and new payments cannot
+exceed the balance. The remaining money gaps are about documents, audit history and
+reconciliation.
 
 | Gap | Why it matters | Risk | Effort |
 |---|---|---|---|
-| No refund workflow | `PaymentStatus.REFUNDED` exists in the schema but no endpoint sets it. Today a refund is handled outside the system, so the booking still shows the money as collected. | **High** | M |
-| No overpayment rule | A payment larger than the balance is accepted and merely reported as `surplus`. The dashboard counts it as collected revenue. Policy needs deciding: reject, or allow as a deposit/credit. | Medium | S |
-| No receipts or invoices | The owner has no document to send a customer. The payment list is admin-only. | Medium | M |
+| ~~No refund workflow~~ | **Done in F12:** partial and full refunds are recorded against a paid payment, reduce `paidAmount`, update the dashboard and are visible in the admin payment history. | — | — |
+| ~~No overpayment rule~~ | **Done in F12:** a new payment may not exceed the outstanding balance; the pending-to-paid transition rechecks it. Returned money is a refund, not an implicit credit. | — | — |
+| No receipts or invoices | The owner has no document to send a customer beyond the browser print view. The payment list is admin-only. | Medium | M |
 | Payments have no edit history | Booking status changes are logged, payment edits/deletions are not. If a figure is questioned there is no trail of who changed what. | Medium | S |
 | Offers are display-only | `discountAmount` exists on a booking but nothing ever sets it; `FIRST10` cannot actually be redeemed. | Medium | M |
 | No daily takings / reconciliation report | The dashboard shows a month total; there is no per-day cash-up or method breakdown (cash vs M-Pesa) for closing the day. | Medium | S |
@@ -151,7 +152,8 @@ client 27% / 19% / 25% / 27%.
 From `build-plan.md` §11, kept here so they are not mistaken for oversights:
 
 - WhatsApp / email notifications — the owner follows up manually.
-- M-Pesa Daraja and automated refunds — payments are recorded by hand.
+- M-Pesa Daraja and provider-side automated refunds — payments and refunds are recorded by
+  hand, though manual refunds now have an auditable workflow (F12).
 - Customer accounts and multiple staff accounts — guest booking, one owner.
 - Discount engine for offers — offers are display-only.
 - Guest-count enforcement for packages (D5).
@@ -175,12 +177,13 @@ unit of work:
    CI job that has Postgres. *(§7)*~~ **Done in T1.**
 3. ~~**Maintenance blackout dates** — protects against renting out a broken item.
    *(§4)*~~ **Done in F11.**
-4. **Refunds and overpayment policy** — closes the gap between the books and reality. *(§3)*
+4. ~~**Refunds and overpayment policy** — closes the gap between the books and reality.
+   *(§3)*~~ **Done in F12.**
 5. **Booking edit** — removes the cancel-and-rebook workaround. *(§4)*
 6. **Staff accounts** — stops password sharing. *(§6)*
 7. **Notifications** — the biggest labour saving for the owner. *(§5)*
 8. **Reports and CSV export** — needed at month end. *(§8)*
 
-The next item is refunds and overpayment policy, which closes the gap between the books
-and reality. Maintenance blackouts are done; code-quality gates give new work lint,
-format and coverage feedback from CI.
+The next item is **booking edit**, which removes the cancel-and-rebook workaround. Refunds
+and maintenance blackouts are done; code-quality gates give new work lint, format and
+coverage feedback from CI.

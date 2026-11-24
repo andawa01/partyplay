@@ -55,9 +55,9 @@ small `vitest` suite; nothing else does by default.
 | Workspaces | `client/` (React 19 + Vite + TS + Tailwind 4) and `server/` (Express 5 + TS) |
 | Server entry | `server/src/index.ts` — cors, json, `/api/health`, `/api/hello`, mounts `/api/categories`, calls `ensureClient()` before listen |
 | Database | PostgreSQL 17 in docker, `docker-compose.yml`, host port 5433 |
-| Prisma schema | 18 models, all required entities present (`database-spec.md` §3) |
-| Migrations | 7 applied; `prisma migrate status` reports up to date |
-| DB hardening | 13 CHECK constraints + `Booking(status, startDate, endDate)` index |
+| Prisma schema | 19 models, all required entities present (`database-spec.md` §3) |
+| Migrations | 8 applied; `prisma migrate status` reports up to date |
+| DB hardening | 14 CHECK constraints + `Booking(status, startDate, endDate)` index |
 | Inventory service | `server/src/services/availability.ts` — `getAvailability`, `getReservedQuantities`, `findShortages`, `toDateOnly`, `isValidRange` |
 | Routes | `/api/categories` (list, get, create, patch, delete — admin guarded by a stub) |
 | Auth | `requireAdmin` is a **501 stub** — no login exists |
@@ -570,20 +570,22 @@ inventory on a subsequent availability query.
 | Method | Path | Notes |
 |---|---|---|
 | POST | `/api/admin/bookings/:id/payments` | `{ amount, method, providerRef?, paidAt?, description? }` |
-| GET | `/api/admin/bookings/:id/payments` | list with running total |
+| GET | `/api/admin/bookings/:id/payments` | list with net running total and refunds |
 | DELETE | `/api/admin/payments/:id` | only while `status = PENDING`; not a refund (§11) |
 | PATCH | `/api/admin/payments/:id` | mark `PAID`/`FAILED`, set `providerRef` |
+| POST | `/api/admin/payments/:id/refunds` | `{ amount, reason, reference?, refundedAt? }` |
 
 **Rules**
 
 - Recording a payment runs in a transaction: create `Payment` (`PAID` immediately when
   `method` is `CASH`/`MPESA`/`BANK_TRANSFER` and `paidAt` is given, else `PENDING`),
-  then recompute `Booking.paidAmount` = sum of `PAID` payments — **recompute, never
-  increment** (increments drift).
+  then recompute `Booking.paidAmount` = sum of `PAID`/`REFUNDED` payments minus refunds —
+  **recompute, never increment** (increments drift).
 - Derived payment status per D2 lives in `services/payments.ts` and is included in the
   booking response as `paymentStatus: "UNPAID" | "PARTIALLY_PAID" | "PAID"`.
-- Overpayment is allowed but flagged (`overpaidBy`), because transfer fees and rounding
-  happen; no CHECK constraint blocks it.
+- Overpayment is rejected in the service, including when a pending payment is marked
+  paid. Money that must go back is recorded as a `PaymentRefund`; it is never an implicit
+  credit or a negative payment.
 - `paidAmount <= totalAmount` is app-enforced and deliberately not a DB check
   (`database-spec.md` §8.2).
 
@@ -608,6 +610,34 @@ upcoming: [...] }`.
 **Verify:** numbers reconcile with direct psql `COUNT`/`SUM` on the same day's data.
 
 **Depends on:** F8, F9.
+
+---
+
+### F12 — Refunds and overpayment policy
+
+| Method | Path | Notes |
+|---|---|---|
+| POST | `/api/admin/payments/:id/refunds` | `{ amount, reason, reference?, refundedAt? }` |
+
+**Rules**
+
+- `PaymentRefund` rows are immutable, always positive, and belong to one paid payment.
+  Partial refunds leave the payment `PAID`; covering the full amount sets `REFUNDED`.
+- Refunds are capped by the payment's unrefunded amount. They may exceed the booking's
+  current balance only when correcting a legacy overpayment, because the refund is
+  bounded by the original payment instead.
+- A new payment may not exceed the outstanding balance. A pending payment is rechecked
+  when marked paid, so two pending rows cannot combine into an overpayment.
+- `Booking.paidAmount` is net of refunds, and the dashboard's collected/this-month
+  figures subtract refunds in the relevant period.
+- Payment writes take a per-booking advisory lock, so concurrent refunds cannot both
+  pass the same remaining-refundable check.
+
+**Verify:** record 2000 of a 2000 total; try 1 more → `409`; refund 500 → payment still
+`PAID`, balance 1500; refund 1500 → payment `REFUNDED`, balance 0; another refund → `409`;
+dashboard collected is unchanged by the refund pair.
+
+**Depends on:** F9.
 
 ---
 
@@ -654,7 +684,7 @@ F1  platform ──┬── F2 auth ──┬── F4 admin catalogue
                └── (migration 5: D1, D3, D4) before F6b
 ```
 
-Engine order: **F1 → F2 → F3 → F4 → F5 → F6a → F6b → F6c → F7 → F8 → F9 → F10 → C1…C11.**
+Engine order: **F1 → F2 → F3 → F4 → F5 → F6a → F6b → F6c → F7 → F8 → F9 → F10 → F11 → F12 → C1…C11.**
 
 F2 before F4 because admin CRUD is meaningless without a login to test it through. F6a
 before F6b because creation without trustworthy pricing produces garbage snapshots. F7
@@ -670,7 +700,7 @@ before F8 because the expiry rules are part of the approval contract.
 | Double counting a package and its items | Demand = standalone `BookingItem`s + expanded `BookingPackageItem`s; a package contributes the equipment it contains |
 | Pending vs confirmed reservation | `PENDING` counts via unexpired `ACTIVE` `StockHold`; `CONFIRMED` counts via item rows. Different sources, never both |
 | Price changes after submission | Every price and package content is snapshotted into the booking rows |
-| Payments | Separate rows; `paidAmount` recomputed from `PAID` rows |
+| Payments | Separate rows; `paidAmount` recomputed from paid/refunded rows minus refunds |
 
 The only defence against overselling is the transaction. The API availability endpoint
 and the client preview are advisory.
@@ -738,6 +768,7 @@ the last unit and assert `[201, 409]`.
 | F9 | Payments | ✅ | — | `feat/f9-payments` |
 | F10 | Dashboard summaries | ✅ | — | `feat/f10-dashboard` |
 | F11 | Maintenance blackout dates | ✅ | ✅ | `feat/f11-maintenance-blackouts` |
+| F12 | Refunds and overpayment policy | ✅ | ✅ | `feat/f12-refunds-overpayment` |
 | C1 | Client foundation | — | ✅ | `feat/c1-client-foundation` |
 | C2 | Public shell and site settings | — | ✅ | `feat/c2-public-shell` |
 | C3 | Equipment catalogue and detail | — | ✅ | `feat/c3-equipment-catalogue` |

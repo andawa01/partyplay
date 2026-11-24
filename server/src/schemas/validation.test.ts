@@ -8,6 +8,7 @@ import {
   resetPasswordSchema,
 } from "./auth";
 import { createBookingSchema } from "./bookings";
+import { createPaymentSchema, refundPaymentSchema } from "./payments";
 import { updateSettingsSchema } from "./settings";
 import { createTransportProviderSchema } from "./transport-providers";
 
@@ -52,6 +53,24 @@ describe("phone validation", () => {
   it("applies to configured contact numbers", () => {
     expect(updateSettingsSchema.safeParse({ contactPhone: "0712345678" }).success).toBe(true);
     expect(updateSettingsSchema.safeParse({ contactPhone: "071234567" }).success).toBe(false);
+  });
+});
+
+describe("payment amount validation", () => {
+  it("accepts an amount with two decimals", () => {
+    expect(createPaymentSchema.safeParse({ amount: 500.25, method: "CASH" }).success).toBe(true);
+    expect(
+      refundPaymentSchema.safeParse({ amount: 500.25, reason: "Partial refund" }).success,
+    ).toBe(true);
+  });
+
+  it.each([0, -1, 0.001, 1.999])("rejects a non-positive or over-precise amount: %s", (amount) => {
+    expect(createPaymentSchema.safeParse({ amount, method: "CASH" }).success).toBe(false);
+    expect(refundPaymentSchema.safeParse({ amount, reason: "Refund" }).success).toBe(false);
+  });
+
+  it("requires a reason for a refund", () => {
+    expect(refundPaymentSchema.safeParse({ amount: 100, reason: "  " }).success).toBe(false);
   });
 });
 

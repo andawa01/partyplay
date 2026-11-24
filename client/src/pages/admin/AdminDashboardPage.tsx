@@ -170,7 +170,7 @@ export default function AdminDashboardPage() {
             Money
           </h2>
           <p className="mt-0.5 text-xs text-slate-500">
-            Paid payments only. Outstanding covers confirmed and completed bookings.
+            Paid payments minus refunds. Outstanding covers confirmed and completed bookings.
           </p>
         </div>
         <div className="grid gap-4 lg:grid-cols-3">
@@ -189,7 +189,7 @@ export default function AdminDashboardPage() {
               <p className="mt-3 text-3xl font-semibold tracking-tight">
                 {formatMoney(data.revenue.collected, currency)}
               </p>
-              <p className="mt-1 text-xs text-slate-400">Every successful payment on record</p>
+              <p className="mt-1 text-xs text-slate-400">Successful payments less refunds</p>
             </div>
           </div>
 
@@ -203,7 +203,9 @@ export default function AdminDashboardPage() {
             <p className="mt-3 text-2xl font-semibold text-slate-900">
               {formatMoney(data.revenue.thisMonth, currency)}
             </p>
-            <p className="mt-1 text-xs text-slate-500">{formatMonthLabel(data.month)} payments</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {formatMonthLabel(data.month)} payments less refunds
+            </p>
           </div>
 
           <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5">

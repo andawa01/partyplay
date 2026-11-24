@@ -10,6 +10,7 @@ import type {
   PaymentsMeta,
   PaymentRow,
   PaymentWriteInput,
+  RefundWriteInput,
 } from "../lib/admin-payments";
 import { paymentEditPayload } from "../lib/admin-payments";
 import type { AdminBookingDetail } from "../lib/admin-bookings";
@@ -86,6 +87,24 @@ export function useUpdatePayment() {
         await apiFetch<PaymentMutationResult>(`/api/admin/payments/${paymentId}`, {
           method: "PATCH",
           body: JSON.stringify(paymentEditPayload(input)),
+        })
+      ).data,
+    onSuccess: (result) => {
+      applyPaymentSummary(queryClient, result.booking);
+      return refreshAfterPayment(queryClient, result.booking.id);
+    },
+  });
+}
+
+export function useRefundPayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ paymentId, input }: { paymentId: string; input: RefundWriteInput }) =>
+      (
+        await apiFetch<PaymentMutationResult>(`/api/admin/payments/${paymentId}/refunds`, {
+          method: "POST",
+          body: JSON.stringify(input),
         })
       ).data,
     onSuccess: (result) => {

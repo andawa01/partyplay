@@ -4,7 +4,17 @@ import type { BookingStatus, PaymentStatus } from "./bookings";
 
 export type PaymentMethod = "MANUAL" | "MPESA" | "BANK_TRANSFER" | "CASH" | "OTHER";
 
-export type PaymentRowStatus = "PENDING" | "PAID" | "FAILED";
+export type PaymentRowStatus = "PENDING" | "PAID" | "FAILED" | "REFUNDED";
+
+export interface PaymentRefund {
+  id: string;
+  amount: string;
+  reason: string;
+  reference: string | null;
+  refundedAt: string;
+  createdAt: string;
+  refundedBy: { id: string; name: string | null; email: string } | null;
+}
 
 export interface PaymentRow {
   id: string;
@@ -18,6 +28,9 @@ export interface PaymentRow {
   createdAt: string;
   updatedAt: string;
   paidBy: { id: string; name: string | null; email: string } | null;
+  refundedAmount: string;
+  refundableAmount: string;
+  refunds: PaymentRefund[];
 }
 
 export interface BookingPaymentSummary {
@@ -34,6 +47,7 @@ export interface BookingPaymentSummary {
 export interface PaymentsMeta {
   total: number;
   paidTotal: string;
+  refundedTotal: string;
   booking: BookingPaymentSummary;
 }
 
@@ -72,11 +86,12 @@ export const paymentMethodMeta: Record<PaymentMethod, { label: string; hint: str
 
 export const paymentRowStatusMeta: Record<
   PaymentRowStatus,
-  { label: string; badge: "warning" | "success" | "destructive" }
+  { label: string; badge: "warning" | "success" | "destructive" | "secondary" }
 > = {
   PENDING: { label: "Pending", badge: "warning" },
   PAID: { label: "Paid", badge: "success" },
   FAILED: { label: "Failed", badge: "destructive" },
+  REFUNDED: { label: "Refunded", badge: "secondary" },
 };
 
 export function paymentMethodLabel(method: PaymentMethod): string {
@@ -149,6 +164,61 @@ export function paymentPayload(values: PaymentFormValues): PaymentWriteInput {
     providerRef: nullableText(values.providerRef),
     paidAt: toIsoOrNull(values.paidAt),
     description: nullableText(values.description),
+  };
+}
+
+export interface RefundFormValues {
+  amount: string;
+  refundedAt: string;
+  reference: string;
+  reason: string;
+}
+
+export const refundFormSchema = z.object({
+  amount: z
+    .string()
+    .trim()
+    .min(1, "Enter the amount refunded")
+    .refine(
+      (value) =>
+        /^\d+(?:\.\d{1,2})?$/.test(value) && Number(value) > 0 && Number(value) <= 99_999_999.99,
+      "Use an amount greater than 0 with up to 2 decimals",
+    ),
+  refundedAt: z
+    .string()
+    .trim()
+    .refine((value) => {
+      if (value === "") {
+        return true;
+      }
+      return !Number.isNaN(new Date(value).getTime());
+    }, "Enter a valid date and time"),
+  reference: z.string().trim().max(128, "Keep the reference to 128 characters"),
+  reason: z.string().trim().min(1, "Say why the money was refunded").max(500),
+});
+
+export interface RefundWriteInput {
+  amount: number;
+  refundedAt: string | null;
+  reference: string | null;
+  reason: string;
+}
+
+export function emptyRefundForm(): RefundFormValues {
+  return {
+    amount: "",
+    refundedAt: nowDateTimeLocal(),
+    reference: "",
+    reason: "",
+  };
+}
+
+export function refundPayload(values: RefundFormValues): RefundWriteInput {
+  return {
+    amount: Number(values.amount),
+    refundedAt: toIsoOrNull(values.refundedAt),
+    reference: nullableText(values.reference),
+    reason: values.reason.trim(),
   };
 }
 

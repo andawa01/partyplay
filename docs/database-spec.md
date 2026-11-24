@@ -43,6 +43,7 @@ Out of scope for this document: API shapes, authentication flows, UI.
 | 16 | `Offer` | Promotions (loose reference to equipment/package) |
 | 17 | `TransportProvider` | Delivery/transport contacts |
 | 18 | `EquipmentBlackout` | Date-specific maintenance downtime for an equipment item |
+| 19 | `PaymentRefund` | Money returned against a paid payment |
 
 Enums: `Role`, `DiscountType`, `OfferAppliesTo`, `BookingStatus`,
 `StockHoldStatus`, `PaymentMethod`, `PaymentStatus`.
@@ -56,6 +57,7 @@ erDiagram
     ADMIN ||--o| SITE_SETTING : owns
     ADMIN ||--o{ BOOKING : handles
     ADMIN ||--o{ PAYMENT : records
+    ADMIN ||--o{ PAYMENT_REFUND : returns
     ADMIN ||--o{ BOOKING_STATUS_HISTORY : changes
 
     CATEGORY ||--o{ CATEGORY : parent_of
@@ -81,6 +83,7 @@ erDiagram
     EQUIPMENT ||--o{ STOCK_HOLD : held_as
 
     BOOKING ||--o{ PAYMENT : receives
+    PAYMENT ||--o{ PAYMENT_REFUND : refunded_by
     BOOKING ||--o{ BOOKING_STATUS_HISTORY : audited_by
 
     ADMIN ||--o{ PASSWORD_RESET_TOKEN : issues
@@ -546,9 +549,11 @@ Indexes: `(bookingId)`, `(adminId)`.
 | `paidAt` | timestamp(3) | yes | — | null until confirmed |
 | `createdAt` / `updatedAt` | timestamp(3) | no | `now()` / auto | |
 
-Indexes: `(bookingId)`, `(status)`.
+Indexes: `(bookingId)`, `(status)`. Refunds are rows in `PaymentRefund`.
 
-**App-enforced:** `amount > 0`.
+**App-enforced:** `amount > 0` with at most two decimals; a payment may not exceed the
+booking's outstanding balance. `status` becomes `REFUNDED` when refunds cover the full
+amount; partial refunds leave it `PAID`.
 
 ### 4.15 Offer
 
@@ -622,6 +627,26 @@ Indexes: `(equipmentId, startDate, endDate)`, `(startDate, endDate)`.
 **App-enforced:** an overlapping blackout for the same equipment is rejected; delete and
 recreate the window instead of stacking duplicates. Blackouts do not cancel existing
 bookings, and confirmation is refused while an overlapping blackout exists.
+
+### 4.19 PaymentRefund
+
+| Field | Type | Null | Default | Notes |
+|---|---|---|---|---|
+| `id` | text | no | `uuid()` | PK |
+| `paymentId` | text | no | — | FK → `Payment.id`, **RESTRICT** |
+| `amount` | numeric(10,2) | no | — | money returned, positive |
+| `reason` | text | no | — | required admin note |
+| `reference` | varchar(128) | yes | — | M-Pesa reversal / bank reference |
+| `refundedAt` | timestamp(3) | no | `now()` | when the money left |
+| `refundedById` | text | yes | — | FK → `Admin.id`, `SET NULL` |
+| `createdAt` | timestamp(3) | no | `now()` | |
+
+Indexes: `(paymentId)`, `(refundedAt)`.
+
+**DB-enforced:** `amount > 0`.
+**App-enforced:** only a `PAID` payment can be refunded; the sum of its refunds cannot
+exceed the original payment amount. Refund rows are immutable, and a fully refunded
+payment cannot be edited or deleted.
 
 ---
 
@@ -767,14 +792,19 @@ Consequences to respect in code:
 A booking can be `APPROVED` and unpaid. Payments are independent rows.
 
 ```
-outstanding = totalAmount − Σ Payment.amount  (where status = 'PAID')
+collected    = Σ Payment.amount      (where status IN ('PAID', 'REFUNDED'))
+refunded     = Σ PaymentRefund.amount
+outstanding  = max(totalAmount − collected + refunded, 0)
 ```
 
-- `Payment.status = PAID` is the only status that reduces the balance;
-  `PENDING`, `FAILED` and `REFUNDED` do not.
-- `Booking.paidAmount` is a **cache** for listing/UI. `Payment` rows are the
-  source of truth; `paidAmount` must be recomputed inside the same transaction
-  that writes a payment.
+- Full refunds set `Payment.status = REFUNDED`; partial refunds leave it `PAID`.
+  In both cases the original `Payment.amount` stays as gross collected money and the
+  `PaymentRefund` rows carry the offset. `PENDING` and `FAILED` never count.
+- `Booking.paidAmount` is a **cache** for listing/UI and stores the net amount
+  (`collected − refunded`). `Payment` and `PaymentRefund` rows are the source of truth;
+  `paidAmount` must be recomputed inside the same transaction that writes either.
+- A new payment may not exceed the outstanding balance. Overpayment is rejected rather
+  than kept as an implicit credit; return money with a refund row instead.
 - Approval must not require full payment unless the business decides otherwise —
   it is currently a manual decision, not an enforced rule.
 
@@ -802,8 +832,10 @@ Migration `20261113194645_harden_booking_index_and_check_constraints` adds:
 | `Package_maxQuantity_check` | `Package` | `maxQuantity IS NULL OR maxQuantity >= minQuantity` |
 | `Package_duration_check` | `Package` | `duration IS NULL OR duration >= 1` |
 | `EquipmentBlackout_dates_check` | `EquipmentBlackout` | `endDate >= startDate` |
+| `PaymentRefund_amount_check` | `PaymentRefund` | `amount > 0` |
 
-The blackout CHECK was added by migration `20261124115958_add_equipment_blackouts`.
+The blackout CHECK was added by migration `20261124115958_add_equipment_blackouts`;
+the refund CHECK by `20261124124910_add_payment_refunds`.
 
 A single-day booking (`startDate = endDate`) is accepted; zero quantities, zero
 days, inverted dates and negative stock are rejected with SQLSTATE `23514`.
@@ -836,7 +868,10 @@ days, inverted dates and negative stock are rejected with SQLSTATE `23514`.
    the column non-null.
 8. **`Booking.paidAmount <= totalAmount` is app-enforced** and deliberately not a
    `CHECK`: editing `totalAmount` after taking payment would otherwise make
-   legitimate rows unwritable. Recompute `paidAmount` from `Payment` rows.
+   legitimate rows unwritable, and a refund can legitimately return the balance to
+   zero. New payments are capped in the service; `paidAmount` is recomputed from
+   `Payment` and `PaymentRefund` rows. The sum of refunds against one payment is also
+   app-enforced because it is a cross-row rule.
 9. **`Booking_status_idx` is now redundant** — `(status)` is a prefix of
    `(status, startDate, endDate)`. Safe to drop to save a write per booking.
 10. **No `updatedAt` on `BookingPackageItem` / `BookingStatusHistory`.** Fine for
@@ -853,6 +888,9 @@ days, inverted dates and negative stock are rejected with SQLSTATE `23514`.
 | 3 | `20261113194014_phase_2_2_stock_holds_and_package_snapshots` | Add `StockHold` + `StockHoldStatus`, add `BookingPackageItem`, add `PackageBooking.quantity`, drop JSON `PackageBooking.itemsSnapshot` |
 | 4 | `20261113194645_harden_booking_index_and_check_constraints` | `(status, startDate, endDate)` index; `CHECK` constraints for quantities and date ranges |
 | 5 | `20261115180000_booking_domain_fixes` | `BookingStatus` rebuilt (`CONFIRMED`, `EXPIRED`; `APPROVED`, `NO_SHOW` removed); `Equipment.pricingMode`; `Booking.fulfilmentMethod` |
+| 6 | `20261124091858_add_secure_password_resets` | Hashed password-reset tokens and session versioning |
+| 7 | `20261124115958_add_equipment_blackouts` | `EquipmentBlackout` plus date-order CHECK |
+| 8 | `20261124124910_add_payment_refunds` | `PaymentRefund` plus positive-amount CHECK |
 
 Apply with `npm run db:migrate --workspace server` (`prisma migrate dev`).
 Check state with `npx prisma migrate status` from `server/`.

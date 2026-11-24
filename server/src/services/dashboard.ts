@@ -120,6 +120,38 @@ async function outstandingRevenue(): Promise<Prisma.Decimal> {
   return rows[0]?.outstanding ?? new Prisma.Decimal(0);
 }
 
+/**
+ * Collected money is gross successful payments minus refunds. REFUNDED payments still
+ * count as gross because their refund rows carry the offset; that keeps full and partial
+ * refunds on the same footing.
+ */
+async function netRevenue(range?: { from: Date; to: Date }): Promise<Prisma.Decimal> {
+  const paymentWhere: Prisma.PaymentWhereInput = {
+    status: { in: ["PAID", "REFUNDED"] },
+    ...(range
+      ? {
+          OR: [
+            { paidAt: { gte: range.from, lt: range.to } },
+            { paidAt: null, createdAt: { gte: range.from, lt: range.to } },
+          ],
+        }
+      : {}),
+  };
+  const refundWhere: Prisma.PaymentRefundWhereInput = range
+    ? { refundedAt: { gte: range.from, lt: range.to } }
+    : {};
+
+  const [payments, refunds] = await Promise.all([
+    db.payment.aggregate({ where: paymentWhere, _sum: { amount: true } }),
+    db.paymentRefund.aggregate({ where: refundWhere, _sum: { amount: true } }),
+  ]);
+
+  const net = (payments._sum.amount ?? new Prisma.Decimal(0)).minus(
+    refunds._sum.amount ?? new Prisma.Decimal(0),
+  );
+  return net.isNegative() ? new Prisma.Decimal(0) : net;
+}
+
 const upcomingSelect = {
   id: true,
   code: true,
@@ -187,18 +219,8 @@ export async function getDashboard() {
       },
     }),
     db.booking.count({ where: { status: "COMPLETED" } }),
-    db.payment.aggregate({ where: { status: "PAID" }, _sum: { amount: true } }),
-    db.payment.aggregate({
-      where: {
-        status: "PAID",
-        // Payments recorded without an explicit paidAt are dated by when they were entered.
-        OR: [
-          { paidAt: { gte: monthStart, lt: nextMonthStart } },
-          { paidAt: null, createdAt: { gte: monthStart, lt: nextMonthStart } },
-        ],
-      },
-      _sum: { amount: true },
-    }),
+    netRevenue(),
+    netRevenue({ from: monthStart, to: nextMonthStart }),
     outstandingRevenue(),
     db.siteSetting.findFirst({ select: { currency: true } }),
     db.booking.findMany({
@@ -217,8 +239,8 @@ export async function getDashboard() {
     bookings: { pending, confirmedThisMonth, completed },
     revenue: {
       currency: settings?.currency ?? "KES",
-      collected: money(collected._sum.amount) ?? "0.00",
-      thisMonth: money(collectedThisMonth._sum.amount) ?? "0.00",
+      collected: money(collected) ?? "0.00",
+      thisMonth: money(collectedThisMonth) ?? "0.00",
       // Only live jobs owe money; rejected, cancelled and lapsed requests do not.
       outstanding: money(outstanding) ?? "0.00",
     },

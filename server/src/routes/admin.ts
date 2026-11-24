@@ -64,6 +64,7 @@ router.post("/bookings/:id/payments", asyncHandler(payments.createPayment));
 router.get("/bookings/:id/payments", asyncHandler(payments.listPayments));
 router.patch("/payments/:id", asyncHandler(payments.updatePayment));
 router.delete("/payments/:id", asyncHandler(payments.deletePayment));
+router.post("/payments/:id/refunds", asyncHandler(payments.refundPayment));
 
 router.get("/dashboard", asyncHandler(dashboard.getDashboard));
 
