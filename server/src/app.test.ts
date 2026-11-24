@@ -54,6 +54,14 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
     startDate: formatCalendarDate(new Date(today.getTime() + 5 * 86_400_000)),
     endDate: formatCalendarDate(new Date(today.getTime() + 6 * 86_400_000)),
   };
+  const maintenanceDates = {
+    startDate: formatCalendarDate(new Date(today.getTime() + 10 * 86_400_000)),
+    endDate: formatCalendarDate(new Date(today.getTime() + 11 * 86_400_000)),
+  };
+  const confirmationDates = {
+    startDate: formatCalendarDate(new Date(today.getTime() + 15 * 86_400_000)),
+    endDate: formatCalendarDate(new Date(today.getTime() + 16 * 86_400_000)),
+  };
 
   let server: Server;
   let base: string;
@@ -289,6 +297,97 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
     // Cancelling a confirmed booking releases the item rows.
     rows = (await availability()).body.data as Array<{ available: number }>;
     expect(rows[0].available).toBe(3);
+  }, 30_000);
+
+  it("removes blacked-out equipment from availability and refuses new bookings", async () => {
+    const created = await api("POST", "/api/admin/blackouts", {
+      cookie,
+      body: {
+        equipmentId,
+        ...maintenanceDates,
+        reason: "Damaged blower; awaiting repair",
+      },
+    });
+    expect(created.status).toBe(201);
+    const blackoutId = (created.body.data as { id: string }).id;
+
+    const availabilityPath = `/api/availability?equipmentIds=${equipmentId}&startDate=${maintenanceDates.startDate}&endDate=${maintenanceDates.endDate}`;
+    let rows = (await api("GET", availabilityPath)).body.data as Array<{
+      available: number;
+      blocked: number;
+      maintenance: boolean;
+    }>;
+    expect(rows[0]).toMatchObject({ available: 0, blocked: 3, maintenance: true });
+
+    const booking = await api("POST", "/api/bookings", {
+      body: {
+        ...bookingDates(maintenanceDates),
+        equipment: [{ equipmentId, quantity: 1 }],
+      },
+    });
+    expect(booking.status).toBe(409);
+    expect(booking.body).toMatchObject({ code: "CONFLICT" });
+    expect(String(booking.body.error)).toContain("maintenance");
+
+    const removed = await api("DELETE", `/api/admin/blackouts/${blackoutId}`, { cookie });
+    expect(removed.status).toBe(204);
+
+    rows = (await api("GET", availabilityPath)).body.data as Array<{
+      available: number;
+      blocked: number;
+      maintenance: boolean;
+    }>;
+    expect(rows[0]).toMatchObject({ available: 3, maintenance: false });
+  }, 30_000);
+
+  it("refuses to confirm a pending booking after maintenance is added", async () => {
+    const created = await api("POST", "/api/bookings", {
+      body: {
+        ...bookingDates(confirmationDates),
+        equipment: [{ equipmentId, quantity: 1 }],
+      },
+    });
+    expect(created.status).toBe(201);
+    const code = (created.body.data as { code: string }).code;
+    const booking = await db.booking.findUniqueOrThrow({ where: { code } });
+
+    const blackout = await api("POST", "/api/admin/blackouts", {
+      cookie,
+      body: {
+        equipmentId,
+        ...confirmationDates,
+        reason: "Inspection before the weekend",
+      },
+    });
+    expect(blackout.status).toBe(201);
+
+    const blocked = await api("PATCH", `/api/admin/bookings/${booking.id}/status`, {
+      cookie,
+      body: { status: "CONFIRMED" },
+    });
+    expect(blocked.status).toBe(409);
+    expect(String(blocked.body.error)).toContain("maintenance");
+    expect(
+      (await db.booking.findUniqueOrThrow({ where: { id: booking.id }, select: { status: true } }))
+        .status,
+    ).toBe("PENDING");
+
+    const blackoutId = (blackout.body.data as { id: string }).id;
+    expect((await api("DELETE", `/api/admin/blackouts/${blackoutId}`, { cookie })).status).toBe(
+      204,
+    );
+
+    const confirmed = await api("PATCH", `/api/admin/bookings/${booking.id}/status`, {
+      cookie,
+      body: { status: "CONFIRMED" },
+    });
+    expect(confirmed.status).toBe(200);
+
+    const cancelled = await api("PATCH", `/api/admin/bookings/${booking.id}/status`, {
+      cookie,
+      body: { status: "CANCELLED", reason: "Smoke test cleanup" },
+    });
+    expect(cancelled.status).toBe(200);
   }, 30_000);
 
   it("recomputes the payment cache from the rows after a deletion", async () => {

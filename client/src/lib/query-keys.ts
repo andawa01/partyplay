@@ -28,6 +28,7 @@ export const queryKeys = {
     categories: () => ["admin", "categories"] as const,
     equipment: (filters?: Record<string, unknown>) =>
       ["admin", "equipment", filters ?? {}] as const,
+    blackouts: () => ["admin", "blackouts"] as const,
     packages: () => ["admin", "packages"] as const,
     offers: () => ["admin", "offers"] as const,
     transportProviders: () => ["admin", "transport-providers"] as const,

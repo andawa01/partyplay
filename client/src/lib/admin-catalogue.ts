@@ -2,6 +2,7 @@ import type { ZodError } from "zod";
 import { z } from "zod";
 
 import type { EquipmentCategory, PricingMode } from "./catalogue";
+import { isValidCalendarDate } from "./dates";
 
 export interface AdminEquipment {
   id: string;
@@ -74,6 +75,17 @@ export interface AdminOffer {
   startsAt: string | null;
   endsAt: string | null;
   isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminBlackout {
+  id: string;
+  equipmentId: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  equipment: { id: string; name: string; slug: string; isActive: boolean };
   createdAt: string;
   updatedAt: string;
 }
@@ -699,6 +711,64 @@ export function transportProviderPayload(
     serviceArea: nullableText(values.serviceArea),
     notes: nullableText(values.notes),
     isActive: values.isActive,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Maintenance blackouts
+// ---------------------------------------------------------------------------
+
+export interface BlackoutFormValues {
+  equipmentId: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+}
+
+const calendarDateField = z
+  .string()
+  .trim()
+  .min(1, "Choose a date")
+  .refine(isValidCalendarDate, "Enter a real calendar date");
+
+export const blackoutFormSchema = z
+  .object({
+    equipmentId: z.string().trim().min(1, "Choose an equipment item"),
+    startDate: calendarDateField,
+    endDate: calendarDateField,
+    reason: z
+      .string()
+      .trim()
+      .min(1, "Record why the item is unavailable")
+      .max(500, "Keep the reason to 500 characters"),
+  })
+  .refine((values) => values.endDate >= values.startDate, {
+    message: "The end date must be on or after the start date",
+    path: ["endDate"],
+  });
+
+export interface BlackoutWriteInput {
+  equipmentId: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+}
+
+export function emptyBlackoutForm(equipmentId = "", today = ""): BlackoutFormValues {
+  return {
+    equipmentId,
+    startDate: today,
+    endDate: today,
+    reason: "",
+  };
+}
+
+export function blackoutPayload(values: BlackoutFormValues): BlackoutWriteInput {
+  return {
+    equipmentId: values.equipmentId,
+    startDate: values.startDate,
+    endDate: values.endDate,
+    reason: values.reason.trim(),
   };
 }
 

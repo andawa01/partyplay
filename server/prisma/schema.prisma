@@ -103,6 +103,7 @@ model Equipment {
   bookingItems        BookingItem[]
   packageItems        PackageItem[]
   stockHolds          StockHold[]
+  blackouts           EquipmentBlackout[]
   bookingPackageItems BookingPackageItem[]
 
   @@index([categoryId])
@@ -124,6 +125,22 @@ model EquipmentInventory {
 
   @@unique([equipmentId])
   @@index([equipmentId])
+}
+
+// Date-specific downtime that takes every unit of an equipment item out of the pool
+// without hiding it from the catalogue. Inclusive calendar dates, like Booking.
+model EquipmentBlackout {
+  id          String    @id @default(uuid())
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  startDate   DateTime  @db.Date
+  endDate     DateTime  @db.Date
+  reason      String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([equipmentId, startDate, endDate])
+  @@index([startDate, endDate])
 }
 
 // ---------------------------------------------------------------------------

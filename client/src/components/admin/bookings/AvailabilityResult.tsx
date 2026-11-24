@@ -53,7 +53,12 @@ export function AvailabilityResult({
               key={line.equipmentId}
               className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 rounded-lg bg-white/60 px-2.5 py-1.5 text-xs"
             >
-              <span className="font-medium text-red-900">{line.name}</span>
+              <span className="font-medium text-red-900">
+                {line.name}
+                {line.maintenance ? (
+                  <span className="ml-1.5 font-normal text-amber-800">· maintenance</span>
+                ) : null}
+              </span>
               <span>
                 requested {line.requested}, available {line.available} — short by{" "}
                 <strong>{line.shortfall}</strong>
