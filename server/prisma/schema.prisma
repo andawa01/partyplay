@@ -27,6 +27,7 @@ model Admin {
   bookings               Booking[]              @relation("handledBy")
   payments               Payment[]              @relation("paidBy")
   refunds                PaymentRefund[]        @relation("refundedBy")
+  bookingEdits           BookingEdit[]          @relation("bookingEditsBy")
   siteSettings           SiteSetting?
   bookingStatusHistories BookingStatusHistory[] @relation("statusHistoryBy")
   passwordResetTokens    PasswordResetToken[]
@@ -319,6 +320,7 @@ model Booking {
   items           BookingItem[]
   packages        PackageBooking[]
   statusHistories BookingStatusHistory[]
+  edits           BookingEdit[]
   payments        Payment[]
   stockHolds      StockHold[]
 
@@ -409,6 +411,29 @@ model BookingStatusHistory {
   adminId    String?
   admin      Admin?         @relation("statusHistoryBy", fields: [adminId], references: [id], onDelete: SetNull)
   createdAt  DateTime       @default(now())
+
+  @@index([bookingId])
+  @@index([adminId])
+}
+
+// Audit trail for explicit schedule / item edits. Snapshot JSON keeps the previous and
+// new line shapes even after the related catalogue rows change.
+model BookingEdit {
+  id                  String   @id @default(uuid())
+  bookingId           String
+  booking             Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  adminId             String?
+  admin               Admin?   @relation("bookingEditsBy", fields: [adminId], references: [id], onDelete: SetNull)
+  note                String?
+  previousStartDate   DateTime @db.Date
+  previousEndDate     DateTime @db.Date
+  newStartDate        DateTime @db.Date
+  newEndDate          DateTime @db.Date
+  previousTotalAmount Decimal  @db.Decimal(10, 2)
+  newTotalAmount      Decimal  @db.Decimal(10, 2)
+  previousSnapshot    Json
+  newSnapshot         Json
+  createdAt           DateTime @default(now())
 
   @@index([bookingId])
   @@index([adminId])

@@ -1,8 +1,8 @@
 # Backend gaps — what is not covered yet
 
 **Prepared:** 15 November 2026
-**Updated:** 24 November 2026 — F11 maintenance blackouts and F12 refunds
-**Scope:** backend and deployment, as merged to `main` at `489a122` plus the F11/F12 branches
+**Updated:** 24 November 2026 — F13 booking edit
+**Scope:** backend and deployment, as merged to `main` at `ab3d26c` plus the F13 branch
 **Purpose:** a plain list of what the backend does *not* do yet, so the owner can decide
 what is worth paying for next. Nothing here is a bug report against finished work — it is
 the boundary of the current build.
@@ -22,7 +22,8 @@ For context, the backend today covers:
 - Booking requests: guest submission with live server-side pricing, stock holds,
   hold expiry, lookup by reference.
 - Admin operations: approve, reject, cancel, complete, transport charge, payment
-  records, partial/full refunds, dashboard summary.
+  records, partial/full refunds, booking date/item edits with audit history, dashboard
+  summary.
 - Admin auth: one owner account, session cookie, password change, rate-limited login.
 - Guard rails recently added: throttled public booking routes, committed HTTP smoke
   tests, idempotent seed.
@@ -70,12 +71,12 @@ reconciliation.
 
 ## 4. Booking lifecycle
 
-The booking is deliberately immutable after submission: the admin can change status and
-transport charge, but not dates, items or quantities.
+The admin can change status, transport charge, rental dates and requested lines while the
+booking is pending or confirmed. Customer identity and fulfilment details stay immutable.
 
 | Gap | Why it matters | Risk | Effort |
 |---|---|---|---|
-| No booking edit | A customer who wants to add a chair must be cancelled and re-booked, losing the original reference and history. | **High** | M |
+| ~~No booking edit~~ | **Done in F13:** dates, equipment and package quantities can be edited on pending or confirmed bookings, with a fresh stock check, repricing and a previous/new snapshot in the edit history. | — | — |
 | No customer self-service cancellation | Only the admin can cancel. Customers must phone; the status page is read-only. | Medium | M |
 | No guest-count enforcement | Package `minQuantity`/`maxQuantity` are stored but no guest count is captured, so package suitability is unchecked (agreed deferral D5, but it now affects pricing decisions). | Medium | M |
 | ~~No blackout / maintenance dates~~ | **Done in F11:** an equipment item can be blocked for an inclusive date range without hiding it; availability, new requests and confirmations all respect the blackout. | — | — |
@@ -179,11 +180,11 @@ unit of work:
    *(§4)*~~ **Done in F11.**
 4. ~~**Refunds and overpayment policy** — closes the gap between the books and reality.
    *(§3)*~~ **Done in F12.**
-5. **Booking edit** — removes the cancel-and-rebook workaround. *(§4)*
+5. ~~**Booking edit** — removes the cancel-and-rebook workaround. *(§4)*~~ **Done in F13.**
 6. **Staff accounts** — stops password sharing. *(§6)*
 7. **Notifications** — the biggest labour saving for the owner. *(§5)*
 8. **Reports and CSV export** — needed at month end. *(§8)*
 
-The next item is **booking edit**, which removes the cancel-and-rebook workaround. Refunds
-and maintenance blackouts are done; code-quality gates give new work lint, format and
-coverage feedback from CI.
+The next item is **staff accounts**, which stops password sharing. Booking edit, refunds and
+maintenance blackouts are done; code-quality gates give new work lint, format and coverage
+feedback from CI.

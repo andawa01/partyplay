@@ -566,6 +566,120 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
     ).toBeCloseTo(beforeCollected, 2);
   }, 30_000);
 
+  it("edits dates and items without double-counting the booking's own stock", async () => {
+    const firstDates = {
+      startDate: formatCalendarDate(new Date(today.getTime() + 22 * 86_400_000)),
+      endDate: formatCalendarDate(new Date(today.getTime() + 23 * 86_400_000)),
+    };
+    const secondDates = {
+      startDate: formatCalendarDate(new Date(today.getTime() + 24 * 86_400_000)),
+      endDate: formatCalendarDate(new Date(today.getTime() + 25 * 86_400_000)),
+    };
+
+    const created = await api("POST", "/api/bookings", {
+      body: {
+        ...bookingDates(firstDates),
+        equipment: [{ equipmentId, quantity: 1 }],
+      },
+    });
+    expect(created.status).toBe(201);
+    const code = (created.body.data as { code: string }).code;
+    const booking = await db.booking.findUniqueOrThrow({ where: { code } });
+
+    const edited = await api("PATCH", `/api/admin/bookings/${booking.id}`, {
+      cookie,
+      body: {
+        ...secondDates,
+        packages: [],
+        equipment: [{ equipmentId, quantity: 2 }],
+        note: "Customer added a second unit",
+      },
+    });
+    expect(edited.status).toBe(200);
+    expect(edited.body.data).toMatchObject({
+      status: "PENDING",
+      startDate: secondDates.startDate,
+      endDate: secondDates.endDate,
+      totals: { totalAmount: "4000.00" },
+      previousTotalAmount: "2000.00",
+      totalChanged: true,
+    });
+    expect((edited.body.data as { edits: unknown[] }).edits).toHaveLength(1);
+
+    const firstAvailability = await api(
+      "GET",
+      `/api/availability?equipmentIds=${equipmentId}&startDate=${firstDates.startDate}&endDate=${firstDates.endDate}`,
+    );
+    expect((firstAvailability.body.data as Array<{ available: number }>)[0].available).toBe(3);
+
+    const secondAvailability = await api(
+      "GET",
+      `/api/availability?equipmentIds=${equipmentId}&startDate=${secondDates.startDate}&endDate=${secondDates.endDate}`,
+    );
+    expect((secondAvailability.body.data as Array<{ available: number }>)[0].available).toBe(1);
+
+    const tooMany = await api("PATCH", `/api/admin/bookings/${booking.id}`, {
+      cookie,
+      body: {
+        ...secondDates,
+        packages: [],
+        equipment: [{ equipmentId, quantity: 4 }],
+      },
+    });
+    expect(tooMany.status).toBe(409);
+
+    const confirmed = await api("PATCH", `/api/admin/bookings/${booking.id}/status`, {
+      cookie,
+      body: { status: "CONFIRMED" },
+    });
+    expect(confirmed.status).toBe(200);
+
+    const confirmedEdit = await api("PATCH", `/api/admin/bookings/${booking.id}`, {
+      cookie,
+      body: {
+        ...secondDates,
+        packages: [],
+        equipment: [{ equipmentId, quantity: 3 }],
+        note: "Added the last unit after confirmation",
+      },
+    });
+    expect(confirmedEdit.status).toBe(200);
+    expect(confirmedEdit.body.data).toMatchObject({
+      status: "CONFIRMED",
+      totals: { totalAmount: "6000.00" },
+      items: [{ quantity: 3 }],
+      stockHolds: [{ quantity: 3, status: "CONSUMED" }],
+    });
+    expect((confirmedEdit.body.data as { edits: unknown[] }).edits).toHaveLength(2);
+
+    const confirmedTooMany = await api("PATCH", `/api/admin/bookings/${booking.id}`, {
+      cookie,
+      body: {
+        ...secondDates,
+        packages: [],
+        equipment: [{ equipmentId, quantity: 4 }],
+      },
+    });
+    expect(confirmedTooMany.status).toBe(409);
+
+    const edits = await db.bookingEdit.findMany({
+      where: { bookingId: booking.id },
+      orderBy: { createdAt: "asc" },
+      select: { previousTotalAmount: true, newTotalAmount: true, note: true },
+    });
+    expect(edits).toHaveLength(2);
+    expect(Number(edits[0]?.previousTotalAmount)).toBe(2000);
+    expect(Number(edits[0]?.newTotalAmount)).toBe(4000);
+    expect(Number(edits[1]?.newTotalAmount)).toBe(6000);
+    expect(edits[1]?.note).toBe("Added the last unit after confirmation");
+
+    const cancelled = await api("PATCH", `/api/admin/bookings/${booking.id}/status`, {
+      cookie,
+      body: { status: "CANCELLED", reason: "Smoke test cleanup" },
+    });
+    expect(cancelled.status).toBe(200);
+  }, 30_000);
+
   it("requests a reset email without revealing whether the account exists", async () => {
     emailMock.sendPasswordResetEmail.mockClear();
 

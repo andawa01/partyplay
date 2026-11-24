@@ -8,6 +8,7 @@ import {
   Mail,
   MapPin,
   Package,
+  Pencil,
   Phone,
   ReceiptText,
   RefreshCw,
@@ -22,6 +23,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { AvailabilityResult } from "../../components/admin/bookings/AvailabilityResult";
 import { BookingActionDialog } from "../../components/admin/bookings/BookingActionDialog";
+import { BookingEditDialog } from "../../components/admin/bookings/BookingEditDialog";
 import { PaymentsPanel } from "../../components/admin/bookings/PaymentsPanel";
 import {
   AdminBookingStatusBadge,
@@ -48,6 +50,7 @@ export default function AdminBookingDetailPage() {
   const [availability, setAvailability] = useState<BookingAvailabilityCheck | null>(null);
   const [action, setAction] = useState<BookingActionOption | null>(null);
   const [transportOpen, setTransportOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   if (bookingQuery.isPending) {
     return <BookingDetailSkeleton />;
@@ -76,6 +79,7 @@ export default function AdminBookingDetailPage() {
   const actions = allowedBookingActions(booking.status);
   const meta = adminStatusMeta[booking.status];
   const canChangeTransport = booking.status === "PENDING" || booking.status === "CONFIRMED";
+  const canEdit = booking.status === "PENDING" || booking.status === "CONFIRMED";
 
   function startAction(nextAction: BookingActionOption) {
     if (nextAction.to === "CONFIRMED") {
@@ -236,10 +240,18 @@ export default function AdminBookingDetailPage() {
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-              <ReceiptText aria-hidden="true" className="size-4 text-brand-700" />
-              What is booked
-            </h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                <ReceiptText aria-hidden="true" className="size-4 text-brand-700" />
+                What is booked
+              </h2>
+              {canEdit ? (
+                <Button type="button" size="sm" variant="outline" onClick={() => setEditOpen(true)}>
+                  <Pencil aria-hidden="true" className="size-3.5" />
+                  Edit dates & items
+                </Button>
+              ) : null}
+            </div>
 
             <div className="mt-4 space-y-3">
               {booking.packages.map((pkg) => (
@@ -363,6 +375,38 @@ export default function AdminBookingDetailPage() {
               </ol>
             )}
           </section>
+
+          {booking.edits.length > 0 ? (
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                <Pencil aria-hidden="true" className="size-4 text-brand-700" />
+                Edit history
+              </h2>
+              <ol className="mt-4 space-y-4">
+                {booking.edits.map((edit) => (
+                  <li
+                    key={edit.id}
+                    className="rounded-xl border border-slate-100 bg-slate-50/70 p-3"
+                  >
+                    <p className="text-sm font-medium text-slate-900">
+                      {formatLongDate(edit.previousStartDate)} –{" "}
+                      {formatLongDate(edit.previousEndDate)} → {formatLongDate(edit.newStartDate)} –{" "}
+                      {formatLongDate(edit.newEndDate)}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {formatDateTime(edit.createdAt)}
+                      {edit.admin ? ` · ${edit.admin.name ?? edit.admin.email}` : ""} · Total{" "}
+                      {formatMoney(edit.previousTotalAmount, booking.currency)} →{" "}
+                      {formatMoney(edit.newTotalAmount, booking.currency)}
+                    </p>
+                    {edit.note ? (
+                      <p className="mt-1.5 text-sm leading-relaxed text-slate-700">{edit.note}</p>
+                    ) : null}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ) : null}
 
           <PaymentsPanel booking={booking} />
         </div>
@@ -545,6 +589,16 @@ export default function AdminBookingDetailPage() {
 
       {transportOpen ? (
         <TransportChargeDialog booking={booking} onClose={() => setTransportOpen(false)} />
+      ) : null}
+
+      {editOpen ? (
+        <BookingEditDialog
+          booking={booking}
+          onClose={() => {
+            setEditOpen(false);
+            setAvailability(null);
+          }}
+        />
       ) : null}
     </div>
   );

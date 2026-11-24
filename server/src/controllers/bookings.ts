@@ -7,6 +7,7 @@ import {
   bookingCodeParamsSchema,
   createBookingSchema,
   quoteBookingSchema,
+  updateBookingDetailsSchema,
   updateBookingStatusSchema,
   updateBookingTransportSchema,
 } from "../schemas/bookings";
@@ -59,6 +60,12 @@ export async function updateBookingTransport(req: Request, res: Response): Promi
   const { id } = idParamsSchema.parse(req.params);
   const input = updateBookingTransportSchema.parse(req.body);
   res.json({ data: await bookings.updateBookingTransportCharge(id, input, adminId(req)) });
+}
+
+export async function updateBookingDetails(req: Request, res: Response): Promise<void> {
+  const { id } = idParamsSchema.parse(req.params);
+  const input = updateBookingDetailsSchema.parse(req.body);
+  res.json({ data: await bookings.updateBookingDetails(id, input, adminId(req)) });
 }
 
 export async function checkBookingAvailability(req: Request, res: Response): Promise<void> {

@@ -56,6 +56,7 @@ router.delete("/transport-providers/:id", asyncHandler(providers.deleteTransport
 
 router.get("/bookings", asyncHandler(bookings.listAdminBookings));
 router.get("/bookings/:id", asyncHandler(bookings.getAdminBooking));
+router.patch("/bookings/:id", asyncHandler(bookings.updateBookingDetails));
 router.patch("/bookings/:id/status", asyncHandler(bookings.updateBookingStatus));
 router.patch("/bookings/:id/transport", asyncHandler(bookings.updateBookingTransport));
 router.post("/bookings/:id/availability", asyncHandler(bookings.checkBookingAvailability));
