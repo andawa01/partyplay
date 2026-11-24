@@ -314,8 +314,8 @@ category (see `routes/categories.ts`).
 | `name` | text | no | — | **UNIQUE** |
 | `categoryId` | text | no | — | FK → `Category.id`, `RESTRICT` |
 | `description` | text | yes | — | |
-| `imageUrl` | varchar(2048) | yes | — | Cloudinary URL |
-| `imagePublicId` | varchar(128) | yes | — | needed to delete the asset later |
+| `imageUrl` | varchar(2048) | yes | — | Cloudinary secure URL |
+| `imagePublicId` | varchar(128) | yes | — | asset handle; admin responses only |
 | `note` | text | yes | — | e.g. "requires a flat, dry surface" |
 | `pricePerDay` | numeric(10,2) | yes | — | daily rate |
 | `pricePerWeek` | numeric(10,2) | yes | — | weekly rate |
@@ -331,7 +331,9 @@ Indexes: `(categoryId)`, unique `(slug)`.
 **DB-enforced:** `minQuantity >= 1` and `maxQuantity >= minQuantity`.
 **App-enforced:** `pricingMode` decides which field is used — `PER_DAY` needs
 `pricePerDay`, `FLAT` needs `flatPrice`. The pricing service rejects a missing price
-rather than charging zero. `pricePerWeek` is unused in the MVP (D3).
+rather than charging zero. `pricePerWeek` is unused in the MVP (D3). Cloudinary
+`imagePublicId` is never returned by public endpoints; replacing/removing a managed
+image deletes the old asset best-effort.
 
 ### 4.4 EquipmentInventory
 
@@ -355,8 +357,8 @@ totals live; reserved counts are always derived, never stored.
 | `slug` | text | no | — | **UNIQUE** |
 | `name` | text | no | — | not unique (unlike equipment `name`) |
 | `description` | text | yes | — | |
-| `imageUrl` | varchar(2048) | yes | — | |
-| `imagePublicId` | varchar(128) | yes | — | |
+| `imageUrl` | varchar(2048) | yes | — | Cloudinary secure URL |
+| `imagePublicId` | varchar(128) | yes | — | asset handle; admin responses only |
 | `price` | numeric(10,2) | **no** | — | current package price |
 | `minQuantity` | int | no | `1` | minimum guests |
 | `maxQuantity` | int | yes | — | optional guest cap |
@@ -369,6 +371,10 @@ Indexes: unique `(slug)`.
 
 **DB-enforced:** `minQuantity >= 1`; `maxQuantity` is null or
 `>= minQuantity`; `duration` is null or `>= 1`.
+
+**App-enforced:** `imagePublicId` stays admin-only. Replacing/removing a managed
+image deletes the previous Cloudinary asset best-effort; deleting a package does the
+same after its rows are gone.
 
 ### 4.6 PackageItem
 

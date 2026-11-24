@@ -24,6 +24,7 @@ import {
 } from "../../../lib/admin-catalogue";
 import { formatMoney } from "../../../lib/money";
 import { toast } from "../../../lib/toast";
+import { ImageUploadField } from "./ImageUploadField";
 import { ErrorState } from "../../ui/error-state";
 import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
@@ -299,6 +300,7 @@ export function EquipmentFormDialog({
       : emptyEquipmentForm(initialCategoryId),
   );
   const [errors, setErrors] = useState<FieldErrors<EquipmentFormValues>>({});
+  const [imageUploading, setImageUploading] = useState(false);
   const save = useSaveEquipment();
 
   function setField<K extends keyof EquipmentFormValues>(
@@ -307,6 +309,18 @@ export function EquipmentFormDialog({
   ) {
     setValues((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
+    if (save.error) {
+      save.reset();
+    }
+  }
+
+  function setImage(imageUrl: string | null, imagePublicId: string | null) {
+    setValues((current) => ({
+      ...current,
+      imageUrl: imageUrl ?? "",
+      imagePublicId: imagePublicId ?? "",
+    }));
+    setErrors((current) => ({ ...current, imageUrl: undefined }));
     if (save.error) {
       save.reset();
     }
@@ -452,22 +466,14 @@ export function EquipmentFormDialog({
           />
         </FormField>
 
-        <FormField
-          label="Image URL"
-          htmlFor="equipment-image"
+        <ImageUploadField
+          id="equipment-image"
+          kind="equipment"
+          imageUrl={values.imageUrl}
+          onChange={setImage}
+          onUploadingChange={setImageUploading}
           error={errors.imageUrl}
-          hint="Optional. A direct https image link."
-        >
-          <Input
-            id="equipment-image"
-            type="url"
-            value={values.imageUrl}
-            onChange={(event) => setField("imageUrl", event.target.value)}
-            placeholder="https://…"
-            aria-invalid={Boolean(errors.imageUrl)}
-            aria-describedby={errors.imageUrl ? "equipment-image-error" : undefined}
-          />
-        </FormField>
+        />
 
         <div className="grid gap-4 sm:grid-cols-3">
           <FormField
@@ -589,7 +595,7 @@ export function EquipmentFormDialog({
         />
 
         <FormActions
-          pending={save.isPending}
+          pending={save.isPending || imageUploading}
           submitLabel={equipment ? "Save equipment" : "Add equipment"}
           onCancel={onClose}
         />

@@ -7,6 +7,7 @@ import { money } from "../lib/money";
 import type { EquipmentListQuery } from "../schemas/catalogue";
 import type { CreateEquipmentInput, UpdateEquipmentInput } from "../schemas/equipment";
 import { getAvailability } from "./availability";
+import { destroyManagedImage } from "./cloudinary";
 import { expireOverdueBookings } from "./hold-expiry";
 
 /**
@@ -166,6 +167,7 @@ async function availabilityForQuery(
 
 const adminEquipmentFields = {
   ...equipmentDetailFields,
+  imagePublicId: true,
   isActive: true,
   createdAt: true,
   updatedAt: true,
@@ -180,6 +182,7 @@ function toAdminEquipment(row: AdminEquipmentRow) {
     name: row.name,
     description: row.description,
     imageUrl: row.imageUrl,
+    imagePublicId: row.imagePublicId,
     note: row.note,
     pricePerDay: money(row.pricePerDay),
     pricePerWeek: money(row.pricePerWeek),
@@ -242,12 +245,23 @@ export async function createEquipment(input: CreateEquipmentInput) {
 }
 
 export async function updateEquipmentById(id: string, input: UpdateEquipmentInput) {
-  await assertEquipmentExists(id);
+  const existing = await assertEquipmentExists(id);
   if (input.categoryId) {
     await assertCategoryExists(input.categoryId);
   }
 
   await db.equipment.update({ where: { id }, data: input });
+
+  // Only delete the previous asset when the caller explicitly supplied a new image
+  // reference. A PATCH that omits the field leaves the existing image alone.
+  if (
+    input.imagePublicId !== undefined &&
+    existing.imagePublicId &&
+    existing.imagePublicId !== input.imagePublicId
+  ) {
+    await destroyManagedImage(existing.imagePublicId);
+  }
+
   return getAdminEquipmentById(id);
 }
 
@@ -268,11 +282,17 @@ export async function setInventoryTotal(id: string, total: number) {
   });
 }
 
-async function assertEquipmentExists(id: string): Promise<void> {
-  const equipment = await db.equipment.findUnique({ where: { id }, select: { id: true } });
+async function assertEquipmentExists(
+  id: string,
+): Promise<{ id: string; imagePublicId: string | null }> {
+  const equipment = await db.equipment.findUnique({
+    where: { id },
+    select: { id: true, imagePublicId: true },
+  });
   if (!equipment) {
     throw notFound(`Equipment "${id}" was not found`);
   }
+  return equipment;
 }
 
 async function assertCategoryExists(categoryId: string): Promise<void> {

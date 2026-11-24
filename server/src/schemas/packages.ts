@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { slugSchema } from "./common";
+import { imagePublicIdSchema, slugSchema } from "./common";
 import { priceSchema } from "./equipment";
 
 const createFields = {
@@ -8,6 +8,7 @@ const createFields = {
   name: z.string().trim().min(1).max(128),
   description: z.string().max(2000).nullish(),
   imageUrl: z.url().max(2048).nullish(),
+  imagePublicId: imagePublicIdSchema.nullish(),
   price: priceSchema,
   minQuantity: z.number().int().min(1).max(10_000).default(1),
   maxQuantity: z.number().int().min(1).max(10_000).nullish(),
@@ -29,6 +30,7 @@ export const updatePackageSchema = z
     name: createFields.name,
     description: createFields.description,
     imageUrl: createFields.imageUrl,
+    imagePublicId: createFields.imagePublicId,
     price: priceSchema,
     minQuantity: createFields.minQuantity,
     maxQuantity: z.number().int().min(1).max(10_000).nullable(),

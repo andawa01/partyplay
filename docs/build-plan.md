@@ -347,6 +347,7 @@ leaks; confirm inactive equipment is absent.
 | POST / PATCH / DELETE | `/api/admin/transport-providers[/:id]` | phone unique |
 | PUT | `/api/admin/settings` | `SiteSetting` singleton for the logged-in admin |
 | POST / PATCH / DELETE | `/api/admin/categories[/:id]` | move `categories.ts` under `/api/admin`, keep public `GET` in F3 |
+| POST | `/api/admin/uploads/sign` | `{ kind: "equipment" \| "packages" }` → Cloudinary signature for a direct browser upload |
 
 **Rules**
 
@@ -356,7 +357,11 @@ leaks; confirm inactive equipment is absent.
 - Deleting a package with bookings → `409`.
 - `PackageItem` replacement runs in a transaction: delete-then-create, rejecting any
   equipment id that does not exist.
-- Image handling: accept an `imageUrl` string only. Upload/Cloudinary is deferred (§11).
+- Image handling: Cloudinary signed uploads. The server signs `folder`, `timestamp` and
+  `allowed_formats`; the browser uploads directly to Cloudinary and posts back
+  `imageUrl` + `imagePublicId`. Only admin responses expose `imagePublicId`; public
+  responses never do. Replacing or removing an image deletes the previous managed asset
+  best-effort after the database write.
 
 **Verify:** create → patch → deactivate an equipment row and confirm it disappears from
 `/api/equipment` but still resolves via admin; replace package items and confirm the old
@@ -703,7 +708,6 @@ the last unit and assert `[201, 409]`.
 
 | Item | Why |
 |---|---|
-| Image uploads / Cloudinary | Accept `imageUrl` strings until the owner has real photos |
 | WhatsApp / email notifications | Requirements: owner follows up manually |
 | M-Pesa Daraja integration, automated refunds | MVP records payments by hand |
 | Customer accounts, multiple staff accounts | Guest booking + one owner account |

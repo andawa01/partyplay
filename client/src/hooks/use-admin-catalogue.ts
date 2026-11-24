@@ -2,6 +2,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "../lib/api";
+import { uploadCatalogueImage, type ImageUploadKind } from "../lib/image-upload";
 import type {
   AdminCategory,
   AdminEquipment,
@@ -240,6 +241,14 @@ export function useSaveTransportProvider() {
       ).data;
     },
     onSuccess: () => refreshCatalogue(queryClient),
+  });
+}
+
+export function useUploadImage() {
+  return useMutation({
+    mutationFn: async ({ file, kind }: { file: File; kind: ImageUploadKind }) =>
+      uploadCatalogueImage(file, kind),
+    retry: false,
   });
 }
 

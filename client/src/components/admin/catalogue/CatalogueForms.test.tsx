@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -46,6 +46,7 @@ function equipmentRow(id: string, name: string): AdminEquipment {
     name,
     description: null,
     imageUrl: null,
+    imagePublicId: null,
     note: null,
     pricePerDay: "1000.00",
     pricePerWeek: null,
@@ -133,6 +134,71 @@ describe("admin catalogue forms", () => {
       name: "Test chairs",
       categoryId: category.id,
       pricePerDay: 1200,
+    });
+  });
+
+  it("uploads an image and saves its Cloudinary reference", async () => {
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, _init?: RequestInit) => {
+        const url = String(input);
+        if (url === "/api/admin/uploads/sign") {
+          return jsonResponse(200, {
+            data: {
+              cloudName: "demo",
+              apiKey: "123456789",
+              timestamp: 1_764_000_000,
+              signature: "a".repeat(40),
+              folder: "partyplay/equipment",
+              uploadUrl: "https://api.cloudinary.com/v1_1/demo/image/upload",
+              allowedFormats: ["jpg", "jpeg", "png", "webp"],
+              maxFileSize: 8 * 1024 * 1024,
+            },
+          });
+        }
+        if (url.startsWith("https://api.cloudinary.com")) {
+          return jsonResponse(200, {
+            secure_url:
+              "https://res.cloudinary.com/demo/image/upload/v1/partyplay/equipment/chairs.jpg",
+            public_id: "partyplay/equipment/chairs",
+            width: 1200,
+            height: 800,
+          });
+        }
+        return jsonResponse(201, { data: equipmentRow("eq-new", "Test chairs") });
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    renderWithClient(
+      <EquipmentFormDialog
+        categories={[category]}
+        categoryIdBySlug={new Map([["furniture", category.id]])}
+        onClose={vi.fn()}
+      />,
+    );
+
+    await user.upload(
+      screen.getByLabelText("Image"),
+      new File(["image"], "chairs.png", { type: "image/png" }),
+    );
+
+    expect(await screen.findByAltText("Catalogue image preview")).toHaveAttribute(
+      "src",
+      "https://res.cloudinary.com/demo/image/upload/v1/partyplay/equipment/chairs.jpg",
+    );
+
+    await user.type(screen.getByLabelText(/^Name/), "Test chairs");
+    await user.type(screen.getByLabelText(/^Slug/), "test-chairs");
+    await user.type(screen.getByLabelText(/daily price/i), "1200");
+    await user.click(screen.getByRole("button", { name: "Add equipment" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    const saveInit = fetchMock.mock.calls[2]?.[1] as RequestInit;
+    expect(JSON.parse(String(saveInit.body))).toMatchObject({
+      imageUrl:
+        "https://res.cloudinary.com/demo/image/upload/v1/partyplay/equipment/chairs.jpg",
+      imagePublicId: "partyplay/equipment/chairs",
     });
   });
 

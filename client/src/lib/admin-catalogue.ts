@@ -9,6 +9,7 @@ export interface AdminEquipment {
   name: string;
   description: string | null;
   imageUrl: string | null;
+  imagePublicId: string | null;
   note: string | null;
   pricePerDay: string | null;
   pricePerWeek: string | null;
@@ -41,6 +42,7 @@ export interface AdminPackage {
   name: string;
   description: string | null;
   imageUrl: string | null;
+  imagePublicId: string | null;
   price: string;
   minQuantity: number;
   maxQuantity: number | null;
@@ -211,6 +213,7 @@ export interface EquipmentFormValues {
   categoryId: string;
   description: string;
   imageUrl: string;
+  imagePublicId: string;
   note: string;
   pricingMode: PricingMode;
   pricePerDay: string;
@@ -228,6 +231,7 @@ export const equipmentFormSchema = z
     categoryId: z.string().trim().min(1, "Choose a category"),
     description: optionalDescription,
     imageUrl: optionalUrl,
+    imagePublicId: z.string().trim().max(128),
     note: z.string().trim().max(1000, "Keep the note to 1000 characters"),
     pricingMode: z.enum(["PER_DAY", "FLAT"]),
     pricePerDay: optionalMoney("Daily price"),
@@ -257,6 +261,7 @@ export interface EquipmentWriteInput {
   categoryId: string;
   description: string | null;
   imageUrl: string | null;
+  imagePublicId: string | null;
   note: string | null;
   pricingMode: PricingMode;
   pricePerDay: number | null;
@@ -274,6 +279,7 @@ export function emptyEquipmentForm(categoryId = ""): EquipmentFormValues {
     categoryId,
     description: "",
     imageUrl: "",
+    imagePublicId: "",
     note: "",
     pricingMode: "PER_DAY",
     pricePerDay: "",
@@ -295,6 +301,7 @@ export function equipmentToForm(
     categoryId: categoryId || "",
     description: equipment.description ?? "",
     imageUrl: equipment.imageUrl ?? "",
+    imagePublicId: equipment.imagePublicId ?? "",
     note: equipment.note ?? "",
     pricingMode: equipment.pricingMode,
     pricePerDay: equipment.pricePerDay ?? "",
@@ -313,6 +320,7 @@ export function equipmentPayload(values: EquipmentFormValues): EquipmentWriteInp
     categoryId: values.categoryId,
     description: nullableText(values.description),
     imageUrl: nullableText(values.imageUrl),
+    imagePublicId: nullableText(values.imagePublicId),
     note: nullableText(values.note),
     pricingMode: values.pricingMode,
     pricePerDay: nullableNumber(values.pricePerDay),
@@ -339,6 +347,7 @@ export interface PackageFormValues {
   name: string;
   description: string;
   imageUrl: string;
+  imagePublicId: string;
   price: string;
   minQuantity: string;
   maxQuantity: string;
@@ -354,6 +363,7 @@ export const packageFormSchema = z
     name: nameField,
     description: optionalDescription,
     imageUrl: optionalUrl,
+    imagePublicId: z.string().trim().max(128),
     price: requiredMoney("Package price"),
     minQuantity: requiredWholeNumber(1, 10_000, "Minimum quantity"),
     maxQuantity: optionalWholeNumber(1, 10_000, "Maximum quantity"),
@@ -390,6 +400,7 @@ export interface PackageWriteInput {
   name: string;
   description: string | null;
   imageUrl: string | null;
+  imagePublicId: string | null;
   price: number;
   minQuantity: number;
   maxQuantity: number | null;
@@ -405,6 +416,7 @@ export function emptyPackageForm(): PackageFormValues {
     name: "",
     description: "",
     imageUrl: "",
+    imagePublicId: "",
     price: "",
     minQuantity: "1",
     maxQuantity: "",
@@ -421,6 +433,7 @@ export function packageToForm(pkg: AdminPackage): PackageFormValues {
     name: pkg.name,
     description: pkg.description ?? "",
     imageUrl: pkg.imageUrl ?? "",
+    imagePublicId: pkg.imagePublicId ?? "",
     price: pkg.price,
     minQuantity: String(pkg.minQuantity),
     maxQuantity: pkg.maxQuantity === null ? "" : String(pkg.maxQuantity),
@@ -441,6 +454,7 @@ export function packagePayload(values: PackageFormValues): PackageWriteInput {
     name: values.name.trim(),
     description: nullableText(values.description),
     imageUrl: nullableText(values.imageUrl),
+    imagePublicId: nullableText(values.imagePublicId),
     price: Number(values.price),
     minQuantity: Number(values.minQuantity),
     maxQuantity: nullableNumber(values.maxQuantity),
