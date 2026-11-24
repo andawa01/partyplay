@@ -55,9 +55,9 @@ small `vitest` suite; nothing else does by default.
 | Workspaces | `client/` (React 19 + Vite + TS + Tailwind 4) and `server/` (Express 5 + TS) |
 | Server entry | `server/src/index.ts` — cors, json, `/api/health`, `/api/hello`, mounts `/api/categories`, calls `ensureClient()` before listen |
 | Database | PostgreSQL 17 in docker, `docker-compose.yml`, host port 5433 |
-| Prisma schema | 17 models, all required entities present (`database-spec.md` §3) |
-| Migrations | 4 applied; `prisma migrate status` reports up to date |
-| DB hardening | 12 CHECK constraints + `Booking(status, startDate, endDate)` index |
+| Prisma schema | 18 models, all required entities present (`database-spec.md` §3) |
+| Migrations | 7 applied; `prisma migrate status` reports up to date |
+| DB hardening | 13 CHECK constraints + `Booking(status, startDate, endDate)` index |
 | Inventory service | `server/src/services/availability.ts` — `getAvailability`, `getReservedQuantities`, `findShortages`, `toDateOnly`, `isValidRange` |
 | Routes | `/api/categories` (list, get, create, patch, delete — admin guarded by a stub) |
 | Auth | `requireAdmin` is a **501 stub** — no login exists |
@@ -737,6 +737,7 @@ the last unit and assert `[201, 409]`.
 | F8 | Admin booking operations | ✅ | — | `feat/f8-booking-operations` |
 | F9 | Payments | ✅ | — | `feat/f9-payments` |
 | F10 | Dashboard summaries | ✅ | — | `feat/f10-dashboard` |
+| F11 | Maintenance blackout dates | ✅ | ✅ | `feat/f11-maintenance-blackouts` |
 | C1 | Client foundation | — | ✅ | `feat/c1-client-foundation` |
 | C2 | Public shell and site settings | — | ✅ | `feat/c2-public-shell` |
 | C3 | Equipment catalogue and detail | — | ✅ | `feat/c3-equipment-catalogue` |

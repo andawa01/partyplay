@@ -1,14 +1,25 @@
-import { ArrowUpRight, BadgePercent, Boxes, Folder, Package, Sparkles, Truck } from "lucide-react";
+import {
+  ArrowUpRight,
+  BadgePercent,
+  Boxes,
+  Folder,
+  Package,
+  Sparkles,
+  Truck,
+  Wrench,
+} from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { CategoriesPanel } from "../../components/admin/catalogue/CategoriesPanel";
 import { EquipmentPanel } from "../../components/admin/catalogue/EquipmentPanel";
+import { MaintenancePanel } from "../../components/admin/catalogue/MaintenancePanel";
 import { OffersPanel } from "../../components/admin/catalogue/OffersPanel";
 import { PackagesPanel } from "../../components/admin/catalogue/PackagesPanel";
 import { TransportProvidersPanel } from "../../components/admin/catalogue/TransportProvidersPanel";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import {
+  useAdminBlackouts,
   useAdminCategories,
   useAdminEquipment,
   useAdminOffers,
@@ -30,6 +41,12 @@ const tabs = [
     label: "Packages",
     icon: Package,
     description: "Bundles and included items",
+  },
+  {
+    id: "maintenance",
+    label: "Maintenance",
+    icon: Wrench,
+    description: "Date-specific downtime",
   },
   {
     id: "offers",
@@ -63,6 +80,7 @@ export default function AdminCataloguePage() {
   const site = useSite();
   const currency = site.data?.currency ?? "KES";
   const equipment = useAdminEquipment();
+  const blackouts = useAdminBlackouts();
   const packages = useAdminPackages();
   const offers = useAdminOffers();
   const categories = useAdminCategories();
@@ -70,6 +88,7 @@ export default function AdminCataloguePage() {
 
   const counts: Record<TabId, number | null> = {
     equipment: equipment.data?.total ?? (equipment.isPending ? null : 0),
+    maintenance: blackouts.data?.length ?? (blackouts.isPending ? null : 0),
     packages: packages.data?.length ?? (packages.isPending ? null : 0),
     offers: offers.data?.length ?? (offers.isPending ? null : 0),
     categories:
@@ -185,6 +204,7 @@ export default function AdminCataloguePage() {
           {active.label} · {active.description}
         </p>
         {activeTab === "equipment" ? <EquipmentPanel currency={currency} /> : null}
+        {activeTab === "maintenance" ? <MaintenancePanel /> : null}
         {activeTab === "packages" ? <PackagesPanel currency={currency} /> : null}
         {activeTab === "offers" ? <OffersPanel currency={currency} /> : null}
         {activeTab === "categories" ? <CategoriesPanel /> : null}

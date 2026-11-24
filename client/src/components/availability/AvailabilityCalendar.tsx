@@ -99,6 +99,7 @@ export function AvailabilityCalendar({
 
             const day = byDate.get(date);
             const isPast = date < today;
+            const isMaintenance = !isPending && day?.maintenance === true;
             const isFullyBooked = !isPending && day !== undefined && day.available <= 0;
             const isUnavailable = isPast || isFullyBooked || day === undefined;
             const isStart = date === startDate;
@@ -111,9 +112,11 @@ export function AvailabilityCalendar({
               ? "Past date"
               : isPending
                 ? "Loading availability"
-                : isFullyBooked
-                  ? `Fully booked — no ${unitLabel}s free`
-                  : "Availability unknown";
+                : isMaintenance
+                  ? "Under maintenance — not bookable"
+                  : isFullyBooked
+                    ? `Fully booked — no ${unitLabel}s free`
+                    : "Availability unknown";
 
             return (
               <button

@@ -77,7 +77,7 @@ transport charge, but not dates, items or quantities.
 | No booking edit | A customer who wants to add a chair must be cancelled and re-booked, losing the original reference and history. | **High** | M |
 | No customer self-service cancellation | Only the admin can cancel. Customers must phone; the status page is read-only. | Medium | M |
 | No guest-count enforcement | Package `minQuantity`/`maxQuantity` are stored but no guest count is captured, so package suitability is unchecked (agreed deferral D5, but it now affects pricing decisions). | Medium | M |
-| No blackout / maintenance dates | There is no way to take a damaged castle out of stock for a weekend without deactivating it entirely, which also hides it from the catalogue. | **High** | M |
+| ~~No blackout / maintenance dates~~ | **Done in F11:** an equipment item can be blocked for an inclusive date range without hiding it; availability, new requests and confirmations all respect the blackout. | — | — |
 | No delivery scheduling or capacity | Transport is a manual charge per booking. Nothing warns that two deliveries are promised for the same hour, or that the same driver is double-booked. | Medium | L |
 | No booking code rotation / customer identity | The reference code is the only credential. Anyone who learns a code sees the customer's name, phone and addresses (throttled, but not authenticated). Acceptable for an MVP; worth revisiting if codes are shared widely. | Low | M |
 
@@ -173,13 +173,14 @@ unit of work:
    nightly backups, basic request logging. *(§2)*~~ **Done in O1.**
 2. ~~**Concurrency test in CI** — commit the last-unit test and run the smoke suite in the
    CI job that has Postgres. *(§7)*~~ **Done in T1.**
-3. **Maintenance blackout dates** — protects against renting out a broken item. *(§4)*
+3. ~~**Maintenance blackout dates** — protects against renting out a broken item.
+   *(§4)*~~ **Done in F11.**
 4. **Refunds and overpayment policy** — closes the gap between the books and reality. *(§3)*
 5. **Booking edit** — removes the cancel-and-rebook workaround. *(§4)*
 6. **Staff accounts** — stops password sharing. *(§6)*
 7. **Notifications** — the biggest labour saving for the owner. *(§5)*
 8. **Reports and CSV export** — needed at month end. *(§8)*
 
-The next item is maintenance blackout dates, which protects against renting out a broken
-item. Code-quality gates are now in place, so new work has lint, format and coverage
-feedback from CI.
+The next item is refunds and overpayment policy, which closes the gap between the books
+and reality. Maintenance blackouts are done; code-quality gates give new work lint,
+format and coverage feedback from CI.

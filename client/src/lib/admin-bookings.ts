@@ -173,7 +173,9 @@ export interface BookingAvailabilityShortage {
   name: string;
   total: number;
   reserved: number;
+  blocked?: number;
   available: number;
+  maintenance?: boolean;
   requested: number;
   shortfall: number;
 }

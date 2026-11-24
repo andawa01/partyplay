@@ -20,6 +20,7 @@ import type {
   UpdateBookingTransportInput,
 } from "../schemas/bookings";
 import { findShortages, type DemandLine } from "./availability";
+import { getBlackoutsForRange, serializeBlackout } from "./blackouts";
 import { assertTransition } from "./booking-status";
 import { expireOverdueBookings } from "./hold-expiry";
 import { derivePaymentStatus } from "./payments";
@@ -380,11 +381,17 @@ async function createInTransaction(
       });
 
       if (shortages.length > 0) {
-        throw conflict("Not enough stock for the requested dates", {
-          startDate: formatCalendarDate(startDate),
-          endDate: formatCalendarDate(endDate),
-          shortages,
-        });
+        const maintenance = shortages.some((shortage) => shortage.maintenance);
+        throw conflict(
+          maintenance
+            ? "Some equipment is unavailable for maintenance on the requested dates"
+            : "Not enough stock for the requested dates",
+          {
+            startDate: formatCalendarDate(startDate),
+            endDate: formatCalendarDate(endDate),
+            shortages,
+          },
+        );
       }
 
       const price = priceBooking({
@@ -1030,6 +1037,20 @@ export async function changeBookingStatus(
       if (input.status === "CONFIRMED") {
         if (equipmentIds.length > 0) {
           await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${equipmentIds.join(",")}))`;
+        }
+
+        // A hold reserves stock, but it does not override a maintenance blackout added
+        // after the request arrived. Check this even when the hold is still live.
+        const blackouts = await getBlackoutsForRange({
+          equipmentIds,
+          startDate: booking.startDate,
+          endDate: booking.endDate,
+          client: tx,
+        });
+        if (blackouts.length > 0) {
+          throw conflict("Equipment is unavailable for maintenance on these dates", {
+            blackouts: blackouts.map(serializeBlackout),
+          });
         }
 
         if (lapsed) {

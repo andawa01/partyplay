@@ -42,6 +42,7 @@ Out of scope for this document: API shapes, authentication flows, UI.
 | 15 | `Payment` | Manual payment records against a booking |
 | 16 | `Offer` | Promotions (loose reference to equipment/package) |
 | 17 | `TransportProvider` | Delivery/transport contacts |
+| 18 | `EquipmentBlackout` | Date-specific maintenance downtime for an equipment item |
 
 Enums: `Role`, `DiscountType`, `OfferAppliesTo`, `BookingStatus`,
 `StockHoldStatus`, `PaymentMethod`, `PaymentStatus`.
@@ -61,6 +62,7 @@ erDiagram
     CATEGORY ||--o{ EQUIPMENT : contains
 
     EQUIPMENT ||--o| EQUIPMENT_INVENTORY : stock_level
+    EQUIPMENT ||--o{ EQUIPMENT_BLACKOUT : unavailable_on
     EQUIPMENT ||--o{ PACKAGE_ITEM : included_in
     PACKAGE ||--o{ PACKAGE_ITEM : bundles
 
@@ -131,6 +133,13 @@ erDiagram
         string id PK
         string equipmentId FK
         int total
+    }
+    EQUIPMENT_BLACKOUT {
+        string id PK
+        string equipmentId FK
+        date startDate
+        date endDate
+        string reason
     }
     PACKAGE {
         string id PK
@@ -596,6 +605,24 @@ require `appliesToId`; other scopes must leave it null.
 | `currency` | text | no | `"KES"` | |
 | `updatedAt` | timestamp(3) | no | auto | |
 
+### 4.18 EquipmentBlackout
+
+| Field | Type | Null | Default | Notes |
+|---|---|---|---|---|
+| `id` | text | no | `uuid()` | PK |
+| `equipmentId` | text | no | — | FK → `Equipment.id`, **CASCADE** |
+| `startDate` | date | no | — | first blocked day, inclusive |
+| `endDate` | date | no | — | last blocked day, inclusive |
+| `reason` | text | no | — | admin-only maintenance note |
+| `createdAt` / `updatedAt` | timestamp(3) | no | `now()` / auto | |
+
+Indexes: `(equipmentId, startDate, endDate)`, `(startDate, endDate)`.
+
+**DB-enforced:** `endDate >= startDate`.
+**App-enforced:** an overlapping blackout for the same equipment is rejected; delete and
+recreate the window instead of stacking duplicates. Blackouts do not cancel existing
+bookings, and confirmation is refused while an overlapping blackout exists.
+
 ---
 
 ## 5. Enums
@@ -649,14 +676,18 @@ by time comparison even if not yet swept.
 Availability of an equipment item over a date range is:
 
 ```
-available = total - reserved
+available = total - reserved - blocked
 
 reserved = Σ BookingItem.quantity          (CONFIRMED, overlapping)
          + Σ BookingPackageItem.quantity   (CONFIRMED, overlapping)
          + Σ StockHold.quantity            (ACTIVE, unexpired, PENDING, overlapping)
+
+blocked  = total                           (an overlapping EquipmentBlackout exists)
 ```
 
-`available` is clamped at 0 for display.
+`available` is clamped at 0 for display. A blackout blocks every unit of that equipment
+for the request because the item is physically unavailable, even if only one day of a
+multi-day range is affected.
 
 **Overlap is inclusive on both ends.** A booking occupies stock when:
 
@@ -695,7 +726,11 @@ future range, so it needs no special case. If a booking can be completed *before
 its `endDate`, it must be moved to `CANCELLED` instead.
 
 **Implementation:** `server/src/services/availability.ts` —
-`getReservedQuantities()`, `getAvailability()`, `findShortages()`.
+`getReservedQuantities()`, `getAvailability()`, `findShortages()`, with blackout windows
+read through `server/src/services/blackouts.ts`.
+
+Confirmation re-checks blackouts inside the status transaction. A still-live hold does not
+override a maintenance window added after the request arrived.
 
 ### 7.2 Rule B — historical prices must not change
 
@@ -766,6 +801,9 @@ Migration `20261113194645_harden_booking_index_and_check_constraints` adds:
 | `Package_minQuantity_check` | `Package` | `minQuantity >= 1` |
 | `Package_maxQuantity_check` | `Package` | `maxQuantity IS NULL OR maxQuantity >= minQuantity` |
 | `Package_duration_check` | `Package` | `duration IS NULL OR duration >= 1` |
+| `EquipmentBlackout_dates_check` | `EquipmentBlackout` | `endDate >= startDate` |
+
+The blackout CHECK was added by migration `20261124115958_add_equipment_blackouts`.
 
 A single-day booking (`startDate = endDate`) is accepted; zero quantities, zero
 days, inverted dates and negative stock are rejected with SQLSTATE `23514`.

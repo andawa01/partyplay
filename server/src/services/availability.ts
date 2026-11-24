@@ -4,6 +4,7 @@ import { db } from "../config/db";
 import { badRequest, notFound } from "../lib/api-error";
 import { formatCalendarDate, isPastDate, parseCalendarDate, todayInNairobi } from "../lib/dates";
 import { money } from "../lib/money";
+import { blackoutByEquipment, getBlackoutsForRange } from "./blackouts";
 import { expireOverdueBookings } from "./hold-expiry";
 
 // ---------------------------------------------------------------------------
@@ -47,7 +48,10 @@ export type AvailabilityRow = {
   name: string;
   total: number;
   reserved: number;
+  /** Units removed from the pool by maintenance blackouts. */
+  blocked: number;
   available: number;
+  maintenance: boolean;
 };
 
 /** Normalise to a UTC calendar date so @db.Date columns compare cleanly. */
@@ -140,24 +144,37 @@ export async function getReservedQuantities(
 /** Availability per equipment for a date range. */
 export async function getAvailability(input: AvailabilityInput): Promise<AvailabilityRow[]> {
   const client = input.client ?? db;
-  const [equipment, reserved] = await Promise.all([
+  const startDate = toDateOnly(input.startDate);
+  const endDate = toDateOnly(input.endDate);
+  const [equipment, reserved, blackouts] = await Promise.all([
     client.equipment.findMany({
       where: { id: { in: input.equipmentIds } },
       select: { id: true, name: true, inventory: { select: { total: true } } },
     }),
     getReservedQuantities(input),
+    getBlackoutsForRange({
+      equipmentIds: input.equipmentIds,
+      startDate,
+      endDate,
+      client,
+    }),
   ]);
+  const blackoutsByEquipment = blackoutByEquipment(blackouts);
 
   return equipment.map((item) => {
     // EquipmentInventory is unique per equipment but declared as a list relation.
     const total = item.inventory[0]?.total ?? 0;
     const reservedUnits = reserved.get(item.id) ?? 0;
+    const maintenance = blackoutsByEquipment.has(item.id);
+    const blocked = maintenance ? total : 0;
     return {
       equipmentId: item.id,
       name: item.name,
       total,
       reserved: reservedUnits,
-      available: Math.max(0, total - reservedUnits),
+      blocked,
+      available: Math.max(0, total - reservedUnits - blocked),
+      maintenance,
     };
   });
 }
@@ -231,7 +248,7 @@ export async function getPublicAvailability(input: { equipmentIds: string[] } & 
   };
 }
 
-type CalendarDay = { date: string; available: number };
+type CalendarDay = { date: string; available: number; maintenance: boolean };
 
 /**
  * Expands a package into its equipment demand for the requested number of packages
@@ -361,6 +378,13 @@ export async function getEquipmentCalendar(equipmentId: string, month: string) {
 
   const total = equipment.inventory[0]?.total ?? 0;
   const daysInMonth = new Date(Date.UTC(year, monthIndex, 0)).getUTCDate();
+  const firstDay = new Date(Date.UTC(year, monthIndex - 1, 1));
+  const lastDay = new Date(Date.UTC(year, monthIndex - 1, daysInMonth));
+  const blackouts = await getBlackoutsForRange({
+    equipmentIds: [equipmentId],
+    startDate: firstDay,
+    endDate: lastDay,
+  });
   const days: CalendarDay[] = [];
 
   for (let day = 1; day <= daysInMonth; day += 1) {
@@ -370,10 +394,15 @@ export async function getEquipmentCalendar(equipmentId: string, month: string) {
       startDate: date,
       endDate: date,
     });
+    const maintenance = blackouts.some(
+      (blackout) => blackout.startDate <= date && blackout.endDate >= date,
+    );
+    const blocked = maintenance ? total : 0;
 
     days.push({
       date: formatCalendarDate(date),
-      available: Math.max(0, total - (reserved.get(equipmentId) ?? 0)),
+      available: Math.max(0, total - (reserved.get(equipmentId) ?? 0) - blocked),
+      maintenance,
     });
   }
 
@@ -414,7 +443,9 @@ export async function findShortages(
         name: row?.name ?? equipmentId,
         total: row?.total ?? 0,
         reserved: row?.reserved ?? 0,
+        blocked: row?.blocked ?? 0,
         available,
+        maintenance: row?.maintenance ?? false,
         requested: requestedUnits,
         shortfall: requestedUnits - available,
       });

@@ -6,6 +6,7 @@
 export interface CalendarDay {
   date: string;
   available: number;
+  maintenance?: boolean;
 }
 
 export interface CalendarMeta {
@@ -20,7 +21,9 @@ export interface AvailabilityRow {
   name: string;
   total: number;
   reserved: number;
+  blocked?: number;
   available: number;
+  maintenance?: boolean;
 }
 
 export interface AvailabilityMeta {
@@ -50,15 +53,20 @@ export function combineCalendars(
   const availabilityByEquipment = calendars.map(
     (days) => new Map(days.map((day) => [day.date, day.available])),
   );
+  const maintenanceByEquipment = calendars.map(
+    (days) => new Map(days.map((day) => [day.date, day.maintenance === true])),
+  );
 
   return calendars[0].map((day) => {
     const availablePackages = demands.map((demand, index) => {
       const units = availabilityByEquipment[index].get(day.date) ?? 0;
       return Math.floor(units / demand.requiredUnits);
     });
+    const maintenance = maintenanceByEquipment.some((byDate) => byDate.get(day.date) === true);
     return {
       date: day.date,
       available: Math.max(0, Math.min(...availablePackages)),
+      ...(maintenance ? { maintenance: true } : {}),
     };
   });
 }

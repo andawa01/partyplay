@@ -4,10 +4,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../lib/api";
 import { uploadCatalogueImage, type ImageUploadKind } from "../lib/image-upload";
 import type {
+  AdminBlackout,
   AdminCategory,
   AdminEquipment,
   AdminOffer,
   AdminPackage,
+  BlackoutWriteInput,
   CategoryWriteInput,
   EquipmentWriteInput,
   OfferWriteInput,
@@ -23,6 +25,7 @@ function refreshCatalogue(queryClient: QueryClient): Promise<unknown> {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: ["admin", "categories"] }),
     queryClient.invalidateQueries({ queryKey: ["admin", "equipment"] }),
+    queryClient.invalidateQueries({ queryKey: ["admin", "blackouts"] }),
     queryClient.invalidateQueries({ queryKey: ["admin", "packages"] }),
     queryClient.invalidateQueries({ queryKey: ["admin", "offers"] }),
     queryClient.invalidateQueries({ queryKey: ["admin", "transport-providers"] }),
@@ -30,6 +33,8 @@ function refreshCatalogue(queryClient: QueryClient): Promise<unknown> {
     queryClient.invalidateQueries({ queryKey: ["equipment"] }),
     queryClient.invalidateQueries({ queryKey: ["packages"] }),
     queryClient.invalidateQueries({ queryKey: ["offers"] }),
+    queryClient.invalidateQueries({ queryKey: ["availability"] }),
+    queryClient.invalidateQueries({ queryKey: ["calendar"] }),
   ]);
 }
 
@@ -57,6 +62,13 @@ export function useAdminEquipment() {
         total: result.meta?.total ?? result.data.length,
       };
     },
+  });
+}
+
+export function useAdminBlackouts() {
+  return useQuery({
+    queryKey: queryKeys.admin.blackouts(),
+    queryFn: async () => (await apiFetch<AdminBlackout[]>("/api/admin/blackouts")).data,
   });
 }
 
@@ -103,6 +115,30 @@ export function useDeactivateEquipment() {
   return useMutation({
     mutationFn: async (id: string) => {
       await apiFetch<undefined>(`/api/admin/equipment/${id}`, { method: "DELETE" });
+    },
+    onSuccess: () => refreshCatalogue(queryClient),
+  });
+}
+
+export function useSaveBlackout() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: BlackoutWriteInput) =>
+      (
+        await apiFetch<AdminBlackout>("/api/admin/blackouts", {
+          method: "POST",
+          body: JSON.stringify(input),
+        })
+      ).data,
+    onSuccess: () => refreshCatalogue(queryClient),
+  });
+}
+
+export function useDeleteBlackout() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiFetch<undefined>(`/api/admin/blackouts/${id}`, { method: "DELETE" });
     },
     onSuccess: () => refreshCatalogue(queryClient),
   });

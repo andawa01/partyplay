@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { AdminCategory, AdminEquipment } from "../../../lib/admin-catalogue";
 import { EquipmentFormDialog } from "./EquipmentPanel";
+import { BlackoutFormDialog } from "./MaintenancePanel";
 import { OfferFormDialog } from "./OffersPanel";
 import { PackageFormDialog } from "./PackagesPanel";
 
@@ -192,6 +193,30 @@ describe("admin catalogue forms", () => {
       imageUrl: "https://res.cloudinary.com/demo/image/upload/v1/partyplay/equipment/chairs.jpg",
       imagePublicId: "partyplay/equipment/chairs",
     });
+  });
+
+  it("rejects a maintenance blackout whose end is before its start", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    renderWithClient(
+      <BlackoutFormDialog
+        equipment={[equipmentRow("eq-chairs", "Chairs")]}
+        today="2026-11-24"
+        onClose={vi.fn()}
+      />,
+    );
+
+    await user.type(screen.getByLabelText(/^Reason/), "Damaged blower");
+    fireEvent.change(screen.getByLabelText(/^First day/), { target: { value: "2026-12-05" } });
+    fireEvent.change(screen.getByLabelText(/^Last day/), { target: { value: "2026-12-01" } });
+    await user.click(screen.getByRole("button", { name: "Block dates" }));
+
+    expect(
+      await screen.findByText("The end date must be on or after the start date"),
+    ).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("rejects duplicate equipment lines in a package", async () => {

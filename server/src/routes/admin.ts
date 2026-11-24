@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import * as blackouts from "../controllers/blackouts";
 import * as bookings from "../controllers/bookings";
 import * as categories from "../controllers/categories";
 import * as dashboard from "../controllers/dashboard";
@@ -31,6 +32,10 @@ router.post("/equipment", asyncHandler(equipment.createEquipment));
 router.patch("/equipment/:id", asyncHandler(equipment.updateEquipment));
 router.delete("/equipment/:id", asyncHandler(equipment.deactivateEquipment));
 router.put("/equipment/:id/inventory", asyncHandler(equipment.setInventory));
+
+router.get("/blackouts", asyncHandler(blackouts.listBlackouts));
+router.post("/blackouts", asyncHandler(blackouts.createBlackout));
+router.delete("/blackouts/:id", asyncHandler(blackouts.deleteBlackout));
 
 router.get("/packages", asyncHandler(packages.listAdminPackages));
 router.get("/packages/:id", asyncHandler(packages.getAdminPackage));
