@@ -193,10 +193,14 @@ pull requests into `main`. Two independent jobs, both on Node 22, both under a m
 **`Migrations apply from empty`** — `postgres:17-alpine` service container, database
 starting with zero tables
 
-1. `npx prisma migrate deploy` — every migration, in order, from nothing
-2. `npx prisma migrate status` — must report the schema is up to date
-3. `npx prisma migrate diff --exit-code` — must report no difference between the migrated
+1. `npx prisma generate` — makes the client available to the HTTP tests
+2. `npx prisma migrate deploy` — every migration, in order, from nothing
+3. `npx prisma migrate status` — must report the schema is up to date
+4. `npx prisma migrate diff --exit-code` — must report no difference between the migrated
    database and `schema.prisma` (exits non-zero when they diverge)
+5. `npm test --workspace server -- src/app.test.ts` — the HTTP smoke suite against the
+   migrated database, with `PARTYPLAY_REQUIRE_SMOKE_DB=1` so an unreachable database fails
+   the job instead of silently skipping
 
 Why the empty database matters: a hand-edited migration can succeed locally only because
 the object already existed. Applying from nothing is the only honest test of it, and it is
@@ -204,9 +208,10 @@ the step that would have caught a broken CHECK-constraint migration before it re
 The drift step catches the opposite failure — an applied migration whose result no longer
 matches the Prisma schema.
 
-The server test suite started at F6a (pricing). It is part of the `Typecheck` job because
-those tests are pure and need no database; a test that needs Postgres belongs in the
-migrations job or a new job with a service container.
+The server test suite started at F6a (pricing). Pure tests run in `Typecheck`; the HTTP
+suite runs again in the migrations job, where Postgres exists. The latter includes the
+committed last-unit concurrency test: two simultaneous requests must produce one `201` and
+one `409`.
 
 **Branch protection cannot be set from a file.** To make `main` truly un-pushable, turn on
 in GitHub → Settings → Branches: require a pull request before merging, and require both

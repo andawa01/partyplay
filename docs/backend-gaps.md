@@ -2,7 +2,7 @@
 
 **Prepared:** 15 November 2026
 **Updated:** 24 November 2026 — O1 operations package
-**Scope:** backend and deployment, as merged to `main` at `7b25569` plus the O1 branch
+**Scope:** backend and deployment, as merged to `main` at `07e173f` plus the T1 branch
 **Purpose:** a plain list of what the backend does *not* do yet, so the owner can decide
 what is worth paying for next. Nothing here is a bug report against finished work — it is
 the boundary of the current build.
@@ -118,15 +118,20 @@ roles, but nothing creates or manages additional accounts.
 
 ## 7. Testing and code quality
 
-The recent hardening added a committed HTTP smoke suite and a test-only environment. Two
-gaps remain in how it is used.
+The HTTP smoke suite now runs in the CI job that owns Postgres, and the last-unit race is
+a committed test rather than a one-off script.
+
+These remain:
 
 | Gap | Why it matters | Risk | Effort |
 |---|---|---|---|
-| Smoke tests never run in CI | CI has no database in the test job, so the suite skips. The `Migrations` job already starts Postgres; the suite could run there against an empty migrated database. | **High** — regressions in booking/payment logic are not caught by CI | S |
-| No concurrency regression test | The double-booking protection was verified once by a throwaway script. There is no committed test firing two requests for the last unit and asserting one succeeds and one conflicts. | **High** — this is the single most expensive failure mode | S |
 | No lint or format configuration | No ESLint/Prettier config, so style and obvious mistakes rely on review. | Low | S |
 | No coverage threshold | Nothing prevents a future change from dropping test coverage. | Low | S |
+
+**Done in T1:** the `Migrations` job runs `src/app.test.ts` against an empty migrated
+database with `PARTYPLAY_REQUIRE_SMOKE_DB=1`, so a missing connection fails the job instead
+of skipping. The suite also fires two concurrent requests for the last unit and asserts
+one `201` and one `409`.
 
 ---
 
@@ -169,8 +174,8 @@ unit of work:
 
 1. ~~**Operations package** — deploy definition, graceful shutdown, scheduled sweeper,
    nightly backups, basic request logging. *(§2)*~~ **Done in O1.**
-2. **Concurrency test in CI** — commit the last-unit test and run the smoke suite in the
-   CI job that has Postgres. *(§7)*
+2. ~~**Concurrency test in CI** — commit the last-unit test and run the smoke suite in the
+   CI job that has Postgres. *(§7)*~~ **Done in T1.**
 3. **Maintenance blackout dates** — protects against renting out a broken item. *(§4)*
 4. **Refunds and overpayment policy** — closes the gap between the books and reality. *(§3)*
 5. **Booking edit** — removes the cancel-and-rebook workaround. *(§4)*
@@ -178,5 +183,5 @@ unit of work:
 7. **Notifications** — the biggest labour saving for the owner. *(§5)*
 8. **Reports and CSV export** — needed at month end. *(§8)*
 
-Item 2 is small and protects everything else; it is worth doing before the next feature,
-not after.
+The next item is maintenance blackout dates, which protects against renting out a broken
+item.

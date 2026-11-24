@@ -64,6 +64,7 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
   let adminId: string;
   let categoryId: string;
   let equipmentId: string;
+  let lastUnitEquipmentId: string | null = null;
   let baseline: {
     pending: number;
     collected: number;
@@ -188,6 +189,9 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
     await db.booking.deleteMany({ where: { id: { in: bookingIds } } });
     await db.customer.deleteMany({ where: { phone } });
     await db.equipment.deleteMany({ where: { id: equipmentId } });
+    if (lastUnitEquipmentId) {
+      await db.equipment.deleteMany({ where: { id: lastUnitEquipmentId } });
+    }
     await db.category.deleteMany({ where: { id: categoryId } });
     await db.bookingStatusHistory.deleteMany({ where: { adminId } });
     await db.admin.deleteMany({ where: { id: adminId } });
@@ -480,5 +484,53 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
       body: { token: expiredToken, newPassword: "Another-Password1" },
     });
     expect(expired.status).toBe(400);
+  }, 30_000);
+
+  it("allows only one of two concurrent requests for the last unit", async () => {
+    const lastUnit = await db.equipment.create({
+      data: {
+        slug: `smoke-last-unit-${suffix}`,
+        name: `Smoke Last Unit ${suffix}`,
+        categoryId,
+        pricingMode: "FLAT",
+        flatPrice: "2000.00",
+        inventory: { create: { total: 1 } },
+      },
+    });
+    lastUnitEquipmentId = lastUnit.id;
+
+    const request = () =>
+      api("POST", "/api/bookings", {
+        body: {
+          ...bookingDates(futureDates),
+          equipment: [{ equipmentId: lastUnit.id, quantity: 1 }],
+        },
+      });
+
+    const responses = await Promise.all([request(), request()]);
+    const statuses = responses.map((response) => response.status).sort();
+    expect(statuses).toEqual([201, 409]);
+
+    const accepted = responses.find((response) => response.status === 201);
+    const rejected = responses.find((response) => response.status === 409);
+    expect(accepted?.body).toMatchObject({ data: { status: "PENDING" } });
+    expect(rejected?.body).toMatchObject({ code: "CONFLICT" });
+
+    const acceptedBookings = await db.booking.findMany({
+      where: {
+        customer: { phone },
+        items: { some: { equipmentId: lastUnit.id } },
+      },
+      select: { id: true, status: true },
+    });
+    expect(acceptedBookings).toHaveLength(1);
+    expect(acceptedBookings[0]?.status).toBe("PENDING");
+
+    const activeHolds = await db.stockHold.findMany({
+      where: { equipmentId: lastUnit.id, status: "ACTIVE" },
+      select: { quantity: true },
+    });
+    expect(activeHolds).toHaveLength(1);
+    expect(activeHolds[0]?.quantity).toBe(1);
   }, 30_000);
 });
