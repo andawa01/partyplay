@@ -284,7 +284,13 @@ export default function AdminLoginPage() {
           </form>
 
           <p className="mt-4 text-xs leading-relaxed text-slate-500">
-            Forgot your password? Ask the site operator for a one-time reset link.
+            <Link
+              to="/admin/forgot-password"
+              className="font-medium text-brand-700 hover:underline"
+            >
+              Forgot your password?
+            </Link>{" "}
+            Request a one-time reset link.
           </p>
 
           <div className="mt-5 flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-500">

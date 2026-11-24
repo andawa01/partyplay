@@ -5,6 +5,8 @@ import bcrypt from "bcrypt";
 
 import { db } from "../config/db";
 import { ApiError, badRequest, unauthorized } from "../lib/api-error";
+import { isEmailConfigured, sendPasswordResetEmail } from "../lib/email";
+import { passwordResetUrl } from "../lib/password-reset";
 import { signSessionToken } from "../lib/tokens";
 import type { ChangePasswordInput, LoginInput, ResetPasswordInput } from "../schemas/auth";
 
@@ -117,6 +119,42 @@ export async function issuePasswordResetToken(
   ]);
 
   return { token, expiresAt };
+}
+
+/**
+ * Sends a reset link when the email belongs to an admin. The caller returns the same
+ * response either way, so this endpoint cannot be used to enumerate accounts.
+ */
+export async function requestPasswordReset(email: string): Promise<void> {
+  if (!isEmailConfigured()) {
+    throw new ApiError(
+      503,
+      "EMAIL_NOT_CONFIGURED",
+      "Password reset email is not configured yet.",
+    );
+  }
+
+  const admin = await db.admin.findUnique({
+    where: { email },
+    select: { id: true, email: true, name: true },
+  });
+  if (!admin) {
+    return;
+  }
+
+  const { token, expiresAt } = await issuePasswordResetToken(admin.id);
+  try {
+    await sendPasswordResetEmail({
+      to: admin.email,
+      name: admin.name,
+      resetUrl: passwordResetUrl(token),
+      expiresAt,
+    });
+  } catch (error) {
+    // Keep the public response generic. The operator can inspect the server log and
+    // retry; the unused token is superseded by the next request.
+    console.error("Could not send password reset email", error);
+  }
 }
 
 /**

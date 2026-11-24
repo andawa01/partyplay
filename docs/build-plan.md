@@ -249,8 +249,7 @@ dependencies in the list are done.
 `UserSession` was dropped in migration 2, so sessions remain stateless.
 
 **New dependencies:** `cookie-parser` and `jsonwebtoken` (+ `@types/cookie-parser`,
-`@types/jsonwebtoken`). Neither is installed today — add them in this feature and
-nothing earlier.
+`@types/jsonwebtoken`). Password reset email uses the official `resend` Node SDK.
 
 **Endpoints**
 
@@ -260,6 +259,7 @@ nothing earlier.
 | POST | `/api/auth/logout` | admin | clears cookie |
 | GET | `/api/auth/me` | admin | `{ id, email, name, role }` |
 | POST | `/api/auth/password` | admin | `{ currentPassword, newPassword }`, min 8 chars with uppercase, lowercase and a number, bcrypt cost 12 |
+| POST | `/api/auth/forgot-password` | public | `{ email }` → `202` generic response; sends a reset link when the email belongs to an admin. Rate-limited to 5 requests per IP per 15 minutes |
 | POST | `/api/auth/reset-password` | public | `{ token, newPassword }`, consumes a one-time reset token, min 8 chars with uppercase, lowercase and a number, bcrypt cost 12 |
 
 **Rules**
@@ -276,24 +276,26 @@ nothing earlier.
   `ADMIN_EMAIL` / `ADMIN_PASSWORD`, hashing with bcrypt. It is idempotent: rerunning it
   never overwrites an existing password — signed-in admins change it through
   `POST /api/auth/password`.
-- `npm run admin:reset-link -- owner@example.com` is the server-assisted recovery path.
-  It creates a 32-byte random token, stores only its SHA-256 hash, expires the link after
-  30 minutes, invalidates the admin's previous unused links and prints a frontend URL
-  with the token in the URL fragment (`#token=…`) so it never reaches server logs or a
-  Referer.
+- `POST /api/auth/forgot-password` always returns the same `202` message, whether or not
+  the email belongs to an admin. It creates a 32-byte random token, stores only its
+  SHA-256 hash, expires the link after 30 minutes, invalidates the admin's previous unused
+  links and sends a frontend URL with the token in the URL fragment (`#token=…`) so it
+  never reaches server logs or a Referer.
+- Reset email is sent through Resend. Set `RESEND_API_KEY` and `MAIL_FROM` (a verified
+  sender/domain) in `server/.env`; when unset, the endpoint returns a clear `503` and the
+  UI explains that email delivery is not configured.
+- `npm run admin:reset-link -- owner@example.com` remains a server-side fallback for
+  recovery when email is unavailable.
 - `POST /api/auth/reset-password` is rate-limited to 10 attempts per IP per 15 minutes.
   It consumes the token in a transaction, applies the password policy, marks every other
   unused link for that admin as used, bumps `Admin.sessionVersion` and clears the session
   cookie. A reused or expired token gets the same 400 response.
-- There is intentionally no public “forgot password” endpoint: without a configured
-  email provider, only someone with server access can issue a reset link. Add email
-  delivery before exposing self-service reset requests.
 
 **Verify:** login → cookie set → `/api/auth/me` 200; no cookie → 401; login with wrong
 password → 401; `/api/categories` POST without cookie → 401; with cookie → works
-(remove the 501 stub behaviour). Issue a reset link, reset the password, confirm the old
-cookie gets 401, the old password stops working, the new password works and the same
-token cannot be used twice.
+(remove the 501 stub behaviour). Request a reset email, confirm the generic response for
+known and unknown addresses, reset the password, confirm the old cookie gets 401, the old
+password stops working, the new password works and the same token cannot be used twice.
 
 **Depends on:** F1.
 

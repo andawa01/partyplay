@@ -131,8 +131,8 @@ export default function AdminResetPasswordPage() {
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight">Set a new password</h1>
                   <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                    Use the one-time link issued by the site operator. It expires after
-                    30 minutes and works once.
+                    Use the one-time link sent to your admin email. It expires after 30
+                    minutes and works once.
                   </p>
                 </div>
               </div>
@@ -141,11 +141,14 @@ export default function AdminResetPasswordPage() {
                 <Alert variant="destructive" className="mt-5">
                   <AlertTitle>Reset link is incomplete</AlertTitle>
                   <AlertDescription>
-                    Generate a new link with{" "}
-                    <code className="rounded bg-red-50 px-1 py-0.5 text-[0.8em]">
-                      npm run admin:reset-link
-                    </code>{" "}
-                    on the server.
+                    Request a new link from the{" "}
+                    <Link
+                      to="/admin/forgot-password"
+                      className="font-medium underline underline-offset-2"
+                    >
+                      forgot password page
+                    </Link>
+                    .
                   </AlertDescription>
                 </Alert>
               ) : null}
@@ -166,8 +169,14 @@ export default function AdminResetPasswordPage() {
                   </AlertDescription>
                   {invalidLink ? (
                     <p className="mt-2 text-xs">
-                      The link may have expired or already been used. Ask the site
-                      operator for a new one.
+                      The link may have expired or already been used.{" "}
+                      <Link
+                        to="/admin/forgot-password"
+                        className="font-medium underline underline-offset-2"
+                      >
+                        Request a new link
+                      </Link>
+                      .
                     </p>
                   ) : null}
                 </Alert>

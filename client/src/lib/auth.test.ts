@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { changePasswordFormSchema, resetPasswordFormSchema } from "./auth";
+import {
+  changePasswordFormSchema,
+  forgotPasswordFormSchema,
+  resetPasswordFormSchema,
+} from "./auth";
 
 function change(newPassword: string) {
   return changePasswordFormSchema.safeParse({
@@ -33,6 +37,20 @@ describe("change password form", () => {
       confirmPassword: "Password2",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("forgot password form", () => {
+  it("normalises a valid email", () => {
+    const result = forgotPasswordFormSchema.safeParse({ email: "  Owner@Example.COM " });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.email).toBe("owner@example.com");
+    }
+  });
+
+  it("rejects an invalid email", () => {
+    expect(forgotPasswordFormSchema.safeParse({ email: "owner" }).success).toBe(false);
   });
 });
 

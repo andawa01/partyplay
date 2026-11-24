@@ -20,6 +20,9 @@ const StyleGuidePage = lazy(() => import('./pages/StyleGuidePage'))
 const BookingPage = lazy(() => import('./pages/public/BookingPage'))
 const BookingStatusPage = lazy(() => import('./pages/public/BookingStatusPage'))
 const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'))
+const AdminForgotPasswordPage = lazy(
+  () => import('./pages/admin/AdminForgotPasswordPage'),
+)
 const AdminResetPasswordPage = lazy(
   () => import('./pages/admin/AdminResetPasswordPage'),
 )
@@ -92,6 +95,14 @@ export default function App() {
           element={
             <Suspense fallback={<AdminSessionLoading label="Loading sign in…" />}>
               <AdminLoginPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="forgot-password"
+          element={
+            <Suspense fallback={<AdminSessionLoading label="Loading password recovery…" />}>
+              <AdminForgotPasswordPage />
             </Suspense>
           }
         />

@@ -19,25 +19,32 @@ export interface ChangePasswordInput {
   newPassword: string;
 }
 
+export interface ForgotPasswordInput {
+  email: string;
+}
+
 export interface ResetPasswordInput {
   token: string;
   newPassword: string;
-}
+}export const emailFieldSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(1, "Enter your email address")
+  .pipe(z.email("Enter a valid email address"));
 
 export const loginFormSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .min(1, "Enter your email address")
-    .pipe(z.email("Enter a valid email address")),
-  password: z
-    .string()
-    .min(1, "Enter your password")
-    .max(200, "Password is too long"),
+  email: emailFieldSchema,
+  password: z.string().min(1, "Enter your password").max(200, "Password is too long"),
 });
 
 export type LoginFormValues = z.infer<typeof loginFormSchema>;
+
+export const forgotPasswordFormSchema = z.object({
+  email: emailFieldSchema,
+});
+
+export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordFormSchema>;
 
 const newPasswordSchema = z
   .string()

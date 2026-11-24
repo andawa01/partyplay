@@ -1,6 +1,13 @@
 import { Router } from "express";
 
-import { changePassword, login, logout, me, resetPassword } from "../controllers/auth";
+import {
+  changePassword,
+  forgotPassword,
+  login,
+  logout,
+  me,
+  resetPassword,
+} from "../controllers/auth";
 import { asyncHandler } from "../lib/async";
 import { requireAdmin } from "../middleware/auth";
 import { createRateLimiter } from "../middleware/rate-limit";
@@ -21,7 +28,20 @@ const resetRateLimiter = createRateLimiter({
   message: "Too many reset attempts. Try again in a few minutes.",
 });
 
+/** Keep reset-mail requests from becoming an email-bombing or enumeration tool. */
+const forgotPasswordRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: "Too many reset emails requested. Try again in a few minutes.",
+});
+
 router.post("/login", loginRateLimiter, asyncHandler(login));
+
+router.post(
+  "/forgot-password",
+  forgotPasswordRateLimiter,
+  asyncHandler(forgotPassword),
+);
 
 router.post("/reset-password", resetRateLimiter, asyncHandler(resetPassword));
 

@@ -4,6 +4,7 @@ import { apiFetch } from "../lib/api";
 import type {
   AdminUser,
   ChangePasswordInput,
+  ForgotPasswordInput,
   LoginInput,
   ResetPasswordInput,
 } from "../lib/auth";
@@ -55,6 +56,18 @@ export function useChangePassword() {
   return useMutation({
     mutationFn: async (input: ChangePasswordInput) => {
       await apiFetch<undefined>("/api/auth/password", {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
+    },
+    retry: false,
+  });
+}
+
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: async (input: ForgotPasswordInput) => {
+      await apiFetch<{ message: string }>("/api/auth/forgot-password", {
         method: "POST",
         body: JSON.stringify(input),
       });

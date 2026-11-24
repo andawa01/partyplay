@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   changePasswordSchema,
+  forgotPasswordSchema,
   loginSchema,
   PASSWORD_MIN_LENGTH,
   resetPasswordSchema,
@@ -117,6 +118,20 @@ describe("password validation", () => {
   it("caps passwords below bcrypt's 72-byte limit", () => {
     expect(change(`Aa1${"a".repeat(197)}`).success).toBe(true);
     expect(change(`Aa1${"a".repeat(198)}`).success).toBe(false);
+  });
+});
+
+describe("forgot password validation", () => {
+  it("normalises a valid admin email", () => {
+    const result = forgotPasswordSchema.safeParse({ email: "  Owner@Example.COM " });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.email).toBe("owner@example.com");
+    }
+  });
+
+  it("rejects a malformed admin email", () => {
+    expect(forgotPasswordSchema.safeParse({ email: "owner" }).success).toBe(false);
   });
 });
 

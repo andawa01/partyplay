@@ -4,7 +4,17 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 
 import bcrypt from "bcrypt";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+const emailMock = vi.hoisted(() => ({
+  isEmailConfigured: vi.fn(() => true),
+  sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("./lib/email", () => ({
+  isEmailConfigured: emailMock.isEmailConfigured,
+  sendPasswordResetEmail: emailMock.sendPasswordResetEmail,
+}));
 
 import { createApp } from "./app";
 import { db, ensureClient } from "./config/db";
@@ -355,6 +365,42 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
     expect(Number(data.revenue.collected)).toBeCloseTo(baseline.collected + 1500, 2);
     expect(Array.isArray(data.upcoming)).toBe(true);
     expect(data.upcoming).toEqual(baseline.upcoming);
+  }, 30_000);
+
+  it("requests a reset email without revealing whether the account exists", async () => {
+    emailMock.sendPasswordResetEmail.mockClear();
+
+    const known = await api("POST", "/api/auth/forgot-password", {
+      body: { email },
+    });
+    expect(known.status).toBe(202);
+    expect(emailMock.sendPasswordResetEmail).toHaveBeenCalledTimes(1);
+
+    const sent = emailMock.sendPasswordResetEmail.mock.calls[0]?.[0] as {
+      to: string;
+      resetUrl: string;
+    };
+    expect(sent.to).toBe(email);
+    expect(sent.resetUrl).toContain("/admin/reset-password#token=");
+
+    const unknown = await api("POST", "/api/auth/forgot-password", {
+      body: { email: `unknown-${suffix}@example.test` },
+    });
+    expect(unknown.status).toBe(202);
+    expect(unknown.body).toMatchObject({ data: { message: expect.any(String) } });
+    expect(emailMock.sendPasswordResetEmail).toHaveBeenCalledTimes(1);
+  }, 30_000);
+
+  it("reports missing email configuration without sending or looking up an account", async () => {
+    emailMock.sendPasswordResetEmail.mockClear();
+    emailMock.isEmailConfigured.mockReturnValueOnce(false);
+
+    const response = await api("POST", "/api/auth/forgot-password", {
+      body: { email },
+    });
+    expect(response.status).toBe(503);
+    expect(response.body).toMatchObject({ code: "EMAIL_NOT_CONFIGURED" });
+    expect(emailMock.sendPasswordResetEmail).not.toHaveBeenCalled();
   }, 30_000);
 
   it("resets a password once, expires old links and invalidates old sessions", async () => {

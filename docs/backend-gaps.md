@@ -108,7 +108,7 @@ roles, but nothing creates or manages additional accounts.
 | Gap | Why it matters | Risk | Effort |
 |---|---|---|---|
 | No staff accounts | The owner cannot give a helper limited access; they would have to share the owner password. | **High** | M |
-| Reset links are server-assisted only | `npm run admin:reset-link` issues a secure one-time link, but there is no email delivery or public forgot-password form. The operator needs server access to recover an account. | Medium | M |
+| Reset email depends on Resend | Self-service reset works once `RESEND_API_KEY` and `MAIL_FROM` are configured. Without them the request endpoint returns `503`; the server CLI still works as a fallback. | Low | S |
 | Partial session revocation | Logout clears only the current cookie. Password reset bumps `Admin.sessionVersion` and revokes every existing session, but there is no per-session list or remote sign-out. | Low | M |
 | No two-factor authentication | One password protects all customer and payment data. | Medium | M |
 | Admin routes are unthrottled | Only login and public booking routes are limited. A stolen session can be used at full speed. | Low | S |
@@ -176,7 +176,7 @@ unit of work:
 3. **Maintenance blackout dates** — protects against renting out a broken item. *(§4)*
 4. **Refunds and overpayment policy** — closes the gap between the books and reality. *(§3)*
 5. **Booking edit** — removes the cancel-and-rebook workaround. *(§4)*
-6. **Staff accounts + emailed reset links** — stops password sharing and makes recovery self-service. *(§6)*
+6. **Staff accounts** — stops password sharing. *(§6)*
 7. **Notifications** — the biggest labour saving for the owner. *(§5)*
 8. **Reports and CSV export** — needed at month end. *(§8)*
 

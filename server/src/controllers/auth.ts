@@ -2,7 +2,12 @@ import type { Request, Response } from "express";
 
 import { authConfig, sessionCookieMaxAgeMs, sessionCookieOptions } from "../config/auth";
 import { unauthorized } from "../lib/api-error";
-import { changePasswordSchema, loginSchema, resetPasswordSchema } from "../schemas/auth";
+import {
+  changePasswordSchema,
+  forgotPasswordSchema,
+  loginSchema,
+  resetPasswordSchema,
+} from "../schemas/auth";
 import * as auth from "../services/auth";
 
 export async function login(req: Request, res: Response): Promise<void> {
@@ -14,6 +19,17 @@ export async function login(req: Request, res: Response): Promise<void> {
     maxAge: sessionCookieMaxAgeMs,
   });
   res.json({ data: admin });
+}
+
+export async function forgotPassword(req: Request, res: Response): Promise<void> {
+  const input = forgotPasswordSchema.parse(req.body);
+  await auth.requestPasswordReset(input.email);
+
+  res.status(202).json({
+    data: {
+      message: "If that email belongs to an admin, a reset link is on its way.",
+    },
+  });
 }
 
 export async function logout(_req: Request, res: Response): Promise<void> {

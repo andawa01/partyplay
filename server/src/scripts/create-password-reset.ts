@@ -1,6 +1,7 @@
 import "dotenv/config";
 
 import { db, ensureClient } from "../config/db";
+import { passwordResetUrl } from "../lib/password-reset";
 import { issuePasswordResetToken } from "../services/auth";
 
 function fail(message: string): never {
@@ -25,12 +26,7 @@ async function main(): Promise<void> {
   }
 
   const { token, expiresAt } = await issuePasswordResetToken(admin.id);
-  const baseUrl = (
-    process.env.APP_BASE_URL ??
-    process.env.CLIENT_URL ??
-    "http://localhost:5173"
-  ).replace(/\/+$/, "");
-  const resetUrl = `${baseUrl}/admin/reset-password#token=${encodeURIComponent(token)}`;
+  const resetUrl = passwordResetUrl(token);
 
   console.log(`Password reset link for ${admin.email}:`);
   console.log(resetUrl);
