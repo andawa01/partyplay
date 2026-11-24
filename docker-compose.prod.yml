@@ -1,0 +1,132 @@
+name: partyplay
+
+x-api-env: &api-env
+  NODE_ENV: production
+  DATABASE_URL: postgresql://partyplay:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.production}@db:5432/partyplay
+  PORT: "4000"
+  CLIENT_URL: ${APP_ORIGIN:-https://localhost}
+  APP_BASE_URL: ${APP_ORIGIN:-https://localhost}
+  JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env.production}
+  ADMIN_SESSION_HOURS: ${ADMIN_SESSION_HOURS:-12}
+  HOLD_SWEEP_INTERVAL_MINUTES: ${HOLD_SWEEP_INTERVAL_MINUTES:-5}
+  TRUST_PROXY_HOPS: "1"
+  SHUTDOWN_TIMEOUT_MS: ${SHUTDOWN_TIMEOUT_MS:-10000}
+  LOG_REQUESTS: ${LOG_REQUESTS:-true}
+  CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+  CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+  CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+  CLOUDINARY_UPLOAD_FOLDER: ${CLOUDINARY_UPLOAD_FOLDER:-partyplay}
+  RESEND_API_KEY: ${RESEND_API_KEY:-}
+  MAIL_FROM: ${MAIL_FROM:-}
+  ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+  ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: partyplay
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.production}
+      POSTGRES_DB: partyplay
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U partyplay -d partyplay"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      target: migrate
+    environment: *api-env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      target: api
+    environment: *api-env
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    stop_grace_period: 30s
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  sweeper:
+    build:
+      context: .
+      target: api
+    command: ["node", "server/dist/jobs/expire-holds.js"]
+    environment: *api-env
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+  backup:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: partyplay
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.production}
+      PGDATABASE: partyplay
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+    volumes:
+      - pgbackups:/backups
+      - ./scripts/backup-db.sh:/usr/local/bin/backup-db.sh:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/backup-db.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    stop_grace_period: 30s
+
+  web:
+    build:
+      context: .
+      target: web
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  pgbackups:
+  caddy_data:
+  caddy_config:

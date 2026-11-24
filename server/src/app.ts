@@ -4,6 +4,7 @@ import express, { type Express } from "express";
 
 import { db } from "./config/db";
 import { errorHandler, notFoundHandler, requestId } from "./middleware/error";
+import { requestLogger } from "./middleware/request-logger";
 import adminRouter from "./routes/admin";
 import authRouter from "./routes/auth";
 import availabilityRouter from "./routes/availability";
@@ -30,6 +31,7 @@ export function createApp(): Express {
   }
 
   app.use(requestId);
+  app.use(requestLogger);
   // `credentials` lets the client send the session cookie when it calls the API on a
   // different origin (it is same-origin behind the Vite proxy and Caddy in production).
   app.use(
