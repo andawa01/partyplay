@@ -19,7 +19,10 @@ vi.mock("./lib/email", () => ({
 import { createApp } from "./app";
 import { db, ensureClient } from "./config/db";
 import { formatCalendarDate, todayInNairobi } from "./lib/dates";
-import { issuePasswordResetToken } from "./services/auth";
+import {
+  issuePasswordResetToken,
+  PASSWORD_RESET_RETENTION_MS,
+} from "./services/auth";
 
 /**
  * HTTP smoke tests: the real app, middleware and routes against the configured database.
@@ -389,6 +392,34 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
     expect(unknown.status).toBe(202);
     expect(unknown.body).toMatchObject({ data: { message: expect.any(String) } });
     expect(emailMock.sendPasswordResetEmail).toHaveBeenCalledTimes(1);
+  }, 30_000);
+
+  it("cleans up reset tokens after the retention window", async () => {
+    const stale = await db.passwordResetToken.create({
+      data: {
+        adminId,
+        tokenHash: `stale-${suffix}`,
+        expiresAt: new Date(Date.now() - PASSWORD_RESET_RETENTION_MS - 60_000),
+      },
+    });
+    const recentUsed = await db.passwordResetToken.create({
+      data: {
+        adminId,
+        tokenHash: `used-${suffix}`,
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+        usedAt: new Date(),
+      },
+    });
+
+    await issuePasswordResetToken(adminId);
+
+    const remaining = await db.passwordResetToken.findMany({
+      where: { id: { in: [stale.id, recentUsed.id] } },
+      select: { id: true },
+    });
+    const ids = remaining.map((row) => row.id);
+    expect(ids).not.toContain(stale.id);
+    expect(ids).toContain(recentUsed.id);
   }, 30_000);
 
   it("reports missing email configuration without sending or looking up an account", async () => {

@@ -12,6 +12,7 @@ import type { ChangePasswordInput, LoginInput, ResetPasswordInput } from "../sch
 
 export const PASSWORD_COST = 12;
 export const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000;
+export const PASSWORD_RESET_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
 export interface AdminSummary {
   id: string;
@@ -98,6 +99,20 @@ function hashResetToken(token: string): string {
 }
 
 /**
+ * Removes used or expired reset rows after a short retention window. Cleanup-on-issue
+ * keeps the table bounded without adding a scheduler or delaying the reset request.
+ */
+export async function cleanupPasswordResetTokens(now = new Date()): Promise<number> {
+  const cutoff = new Date(now.getTime() - PASSWORD_RESET_RETENTION_MS);
+  const result = await db.passwordResetToken.deleteMany({
+    where: {
+      OR: [{ expiresAt: { lt: cutoff } }, { usedAt: { lt: cutoff } }],
+    },
+  });
+  return result.count;
+}
+
+/**
  * Creates a one-time reset link token. Only the hash is stored, and issuing a new token
  * cancels any previous unused link for the same admin.
  */
@@ -107,6 +122,13 @@ export async function issuePasswordResetToken(
   const token = randomBytes(32).toString("base64url");
   const now = new Date();
   const expiresAt = new Date(now.getTime() + PASSWORD_RESET_TTL_MS);
+
+  try {
+    await cleanupPasswordResetTokens(now);
+  } catch (error) {
+    // Cleanup is housekeeping; never block a reset link because it failed.
+    console.error("Could not clean up password reset tokens", error);
+  }
 
   await db.$transaction([
     db.passwordResetToken.updateMany({

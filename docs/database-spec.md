@@ -285,7 +285,8 @@ Indexes: `(adminId, createdAt)`, `(expiresAt)`, unique `(tokenHash)`.
 **App-enforced:** only the hash is stored; the raw token is printed once by
 `npm run admin:reset-link -- <email>`. Issuing a new token marks every unused
 token for that admin as used. Consuming a token also bumps `Admin.sessionVersion`,
-so existing sessions stop working.
+so existing sessions stop working. Rows more than 7 days past expiry or use are
+deleted whenever a new token is issued.
 
 ### 4.2 Category
 

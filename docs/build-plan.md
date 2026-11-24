@@ -290,6 +290,8 @@ dependencies in the list are done.
   It consumes the token in a transaction, applies the password policy, marks every other
   unused link for that admin as used, bumps `Admin.sessionVersion` and clears the session
   cookie. A reused or expired token gets the same 400 response.
+- Cleanup-on-issue deletes reset rows more than 7 days past expiry or use, so the table
+  stays bounded without adding a scheduler.
 
 **Verify:** login → cookie set → `/api/auth/me` 200; no cookie → 401; login with wrong
 password → 401; `/api/categories` POST without cookie → 401; with cookie → works
