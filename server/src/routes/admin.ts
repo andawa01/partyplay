@@ -9,6 +9,7 @@ import * as packages from "../controllers/packages";
 import * as payments from "../controllers/payments";
 import * as site from "../controllers/site";
 import * as providers from "../controllers/transport-providers";
+import * as uploads from "../controllers/uploads";
 import { asyncHandler } from "../lib/async";
 import { requireAdmin } from "../middleware/auth";
 
@@ -17,6 +18,8 @@ const router = Router();
 // One guard for the whole surface: no admin route can be reachable without a session,
 // and no future route can forget to add it.
 router.use(requireAdmin);
+
+router.post("/uploads/sign", asyncHandler(uploads.signImageUpload));
 
 router.post("/categories", asyncHandler(categories.createCategory));
 router.patch("/categories/:id", asyncHandler(categories.updateCategory));

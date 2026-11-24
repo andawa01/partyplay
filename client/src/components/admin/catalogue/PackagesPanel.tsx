@@ -22,6 +22,7 @@ import {
 } from "../../../lib/admin-catalogue";
 import { formatMoney } from "../../../lib/money";
 import { toast } from "../../../lib/toast";
+import { ImageUploadField } from "./ImageUploadField";
 import { Badge } from "../../ui/badge";
 import { Button } from "../../ui/button";
 import { ErrorState } from "../../ui/error-state";
@@ -254,6 +255,7 @@ export function PackageFormDialog({
     pkg ? packageToForm(pkg) : emptyPackageForm(),
   );
   const [errors, setErrors] = useState<FieldErrors<PackageFormValues>>({});
+  const [imageUploading, setImageUploading] = useState(false);
   const save = useSavePackage();
 
   function setField<K extends keyof PackageFormValues>(
@@ -305,6 +307,18 @@ export function PackageFormDialog({
       ...current,
       items: current.items.filter((item) => item.key !== key),
     }));
+  }
+
+  function setImage(imageUrl: string | null, imagePublicId: string | null) {
+    setValues((current) => ({
+      ...current,
+      imageUrl: imageUrl ?? "",
+      imagePublicId: imagePublicId ?? "",
+    }));
+    setErrors((current) => ({ ...current, imageUrl: undefined }));
+    if (save.error) {
+      save.reset();
+    }
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -460,22 +474,14 @@ export function PackageFormDialog({
           />
         </FormField>
 
-        <FormField
-          label="Image URL"
-          htmlFor="package-image"
+        <ImageUploadField
+          id="package-image"
+          kind="packages"
+          imageUrl={values.imageUrl}
+          onChange={setImage}
+          onUploadingChange={setImageUploading}
           error={errors.imageUrl}
-          hint="Optional. A direct https image link."
-        >
-          <Input
-            id="package-image"
-            type="url"
-            value={values.imageUrl}
-            onChange={(event) => setField("imageUrl", event.target.value)}
-            placeholder="https://…"
-            aria-invalid={Boolean(errors.imageUrl)}
-            aria-describedby={errors.imageUrl ? "package-image-error" : undefined}
-          />
-        </FormField>
+        />
 
         <fieldset className="rounded-2xl border border-slate-200 p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -592,7 +598,7 @@ export function PackageFormDialog({
         </div>
 
         <FormActions
-          pending={save.isPending}
+          pending={save.isPending || imageUploading}
           submitLabel={pkg ? "Save package" : "Add package"}
           onCancel={onClose}
         />

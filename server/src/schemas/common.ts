@@ -21,6 +21,13 @@ export const slugSchema = z
   .max(64)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "slug must be kebab-case");
 
+export const imagePublicIdSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(128)
+  .regex(/^[A-Za-z0-9][A-Za-z0-9/_-]*$/, "Invalid image reference");
+
 export const slugParamsSchema = z.object({ slug: slugSchema });
 
 /** Admin routes address rows by id, the same way the database does. */

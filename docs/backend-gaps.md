@@ -94,7 +94,7 @@ in later without re-discovering them.
 | No email / WhatsApp / SMS | The owner must remember to follow up every request manually. A pending booking can expire without the customer ever being told. | M |
 | No M-Pesa / Daraja integration | Payments are typed in by hand; a customer's M-Pesa message has to be matched manually to a booking. | L |
 | No automated refunds | Tied to the refund workflow above. | M |
-| No image uploads | Equipment images are URL strings; someone must host the photos elsewhere. | S |
+| No orphaned-upload cleanup | An image uploaded and then abandoned before saving stays in Cloudinary. Saved-image replacements and package deletions are cleaned up. | S |
 | No discount engine | Offers cannot be applied. | M |
 | No weekly pricing | `pricePerWeek` is stored but unused (agreed deferral D3). | S |
 
@@ -149,7 +149,6 @@ gaps remain in how it is used.
 
 From `build-plan.md` §11, kept here so they are not mistaken for oversights:
 
-- Image uploads / Cloudinary — accepting `imageUrl` strings for now.
 - WhatsApp / email notifications — the owner follows up manually.
 - M-Pesa Daraja and automated refunds — payments are recorded by hand.
 - Customer accounts and multiple staff accounts — guest booking, one owner.

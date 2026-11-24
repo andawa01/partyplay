@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { slugSchema } from "./common";
+import { imagePublicIdSchema, slugSchema } from "./common";
 
 /**
  * Prices arrive as numbers and leave as two-decimal strings, which is exactly what the
@@ -18,6 +18,7 @@ const createFields = {
   categoryId: z.string().min(1).max(64),
   description: z.string().max(2000).nullish(),
   imageUrl: z.url().max(2048).nullish(),
+  imagePublicId: imagePublicIdSchema.nullish(),
   note: z.string().max(1000).nullish(),
   pricePerDay: priceSchema.nullish(),
   pricePerWeek: priceSchema.nullish(),
@@ -43,6 +44,7 @@ export const updateEquipmentSchema = z
     categoryId: createFields.categoryId,
     description: createFields.description,
     imageUrl: createFields.imageUrl,
+    imagePublicId: createFields.imagePublicId,
     note: createFields.note,
     pricePerDay: priceSchema.nullable(),
     pricePerWeek: priceSchema.nullable(),

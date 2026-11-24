@@ -8,6 +8,7 @@ import type {
   PackageItemsInput,
   UpdatePackageInput,
 } from "../schemas/packages";
+import { destroyManagedImage } from "./cloudinary";
 
 const packageFields = {
   id: true,
@@ -76,6 +77,7 @@ export async function getPackageBySlug(slug: string) {
 
 const adminPackageFields = {
   ...packageFields,
+  imagePublicId: true,
   isActive: true,
   createdAt: true,
   updatedAt: true,
@@ -94,6 +96,7 @@ type AdminPackageRow = Prisma.PackageGetPayload<{ select: typeof adminPackageFie
 function toAdminPackage(row: AdminPackageRow) {
   return {
     ...toPublicPackage(row),
+    imagePublicId: row.imagePublicId,
     items: row.items.map((item) => ({
       equipmentId: item.equipmentId,
       quantity: item.quantity,
@@ -128,14 +131,23 @@ export async function createPackage(input: CreatePackageInput) {
 }
 
 export async function updatePackageById(id: string, input: UpdatePackageInput) {
-  await assertPackageExists(id);
+  const existing = await assertPackageExists(id);
   await db.package.update({ where: { id }, data: input });
+
+  if (
+    input.imagePublicId !== undefined &&
+    existing.imagePublicId &&
+    existing.imagePublicId !== input.imagePublicId
+  ) {
+    await destroyManagedImage(existing.imagePublicId);
+  }
+
   return getAdminPackageById(id);
 }
 
 /** A package that appears on a booking is deactivated instead of deleted. */
 export async function deletePackageById(id: string): Promise<void> {
-  await assertPackageExists(id);
+  const existing = await assertPackageExists(id);
 
   const bookingCount = await db.packageBooking.count({ where: { packageId: id } });
   if (bookingCount > 0) {
@@ -146,6 +158,7 @@ export async function deletePackageById(id: string): Promise<void> {
   }
 
   await db.package.delete({ where: { id } });
+  await destroyManagedImage(existing.imagePublicId);
 }
 
 /** Replaces the whole item set atomically, so a failure never leaves a half package. */
@@ -182,9 +195,15 @@ export async function replacePackageItems(id: string, input: PackageItemsInput) 
   return getAdminPackageById(id);
 }
 
-async function assertPackageExists(id: string): Promise<void> {
-  const found = await db.package.findUnique({ where: { id }, select: { id: true } });
+async function assertPackageExists(
+  id: string,
+): Promise<{ id: string; imagePublicId: string | null }> {
+  const found = await db.package.findUnique({
+    where: { id },
+    select: { id: true, imagePublicId: true },
+  });
   if (!found) {
     throw notFound(`Package "${id}" was not found`);
   }
+  return found;
 }
