@@ -26,6 +26,7 @@ const AdminResetPasswordPage = lazy(() => import("./pages/admin/AdminResetPasswo
 const AdminBookingsPage = lazy(() => import("./pages/admin/AdminBookingsPage"));
 const AdminBookingDetailPage = lazy(() => import("./pages/admin/AdminBookingDetailPage"));
 const AdminCataloguePage = lazy(() => import("./pages/admin/AdminCataloguePage"));
+const AdminReportsPage = lazy(() => import("./pages/admin/AdminReportsPage"));
 const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
 const AdminTeamPage = lazy(() => import("./pages/admin/AdminTeamPage"));
 
@@ -171,6 +172,22 @@ export default function App() {
                 >
                   <AdminSettingsPage />
                 </Suspense>
+              }
+            />
+            <Route
+              path="reports"
+              element={
+                <RequireRole roles={["OWNER", "ADMIN"]}>
+                  <Suspense
+                    fallback={
+                      <div className="h-64 animate-pulse rounded-2xl bg-white" aria-busy="true">
+                        <span className="sr-only">Loading reports…</span>
+                      </div>
+                    }
+                  >
+                    <AdminReportsPage />
+                  </Suspense>
+                </RequireRole>
               }
             />
             <Route

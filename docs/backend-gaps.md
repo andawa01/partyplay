@@ -1,8 +1,8 @@
 # Backend gaps — what is not covered yet
 
 **Prepared:** 15 November 2026
-**Updated:** 25 November 2026 — F15 booking notifications
-**Scope:** backend and deployment, as merged to `main` at `ab3d26c` plus the F13, F14 and F15 branches
+**Updated:** 25 November 2026 — F16 reports and CSV export
+**Scope:** backend and deployment, as merged to `main` at `ab3d26c` plus the F13–F16 branches
 **Purpose:** a plain list of what the backend does *not* do yet, so the owner can decide
 what is worth paying for next. Nothing here is a bug report against finished work — it is
 the boundary of the current build.
@@ -28,6 +28,8 @@ For context, the backend today covers:
   rate-limited login, role-scoped routes and owner-managed team accounts.
 - Notifications: request acknowledgement, confirmation, rejection, cancellation and
   expiry emails to the customer, plus a new-request alert to the business address.
+- Reports: revenue and refunds by month, bookings by status, per-equipment utilisation,
+  and bookings/payments CSV exports for the accountant.
 - Guard rails recently added: throttled public booking routes, committed HTTP smoke
   tests, idempotent seed.
 
@@ -144,7 +146,7 @@ client 27% / 19% / 25% / 27%.
 
 | Gap | Why it matters | Risk | Effort |
 |---|---|---|---|
-| No operational reports or CSV export | No per-equipment utilisation, no monthly revenue trend, no export for an accountant. Data is in Postgres only. | Medium | M |
+| ~~No operational reports or CSV export~~ | **Done in F16:** a manager-only report shows monthly revenue, bookings by status and per-equipment utilisation, with bookings and payments CSVs for the accountant. | — | — |
 | Payments list is unpaginated | Fine at today's volume; grows unbounded per booking (bounded in practice by payments per booking). | Low | S |
 | Customers are matched by phone/email but duplicates accumulate | A customer who books with a new number becomes a new row; there is no merge or CRM view. | Low | M |
 | No retention or purge policy | EXPIRED/CANCELLED bookings stay forever with customer contact data. Needs a documented retention period eventually (also a privacy question). | Low | S |
@@ -191,9 +193,9 @@ unit of work:
 5. ~~**Booking edit** — removes the cancel-and-rebook workaround. *(§4)*~~ **Done in F13.**
 6. ~~**Staff accounts** — stops password sharing. *(§6)*~~ **Done in F14.**
 7. ~~**Notifications** — the biggest labour saving for the owner. *(§5)*~~ **Done in F15.**
-8. **Reports and CSV export** — needed at month end. *(§8)*
+8. ~~**Reports and CSV export** — needed at month end. *(§8)*~~ **Done in F16.**
 
-The next item is **reports and CSV export**, which gives the owner month-end figures and an
-export for the accountant. Notifications, staff accounts, booking edit, refunds and
-maintenance blackouts are done; code-quality gates give new work lint, format and coverage
+Every item in this order is now done. The business can run on the current build; what is
+left in the tables above is optional depth — WhatsApp/SMS, customer self-service,
+multi-location and the like. Code-quality gates give new work lint, format and coverage
 feedback from CI.

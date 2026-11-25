@@ -8,6 +8,7 @@ import * as equipment from "../controllers/equipment";
 import * as offers from "../controllers/offers";
 import * as packages from "../controllers/packages";
 import * as payments from "../controllers/payments";
+import * as reports from "../controllers/reports";
 import * as site from "../controllers/site";
 import * as staff from "../controllers/staff";
 import * as providers from "../controllers/transport-providers";
@@ -79,6 +80,10 @@ router.delete("/payments/:id", manager, asyncHandler(payments.deletePayment));
 router.post("/payments/:id/refunds", manager, asyncHandler(payments.refundPayment));
 
 router.get("/dashboard", asyncHandler(dashboard.getDashboard));
+
+// Reports include revenue, so they sit with payments rather than with the booking board.
+router.get("/reports", manager, asyncHandler(reports.getReport));
+router.get("/reports/export", manager, asyncHandler(reports.exportReport));
 
 router.get("/settings", asyncHandler(site.getSettings));
 router.put("/settings", manager, asyncHandler(site.updateSettings));
