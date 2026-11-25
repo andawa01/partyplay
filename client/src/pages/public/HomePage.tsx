@@ -52,21 +52,22 @@ export default function HomePage() {
           />
           <div
             aria-hidden="true"
-            className="absolute inset-0 bg-gradient-to-r from-brand-950/90 via-brand-900/70 to-brand-800/10"
+            className="absolute inset-0 bg-gradient-to-r from-brand-900/95 via-brand-900/80 to-brand-900/25"
+          />
+          <div
+            aria-hidden="true"
+            className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-brand-900/75 to-transparent"
           />
           <div className="absolute inset-0 flex items-center">
             <div className="max-w-xl px-6 text-white sm:px-10 lg:px-14">
-              <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white ring-1 ring-white/25 backdrop-blur">
+              <p className="inline-flex items-center gap-2 rounded-full bg-brand-900/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white ring-1 ring-white/40 backdrop-blur">
                 <Sparkles aria-hidden="true" className="size-3.5" />
                 Party equipment rental
               </p>
-              <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-                Make Every Party{" "}
-                <span className="bg-gradient-to-r from-blush-200 via-white to-brand-200 bg-clip-text text-transparent">
-                  Unforgettable!
-                </span>
+              <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.65)] sm:text-5xl lg:text-6xl">
+                Make Every Party <span className="text-blush-200">Unforgettable!</span>
               </h1>
-              <p className="mt-4 max-w-lg text-base leading-relaxed text-brand-50 sm:text-lg">
+              <p className="mt-4 max-w-lg text-base font-medium leading-relaxed text-white/95 drop-shadow-[0_1px_6px_rgba(0,0,0,0.6)] sm:text-lg">
                 Bouncy castles, slides, tents, tables and chairs for hire in Kenya. Premium party
                 equipment, delivered and set up so you can enjoy the day.
               </p>
@@ -80,7 +81,7 @@ export default function HomePage() {
                 </Link>
                 <Link
                   to="/packages"
-                  className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-6 py-3 font-semibold text-white backdrop-blur transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/15 px-6 py-3 font-semibold text-white backdrop-blur transition hover:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 >
                   View Packages
                 </Link>

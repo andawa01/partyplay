@@ -1,4 +1,4 @@
-import { Menu, PartyPopper, X } from "lucide-react";
+import { LogIn, Menu, PartyPopper, X } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 
@@ -51,6 +51,14 @@ export default function PublicLayout() {
           </ul>
 
           <div className="flex items-center gap-2">
+            <NavLink
+              to="/admin/login"
+              className="inline-flex items-center gap-1.5 rounded-full border border-brand-100 px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+            >
+              <LogIn aria-hidden="true" className="size-4" />
+              <span className="hidden sm:inline">Admin</span>
+              <span className="sr-only sm:hidden">Admin login</span>
+            </NavLink>
             <NavLink
               to="/booking"
               className="hidden rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 sm:inline-flex"

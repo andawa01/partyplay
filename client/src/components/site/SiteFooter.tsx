@@ -1,4 +1,4 @@
-import { ArrowRight, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import { ArrowRight, LogIn, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { publicLinks } from "../../lib/navigation";
@@ -165,7 +165,16 @@ export function SiteFooter({ site = SITE_FALLBACK }: { site?: SiteSettings }) {
           <p>
             © {new Date().getFullYear()} {site.businessName}. Party equipment hire.
           </p>
-          <p className="text-xs text-slate-500">Bouncy castles, sound, tables and chairs.</p>
+          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+            <p>Bouncy castles, sound, tables and chairs.</p>
+            <Link
+              to="/admin/login"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 font-semibold text-slate-600 transition hover:border-brand-300 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+            >
+              <LogIn aria-hidden="true" className="size-3.5" />
+              Admin login
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
