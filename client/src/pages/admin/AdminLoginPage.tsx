@@ -1,12 +1,4 @@
-import {
-  ArrowLeft,
-  ArrowRight,
-  Boxes,
-  CalendarDays,
-  Check,
-  Loader2,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowRight, Loader2, Lock, Mail, PartyPopper, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 
@@ -19,24 +11,6 @@ import { Label } from "../../components/ui/label";
 import { useAdminSession, useLogin } from "../../hooks/use-auth";
 import { isApiError } from "../../lib/api";
 import { adminReturnPath, loginFormSchema, type LoginFormValues } from "../../lib/auth";
-
-const highlights = [
-  {
-    icon: CalendarDays,
-    title: "Bookings in one place",
-    description: "See requests, confirm dates and keep every hire moving.",
-  },
-  {
-    icon: Boxes,
-    title: "Catalogue control",
-    description: "Update equipment, packages and offers without a rebuild.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Private owner access",
-    description: "Customer and payment details stay behind a secure session.",
-  },
-];
 
 export default function AdminLoginPage() {
   const location = useLocation();
@@ -97,81 +71,38 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-950 px-4 py-8 text-slate-100 sm:px-6 sm:py-10">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-brand-50 via-white to-blush-50 px-4 py-10 text-slate-900 sm:py-16">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -left-24 top-0 size-96 rounded-full bg-brand-700/25 blur-3xl"
+        className="pointer-events-none absolute -left-24 top-0 size-96 rounded-full bg-brand-100/70 blur-3xl"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-24 bottom-0 size-96 rounded-full bg-blush-700/20 blur-3xl"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-1/3 size-72 -translate-x-1/2 rounded-full bg-brand-500/10 blur-3xl"
+        className="pointer-events-none absolute -right-24 bottom-0 size-96 rounded-full bg-blush-200/50 blur-3xl"
       />
 
-      <div className="relative mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl items-center gap-10 lg:grid-cols-[minmax(0,1fr)_460px]">
-        <section className="hidden max-w-xl lg:block">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 rounded-sm text-2xl font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-          >
-            PartyPlay <span className="text-brand-300">Admin</span>
-          </Link>
-          <p className="mt-12 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-brand-200 ring-1 ring-white/10">
-            <ShieldCheck aria-hidden="true" className="size-3.5" />
-            Owner workspace
-          </p>
-          <h1 className="mt-5 text-4xl font-bold tracking-tight text-white xl:text-5xl">
-            Run the party.
-            <br />
-            We&apos;ll keep the details together.
-          </h1>
-          <p className="mt-4 max-w-lg text-lg leading-relaxed text-slate-300">
-            One private place for booking requests, stock, customer details and the money side of
-            the business.
-          </p>
+      <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] max-w-md flex-col justify-center">
+        <Link
+          to="/"
+          className="mx-auto flex items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+        >
+          <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-sm">
+            <PartyPopper aria-hidden="true" className="size-5" />
+          </span>
+          <span className="text-2xl font-extrabold tracking-tight text-slate-900">
+            PartyPlay <span className="text-brand-700">Admin</span>
+          </span>
+        </Link>
 
-          <ul className="mt-10 space-y-5">
-            {highlights.map(({ icon: Icon, title, description }) => (
-              <li key={title} className="flex gap-3.5">
-                <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl bg-white/10 text-brand-200 ring-1 ring-white/10">
-                  <Icon aria-hidden="true" className="size-4" />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-white">{title}</p>
-                  <p className="mt-0.5 text-sm leading-relaxed text-slate-400">{description}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-
-          <Link
-            to="/"
-            className="mt-10 inline-flex items-center gap-2 rounded-sm text-sm font-medium text-slate-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-          >
-            <ArrowLeft aria-hidden="true" className="size-4" />
-            Back to the public site
-          </Link>
-        </section>
-
-        <section className="w-full justify-self-end rounded-3xl bg-white p-6 text-slate-900 shadow-2xl shadow-black/20 sm:p-8">
-          <div className="flex items-center justify-between gap-3 lg:hidden">
-            <Link to="/" className="text-xl font-bold text-slate-900">
-              PartyPlay <span className="text-brand-700">Admin</span>
-            </Link>
-            <Link to="/" className="text-xs font-medium text-slate-500 hover:text-brand-700">
-              View site
-            </Link>
-          </div>
-
-          <div className="mt-7 lg:mt-0">
+        <div className="mt-6 rounded-3xl border border-white bg-white/95 p-6 shadow-xl shadow-brand-900/5 sm:p-8">
+          <div className="text-center">
             <span className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-brand-700 ring-1 ring-brand-100">
               <ShieldCheck aria-hidden="true" className="size-3.5" />
               Secure sign in
             </span>
-            <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">Welcome back</h2>
+            <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900">
+              Welcome back
+            </h1>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">
               Sign in with the owner account to manage PartyPlay.
             </p>
@@ -200,18 +131,24 @@ export default function AdminLoginPage() {
           <form onSubmit={handleSubmit} className="mt-6" noValidate>
             <div>
               <Label htmlFor="admin-email">Email address</Label>
-              <Input
-                id="admin-email"
-                type="email"
-                value={email}
-                onChange={(event) => changeField("email", event.target.value)}
-                autoComplete="email"
-                autoFocus
-                placeholder="owner@partyplay.co.ke"
-                aria-invalid={Boolean(fieldErrors.email)}
-                aria-describedby={fieldErrors.email ? "admin-email-error" : undefined}
-                className="mt-1.5 h-11"
-              />
+              <div className="relative mt-1.5">
+                <Mail
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
+                />
+                <Input
+                  id="admin-email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => changeField("email", event.target.value)}
+                  autoComplete="email"
+                  autoFocus
+                  placeholder="owner@partyplay.co.ke"
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  aria-describedby={fieldErrors.email ? "admin-email-error" : undefined}
+                  className="h-11 pl-9"
+                />
+              </div>
               {fieldErrors.email ? (
                 <p id="admin-email-error" className="mt-1.5 text-xs font-medium text-red-600">
                   {fieldErrors.email}
@@ -221,17 +158,23 @@ export default function AdminLoginPage() {
 
             <div className="mt-4">
               <Label htmlFor="admin-password">Password</Label>
-              <PasswordInput
-                id="admin-password"
-                label="password"
-                value={password}
-                onChange={(event) => changeField("password", event.target.value)}
-                autoComplete="current-password"
-                placeholder="Enter your password"
-                aria-invalid={Boolean(fieldErrors.password)}
-                aria-describedby={fieldErrors.password ? "admin-password-error" : undefined}
-                className="mt-1.5 h-11"
-              />
+              <div className="relative mt-1.5">
+                <Lock
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
+                />
+                <PasswordInput
+                  id="admin-password"
+                  label="password"
+                  value={password}
+                  onChange={(event) => changeField("password", event.target.value)}
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  aria-invalid={Boolean(fieldErrors.password)}
+                  aria-describedby={fieldErrors.password ? "admin-password-error" : undefined}
+                  className="h-11 pl-9"
+                />
+              </div>
               {fieldErrors.password ? (
                 <p id="admin-password-error" className="mt-1.5 text-xs font-medium text-red-600">
                   {fieldErrors.password}
@@ -239,10 +182,19 @@ export default function AdminLoginPage() {
               ) : null}
             </div>
 
+            <div className="mt-3 text-right">
+              <Link
+                to="/admin/forgot-password"
+                className="text-xs font-medium text-brand-700 hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
+
             <Button
               type="submit"
               size="lg"
-              className="mt-6 w-full"
+              className="mt-4 w-full"
               disabled={login.isPending}
               aria-busy={login.isPending}
             >
@@ -260,27 +212,17 @@ export default function AdminLoginPage() {
             </Button>
           </form>
 
-          <p className="mt-4 text-xs leading-relaxed text-slate-500">
-            <Link
-              to="/admin/forgot-password"
-              className="font-medium text-brand-700 hover:underline"
-            >
-              Forgot your password?
-            </Link>{" "}
-            Request a one-time reset link.
-          </p>
-
-          <div className="mt-5 flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-500">
-            <Check aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-emerald-600" />
-            Your session is stored in a secure, http-only cookie and expires automatically.
-          </div>
-
-          <p className="mt-5 text-center text-xs text-slate-500 lg:hidden">
+          <p className="mt-5 text-center text-xs text-slate-500">
             <Link to="/" className="font-medium text-brand-700 hover:underline">
               Back to PartyPlay
             </Link>
           </p>
-        </section>
+        </div>
+
+        <p className="mx-auto mt-5 flex items-center gap-2 text-center text-xs text-slate-500">
+          <ShieldCheck aria-hidden="true" className="size-3.5 text-emerald-600" />
+          Protected by a secure, http-only session cookie.
+        </p>
       </div>
     </div>
   );

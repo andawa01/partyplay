@@ -1,4 +1,12 @@
-import { ArrowLeft, Boxes, CalendarDays, ChevronRight, Info, PartyPopper } from "lucide-react";
+import {
+  ArrowLeft,
+  Boxes,
+  CalendarDays,
+  Check,
+  ChevronRight,
+  Info,
+  PartyPopper,
+} from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 
 import { EquipmentImage } from "../../components/catalogue/EquipmentImage";
@@ -146,6 +154,19 @@ export default function EquipmentDetailPage() {
                 </dd>
               </div>
             </dl>
+
+            <ul className="mt-4 grid gap-2 border-t border-slate-100 pt-4 text-sm text-slate-700 sm:grid-cols-2">
+              {["Delivery or collection", "Flexible hire dates", "Stock confirmed by owner"].map(
+                (feature) => (
+                  <li key={feature} className="flex items-center gap-2">
+                    <span className="grid size-5 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-700 ring-1 ring-brand-100">
+                      <Check aria-hidden="true" className="size-3" />
+                    </span>
+                    {feature}
+                  </li>
+                ),
+              )}
+            </ul>
 
             <Button asChild size="lg" className="mt-6 w-full">
               <Link to={`/booking?equipment=${encodeURIComponent(equipment.slug)}`}>

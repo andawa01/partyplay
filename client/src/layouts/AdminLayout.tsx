@@ -6,10 +6,14 @@ import {
   LayoutDashboard,
   Loader2,
   LogOut,
+  Menu,
+  PartyPopper,
   Settings,
   ShieldCheck,
   UsersRound,
+  X,
 } from "lucide-react";
+import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -42,6 +46,7 @@ export default function AdminLayout() {
   const session = useAdminSession();
   const logout = useLogout();
   const admin = session.data;
+  const [menuOpen, setMenuOpen] = useState(false);
 
   function signOut() {
     logout.mutate(undefined, {
@@ -66,115 +71,155 @@ export default function AdminLayout() {
     ({ roles }) => !roles || (admin?.role !== undefined && roles.includes(admin.role)),
   );
 
-  return (
-    <div className="min-h-screen bg-slate-100 text-slate-800">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <div className="flex min-w-0 items-center gap-4">
-            <NavLink
-              to="/admin/dashboard"
-              className="shrink-0 rounded-sm text-lg font-bold text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
-            >
-              PartyPlay <span className="text-brand-700">Admin</span>
-            </NavLink>
-            <nav aria-label="Admin" className="hidden items-center gap-1 md:flex">
-              {availableLinks.map(({ to, label, icon: Icon }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  className={({ isActive }) =>
-                    cn(
-                      "inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300",
-                      isActive
-                        ? "bg-brand-50 text-brand-800"
-                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
-                    )
-                  }
-                >
-                  <Icon aria-hidden="true" className="size-4" />
-                  {label}
-                </NavLink>
-              ))}
-            </nav>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <LinkToSite />
-            <div className="hidden items-center gap-2 border-l border-slate-200 pl-3 sm:flex">
-              <span className="grid size-9 place-items-center rounded-full bg-brand-700 text-sm font-bold text-white">
-                {initial}
-              </span>
-              <div className="max-w-40 leading-tight">
-                <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
-                <p className="truncate text-xs text-slate-500">{adminRoleLabel(admin?.role)}</p>
-              </div>
-              <Badge variant="outline" className="hidden lg:inline-flex">
-                <ShieldCheck aria-hidden="true" className="mr-1 size-3" />
-                Signed in
-              </Badge>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={signOut}
-              disabled={logout.isPending}
-              aria-busy={logout.isPending}
-              className="gap-1.5"
-            >
-              {logout.isPending ? (
-                <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
-              ) : (
-                <LogOut aria-hidden="true" className="size-3.5" />
-              )}
-              <span className="hidden sm:inline">
-                {logout.isPending ? "Signing out…" : "Sign out"}
-              </span>
-              <span className="sr-only sm:hidden">Sign out</span>
-            </Button>
-          </div>
-        </div>
-
-        <nav
-          aria-label="Admin mobile"
-          className="flex gap-1 overflow-x-auto border-t border-slate-100 px-4 py-2 md:hidden"
+  const nav = (
+    <nav aria-label="Admin" className="flex flex-1 flex-col gap-1">
+      {availableLinks.map(({ to, label, icon: Icon }) => (
+        <NavLink
+          key={to}
+          to={to}
+          onClick={() => setMenuOpen(false)}
+          className={({ isActive }) =>
+            cn(
+              "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300",
+              isActive
+                ? "bg-brand-50 text-brand-800"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+            )
+          }
         >
-          {availableLinks.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                cn(
-                  "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300",
-                  isActive ? "bg-brand-50 text-brand-800" : "text-slate-600 hover:bg-slate-50",
-                )
-              }
-            >
-              <Icon aria-hidden="true" className="size-4" />
+          {({ isActive }) => (
+            <>
+              <span
+                className={cn(
+                  "grid size-8 place-items-center rounded-lg transition",
+                  isActive
+                    ? "bg-brand-700 text-white"
+                    : "bg-slate-100 text-slate-500 group-hover:bg-white group-hover:text-brand-700",
+                )}
+              >
+                <Icon aria-hidden="true" className="size-4" />
+              </span>
               {label}
-            </NavLink>
-          ))}
-        </nav>
-      </header>
+            </>
+          )}
+        </NavLink>
+      ))}
+    </nav>
+  );
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
-        <Outlet />
-      </main>
+  const sidebarFooter = (
+    <div className="border-t border-slate-100 pt-4">
+      <div className="flex items-center gap-2.5 px-1">
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-700 text-sm font-bold text-white">
+          {initial}
+        </span>
+        <div className="min-w-0 leading-tight">
+          <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
+          <p className="truncate text-xs text-slate-500">{adminRoleLabel(admin?.role)}</p>
+        </div>
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={signOut}
+        disabled={logout.isPending}
+        aria-busy={logout.isPending}
+        className="mt-3 w-full justify-start gap-2"
+      >
+        {logout.isPending ? (
+          <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
+        ) : (
+          <LogOut aria-hidden="true" className="size-3.5" />
+        )}
+        {logout.isPending ? "Signing out…" : "Sign out"}
+      </Button>
+      <a
+        href="/"
+        target="_blank"
+        rel="noreferrer"
+        className="mt-2 inline-flex w-full items-center gap-1.5 rounded-lg px-1 py-1.5 text-xs font-medium text-slate-500 transition hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+      >
+        View site
+        <ArrowUpRight aria-hidden="true" className="size-3.5" />
+        <span className="sr-only">(opens in a new tab)</span>
+      </a>
     </div>
   );
-}
 
-function LinkToSite() {
   return (
-    <a
-      href="/"
-      target="_blank"
-      rel="noreferrer"
-      className="hidden rounded-md px-2 py-1.5 text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 sm:inline-flex sm:items-center sm:gap-1"
-    >
-      View site
-      <ArrowUpRight aria-hidden="true" className="size-3.5" />
-      <span className="sr-only">(opens in a new tab)</span>
-    </a>
+    <div className="min-h-screen bg-slate-50 text-slate-800">
+      {/* Mobile top bar */}
+      <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
+        <NavLink
+          to="/admin/dashboard"
+          className="flex items-center gap-2 rounded-sm text-lg font-bold text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+        >
+          <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-white">
+            <PartyPopper aria-hidden="true" className="size-4" />
+          </span>
+          PartyPlay <span className="text-brand-700">Admin</span>
+        </NavLink>
+        <button
+          type="button"
+          onClick={() => setMenuOpen((open) => !open)}
+          aria-expanded={menuOpen}
+          aria-controls="admin-mobile-nav"
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          className="grid size-10 place-items-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+        >
+          {menuOpen ? (
+            <X aria-hidden="true" className="size-5" />
+          ) : (
+            <Menu aria-hidden="true" className="size-5" />
+          )}
+        </button>
+      </header>
+
+      {menuOpen ? (
+        <div
+          id="admin-mobile-nav"
+          className="sticky top-[57px] z-30 border-b border-slate-200 bg-white px-4 py-3 lg:hidden"
+        >
+          {nav}
+          <div className="mt-3">{sidebarFooter}</div>
+        </div>
+      ) : null}
+
+      <div className="mx-auto flex max-w-[100rem]">
+        {/* Desktop sidebar */}
+        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-white px-4 py-6 lg:flex">
+          <NavLink
+            to="/admin/dashboard"
+            className="mb-8 flex items-center gap-2.5 rounded-lg px-1 text-lg font-extrabold tracking-tight text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+          >
+            <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-sm">
+              <PartyPopper aria-hidden="true" className="size-5" />
+            </span>
+            PartyPlay <span className="text-brand-700">Admin</span>
+          </NavLink>
+          {nav}
+          <div className="mt-6">{sidebarFooter}</div>
+        </aside>
+
+        <main className="min-w-0 flex-1">
+          <div className="sticky top-0 z-20 hidden items-center justify-between gap-4 border-b border-slate-200 bg-white/90 px-8 py-4 backdrop-blur lg:flex">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                Owner workspace
+              </p>
+              <p className="text-sm font-semibold text-slate-700">PartyPlay admin</p>
+            </div>
+            <Badge variant="outline" className="gap-1">
+              <ShieldCheck aria-hidden="true" className="size-3" />
+              Signed in as {adminRoleLabel(admin?.role)}
+            </Badge>
+          </div>
+          <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+    </div>
   );
 }
