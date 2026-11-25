@@ -554,8 +554,8 @@ returns 409 with a re-check message.
 - `transportCharge` change is allowed while `PENDING`/`CONFIRMED`; the customer must be
   told the new total (requirement §5) — out of scope to send it, note it in the response
   as `totalChanged: true`.
-- Manual list of what is deliberately not automated: no WhatsApp/email notifications
-  (§11).
+- Manual list of what is deliberately not automated: no WhatsApp/SMS notifications
+  (§11). Booking emails arrive in F15.
 
 **Verify:** walk one booking through every allowed edge and two disallowed ones; assert
 `BookingStatusHistory` row per transition; assert a `CANCELLED` confirmed booking frees
@@ -703,6 +703,43 @@ stops working; try to demote the last owner and get `409`.
 
 ---
 
+### F15 — Booking notifications (email)
+
+No new endpoints. Booking lifecycle mail goes through the Resend transport that already
+sends password resets (`server/src/lib/email.ts`); the copy lives in
+`server/src/lib/booking-emails.ts` and the delivery rules in
+`server/src/services/notifications.ts`.
+
+| Event | To | Content |
+|---|---|---|
+| Request submitted | Customer (when an email was given) | Reference, dates, total, hold window, link to the status page, reminder that it is a request |
+| Request submitted | Business (`SiteSetting.contactEmail`) | Customer name/contact, dates, total, hold deadline, link to the admin detail |
+| `CONFIRMED` | Customer | Confirmation and what happens about delivery/collection |
+| `REJECTED` / `CANCELLED` | Customer | The status plus the admin's reason when one was recorded |
+| `EXPIRED` | Customer | The hold lapsed and the items were released; invite a new request |
+
+**Rules**
+
+- Sending is skipped entirely when `RESEND_API_KEY` or `MAIL_FROM` is unset. Unlike
+  password reset, a booking never fails because email is unavailable; the API behaves as
+  before and only the email is missing.
+- `Customer.email` is optional. A customer without one is not emailed; the owner still
+  gets the new-request alert and follows up by phone.
+- Sends happen after the write commits and are best-effort: a Resend rejection is logged
+  and never changes the API response.
+- Expiry mail is produced only by the transaction that flips the booking to `EXPIRED`, so
+  overlapping sweeps and lazy expiry cannot send it twice.
+- No schema change and no new dependency: Resend was already installed for password reset.
+
+**Verify:** with Resend configured, submit a request and assert the customer
+acknowledgement and the owner alert; confirm it and assert the confirmation email; with a
+short `holdMinutes`, let one lapse and assert exactly one expiry email after repeated
+sweeps. Then unset `MAIL_FROM` and confirm booking creation still succeeds with no send.
+
+**Depends on:** F6b, F7, F8.
+
+---
+
 ## 7. Milestone C — Client (only after B1–B4 are done)
 
 Built feature-parallel to the backend slices above, in this order. Each consumes a
@@ -746,7 +783,7 @@ F1  platform ──┬── F2 auth ──┬── F4 admin catalogue
                └── (migration 5: D1, D3, D4) before F6b
 ```
 
-Engine order: **F1 → F2 → F3 → F4 → F5 → F6a → F6b → F6c → F7 → F8 → F9 → F10 → F11 → F12 → F13 → F14 → C1…C11.**
+Engine order: **F1 → F2 → F3 → F4 → F5 → F6a → F6b → F6c → F7 → F8 → F9 → F10 → F11 → F12 → F13 → F14 → F15 → C1…C11.**
 
 F2 before F4 because admin CRUD is meaningless without a login to test it through. F6a
 before F6b because creation without trustworthy pricing produces garbage snapshots. F7
@@ -801,7 +838,7 @@ the last unit and assert `[201, 409]`.
 
 | Item | Why |
 |---|---|
-| WhatsApp / email notifications | Requirements: owner follows up manually |
+| WhatsApp / SMS notifications | Email notifications are done (F15); the owner still calls customers who give no email |
 | M-Pesa Daraja integration, automated refunds | MVP records payments by hand |
 | Customer accounts | Guest booking, no customer login |
 | Discount engine for offers | D6 — offers are display-only |
@@ -833,6 +870,7 @@ the last unit and assert `[201, 409]`.
 | F12 | Refunds and overpayment policy | ✅ | ✅ | `feat/f12-refunds-overpayment` |
 | F13 | Booking edit | ✅ | ✅ | `feat/f13-booking-edit` |
 | F14 | Staff accounts | ✅ | ✅ | `feat/f14-staff-accounts` |
+| F15 | Booking notifications (email) | ✅ | — | `feat/f15-notifications` |
 | C1 | Client foundation | — | ✅ | `feat/c1-client-foundation` |
 | C2 | Public shell and site settings | — | ✅ | `feat/c2-public-shell` |
 | C3 | Equipment catalogue and detail | — | ✅ | `feat/c3-equipment-catalogue` |
