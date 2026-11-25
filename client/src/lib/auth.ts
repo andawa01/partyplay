@@ -1,12 +1,23 @@
 import { z } from "zod";
 
-export type AdminRole = "OWNER" | "STAFF";
+export type AdminRole = "OWNER" | "ADMIN" | "STAFF";
 
 export interface AdminUser {
   id: string;
   email: string;
   name: string | null;
   role: AdminRole;
+}
+
+/** One label everywhere a role is shown, so the badge and nav never disagree. */
+export function adminRoleLabel(role: AdminRole | undefined): string {
+  if (role === "OWNER") {
+    return "Owner";
+  }
+  if (role === "ADMIN") {
+    return "Admin";
+  }
+  return "Staff";
 }
 
 export interface LoginInput {

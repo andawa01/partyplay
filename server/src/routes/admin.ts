@@ -9,10 +9,11 @@ import * as offers from "../controllers/offers";
 import * as packages from "../controllers/packages";
 import * as payments from "../controllers/payments";
 import * as site from "../controllers/site";
+import * as staff from "../controllers/staff";
 import * as providers from "../controllers/transport-providers";
 import * as uploads from "../controllers/uploads";
 import { asyncHandler } from "../lib/async";
-import { requireAdmin } from "../middleware/auth";
+import { requireAdmin, requireRole } from "../middleware/auth";
 
 const router = Router();
 
@@ -20,39 +21,49 @@ const router = Router();
 // and no future route can forget to add it.
 router.use(requireAdmin);
 
-router.post("/uploads/sign", asyncHandler(uploads.signImageUpload));
+// Staff may read the catalogue (the booking editor needs it) but not change it. Money,
+// catalogue configuration and settings are admin-or-owner only; team management is the
+// owner's alone.
+const manager = requireRole("OWNER", "ADMIN");
 
-router.post("/categories", asyncHandler(categories.createCategory));
-router.patch("/categories/:id", asyncHandler(categories.updateCategory));
-router.delete("/categories/:id", asyncHandler(categories.deleteCategory));
+router.get("/users", requireRole("OWNER"), asyncHandler(staff.listStaff));
+router.post("/users", requireRole("OWNER"), asyncHandler(staff.createStaff));
+router.patch("/users/:id", requireRole("OWNER"), asyncHandler(staff.updateStaff));
+router.post("/users/:id/password", requireRole("OWNER"), asyncHandler(staff.setStaffPassword));
+
+router.post("/uploads/sign", manager, asyncHandler(uploads.signImageUpload));
+
+router.post("/categories", manager, asyncHandler(categories.createCategory));
+router.patch("/categories/:id", manager, asyncHandler(categories.updateCategory));
+router.delete("/categories/:id", manager, asyncHandler(categories.deleteCategory));
 
 router.get("/equipment", asyncHandler(equipment.listAdminEquipment));
 router.get("/equipment/:id", asyncHandler(equipment.getAdminEquipment));
-router.post("/equipment", asyncHandler(equipment.createEquipment));
-router.patch("/equipment/:id", asyncHandler(equipment.updateEquipment));
-router.delete("/equipment/:id", asyncHandler(equipment.deactivateEquipment));
-router.put("/equipment/:id/inventory", asyncHandler(equipment.setInventory));
+router.post("/equipment", manager, asyncHandler(equipment.createEquipment));
+router.patch("/equipment/:id", manager, asyncHandler(equipment.updateEquipment));
+router.delete("/equipment/:id", manager, asyncHandler(equipment.deactivateEquipment));
+router.put("/equipment/:id/inventory", manager, asyncHandler(equipment.setInventory));
 
 router.get("/blackouts", asyncHandler(blackouts.listBlackouts));
-router.post("/blackouts", asyncHandler(blackouts.createBlackout));
-router.delete("/blackouts/:id", asyncHandler(blackouts.deleteBlackout));
+router.post("/blackouts", manager, asyncHandler(blackouts.createBlackout));
+router.delete("/blackouts/:id", manager, asyncHandler(blackouts.deleteBlackout));
 
 router.get("/packages", asyncHandler(packages.listAdminPackages));
 router.get("/packages/:id", asyncHandler(packages.getAdminPackage));
-router.post("/packages", asyncHandler(packages.createPackage));
-router.patch("/packages/:id", asyncHandler(packages.updatePackage));
-router.delete("/packages/:id", asyncHandler(packages.deletePackage));
-router.put("/packages/:id/items", asyncHandler(packages.replacePackageItems));
+router.post("/packages", manager, asyncHandler(packages.createPackage));
+router.patch("/packages/:id", manager, asyncHandler(packages.updatePackage));
+router.delete("/packages/:id", manager, asyncHandler(packages.deletePackage));
+router.put("/packages/:id/items", manager, asyncHandler(packages.replacePackageItems));
 
 router.get("/offers", asyncHandler(offers.listAdminOffers));
-router.post("/offers", asyncHandler(offers.createOffer));
-router.patch("/offers/:id", asyncHandler(offers.updateOffer));
-router.delete("/offers/:id", asyncHandler(offers.deleteOffer));
+router.post("/offers", manager, asyncHandler(offers.createOffer));
+router.patch("/offers/:id", manager, asyncHandler(offers.updateOffer));
+router.delete("/offers/:id", manager, asyncHandler(offers.deleteOffer));
 
 router.get("/transport-providers", asyncHandler(providers.listTransportProviders));
-router.post("/transport-providers", asyncHandler(providers.createTransportProvider));
-router.patch("/transport-providers/:id", asyncHandler(providers.updateTransportProvider));
-router.delete("/transport-providers/:id", asyncHandler(providers.deleteTransportProvider));
+router.post("/transport-providers", manager, asyncHandler(providers.createTransportProvider));
+router.patch("/transport-providers/:id", manager, asyncHandler(providers.updateTransportProvider));
+router.delete("/transport-providers/:id", manager, asyncHandler(providers.deleteTransportProvider));
 
 router.get("/bookings", asyncHandler(bookings.listAdminBookings));
 router.get("/bookings/:id", asyncHandler(bookings.getAdminBooking));
@@ -61,15 +72,15 @@ router.patch("/bookings/:id/status", asyncHandler(bookings.updateBookingStatus))
 router.patch("/bookings/:id/transport", asyncHandler(bookings.updateBookingTransport));
 router.post("/bookings/:id/availability", asyncHandler(bookings.checkBookingAvailability));
 
-router.post("/bookings/:id/payments", asyncHandler(payments.createPayment));
-router.get("/bookings/:id/payments", asyncHandler(payments.listPayments));
-router.patch("/payments/:id", asyncHandler(payments.updatePayment));
-router.delete("/payments/:id", asyncHandler(payments.deletePayment));
-router.post("/payments/:id/refunds", asyncHandler(payments.refundPayment));
+router.post("/bookings/:id/payments", manager, asyncHandler(payments.createPayment));
+router.get("/bookings/:id/payments", manager, asyncHandler(payments.listPayments));
+router.patch("/payments/:id", manager, asyncHandler(payments.updatePayment));
+router.delete("/payments/:id", manager, asyncHandler(payments.deletePayment));
+router.post("/payments/:id/refunds", manager, asyncHandler(payments.refundPayment));
 
 router.get("/dashboard", asyncHandler(dashboard.getDashboard));
 
 router.get("/settings", asyncHandler(site.getSettings));
-router.put("/settings", asyncHandler(site.updateSettings));
+router.put("/settings", manager, asyncHandler(site.updateSettings));
 
 export default router;

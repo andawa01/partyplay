@@ -17,6 +17,8 @@ model Admin {
   name           String?
   password       String
   role           Role     @default(STAFF)
+  // Disabled accounts keep their history but cannot sign in or use an existing session.
+  isActive       Boolean  @default(true)
   // Incremented when a password reset must invalidate every existing session.
   sessionVersion Int      @default(0)
   createdAt      DateTime @default(now())

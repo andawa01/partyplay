@@ -7,6 +7,7 @@ import {
   LogOut,
   Settings,
   ShieldCheck,
+  UsersRound,
 } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,14 +16,21 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { useAdminSession, useLogout } from "../hooks/use-auth";
 import { isApiError } from "../lib/api";
+import { adminRoleLabel, type AdminRole } from "../lib/auth";
 import { cn } from "../lib/cn";
 import { clearSession } from "../lib/session";
 import { toastError } from "../lib/toast";
 
-const links = [
+const links: Array<{
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  roles?: AdminRole[];
+}> = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/bookings", label: "Bookings", icon: CalendarDays },
-  { to: "/admin/catalogue", label: "Catalogue", icon: Boxes },
+  { to: "/admin/catalogue", label: "Catalogue", icon: Boxes, roles: ["OWNER", "ADMIN"] },
+  { to: "/admin/team", label: "Team", icon: UsersRound, roles: ["OWNER"] },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
@@ -52,6 +60,9 @@ export default function AdminLayout() {
 
   const displayName = admin?.name?.trim() || admin?.email || "Admin";
   const initial = displayName.slice(0, 1).toUpperCase();
+  const availableLinks = links.filter(
+    ({ roles }) => !roles || (admin?.role !== undefined && roles.includes(admin.role)),
+  );
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800">
@@ -65,7 +76,7 @@ export default function AdminLayout() {
               PartyPlay <span className="text-brand-700">Admin</span>
             </NavLink>
             <nav aria-label="Admin" className="hidden items-center gap-1 md:flex">
-              {links.map(({ to, label, icon: Icon }) => (
+              {availableLinks.map(({ to, label, icon: Icon }) => (
                 <NavLink
                   key={to}
                   to={to}
@@ -93,9 +104,7 @@ export default function AdminLayout() {
               </span>
               <div className="max-w-40 leading-tight">
                 <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
-                <p className="truncate text-xs text-slate-500">
-                  {admin?.role === "OWNER" ? "Owner" : "Staff"}
-                </p>
+                <p className="truncate text-xs text-slate-500">{adminRoleLabel(admin?.role)}</p>
               </div>
               <Badge variant="outline" className="hidden lg:inline-flex">
                 <ShieldCheck aria-hidden="true" className="mr-1 size-3" />
@@ -128,7 +137,7 @@ export default function AdminLayout() {
           aria-label="Admin mobile"
           className="flex gap-1 overflow-x-auto border-t border-slate-100 px-4 py-2 md:hidden"
         >
-          {links.map(({ to, label, icon: Icon }) => (
+          {availableLinks.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}

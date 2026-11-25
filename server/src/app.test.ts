@@ -70,6 +70,7 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
   let categoryId: string;
   let equipmentId: string;
   let lastUnitEquipmentId: string | null = null;
+  const staffAccountIds: string[] = [];
   let baseline: {
     pending: number;
     collected: number;
@@ -200,7 +201,7 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
     }
     await db.category.deleteMany({ where: { id: categoryId } });
     await db.bookingStatusHistory.deleteMany({ where: { adminId } });
-    await db.admin.deleteMany({ where: { id: adminId } });
+    await db.admin.deleteMany({ where: { id: { in: [adminId, ...staffAccountIds] } } });
 
     await new Promise<void>((resolve) => server.close(() => resolve()));
     await db.$disconnect();
@@ -678,6 +679,115 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
       body: { status: "CANCELLED", reason: "Smoke test cleanup" },
     });
     expect(cancelled.status).toBe(200);
+  }, 30_000);
+
+  it("manages team accounts and scopes admin routes by role", async () => {
+    const staffEmail = `smoke-staff-${suffix}@example.test`;
+    const staffPassword = "Staff-Password1";
+    const replacementPassword = "Replacement-Password2";
+
+    const listed = await api("GET", "/api/admin/users", { cookie });
+    expect(listed.status).toBe(200);
+    expect((listed.body.data as Array<{ id: string }>).map((row) => row.id)).toContain(adminId);
+
+    const created = await api("POST", "/api/admin/users", {
+      cookie,
+      body: {
+        name: "Smoke Staff",
+        email: staffEmail,
+        role: "STAFF",
+        password: staffPassword,
+      },
+    });
+    expect(created.status).toBe(201);
+    const staffMember = created.body.data as { id: string; role: string; isActive: boolean };
+    expect(staffMember).toMatchObject({ role: "STAFF", isActive: true });
+    staffAccountIds.push(staffMember.id);
+
+    const duplicate = await api("POST", "/api/admin/users", {
+      cookie,
+      body: {
+        name: "Smoke Staff Copy",
+        email: staffEmail,
+        role: "STAFF",
+        password: staffPassword,
+      },
+    });
+    expect(duplicate.status).toBe(409);
+
+    async function loginCookie(emailAddress: string, pass: string): Promise<string> {
+      const response = await fetch(base + "/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailAddress, password: pass }),
+      });
+      const setCookies =
+        (response.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie?.() ?? [];
+      const value = setCookies.find((entry) => entry.startsWith("pt_sess="));
+      return response.status === 200 && value ? value.split(";")[0] : "";
+    }
+
+    const staffCookie = await loginCookie(staffEmail, staffPassword);
+    expect(staffCookie).not.toBe("");
+
+    // Staff can see the board but not manage accounts or touch money.
+    expect((await api("GET", "/api/admin/dashboard", { cookie: staffCookie })).status).toBe(200);
+    expect((await api("GET", "/api/admin/users", { cookie: staffCookie })).status).toBe(403);
+    const staffPayment = await api(
+      "POST",
+      "/api/admin/bookings/00000000-0000-4000-8000-000000000000/payments",
+      { cookie: staffCookie, body: { amount: 100 } },
+    );
+    expect(staffPayment.status).toBe(403);
+    expect(staffPayment.body).toMatchObject({ code: "FORBIDDEN" });
+
+    // Promoting the same session takes effect on the next request, not the next login.
+    const promoted = await api("PATCH", `/api/admin/users/${staffMember.id}`, {
+      cookie,
+      body: { role: "ADMIN" },
+    });
+    expect(promoted.status).toBe(200);
+    expect((promoted.body.data as { role: string }).role).toBe("ADMIN");
+    const nowAllowed = await api(
+      "POST",
+      "/api/admin/bookings/00000000-0000-4000-8000-000000000000/payments",
+      { cookie: staffCookie, body: {} },
+    );
+    expect(nowAllowed.status).toBe(400);
+
+    // Disabling ends the existing session and blocks a fresh login immediately.
+    const disabled = await api("PATCH", `/api/admin/users/${staffMember.id}`, {
+      cookie,
+      body: { isActive: false },
+    });
+    expect(disabled.status).toBe(200);
+    expect((disabled.body.data as { isActive: boolean }).isActive).toBe(false);
+    expect((await api("GET", "/api/admin/dashboard", { cookie: staffCookie })).status).toBe(401);
+    expect(await loginCookie(staffEmail, staffPassword)).toBe("");
+
+    await api("PATCH", `/api/admin/users/${staffMember.id}`, {
+      cookie,
+      body: { isActive: true },
+    });
+    const reset = await api("POST", `/api/admin/users/${staffMember.id}/password`, {
+      cookie,
+      body: { password: replacementPassword },
+    });
+    expect(reset.status).toBe(204);
+    expect(await loginCookie(staffEmail, staffPassword)).toBe("");
+    expect(await loginCookie(staffEmail, replacementPassword)).not.toBe("");
+
+    // An owner cannot lock themselves out.
+    const selfDisable = await api("PATCH", `/api/admin/users/${adminId}`, {
+      cookie,
+      body: { isActive: false },
+    });
+    expect(selfDisable.status).toBe(400);
+    const selfDemote = await api("PATCH", `/api/admin/users/${adminId}`, {
+      cookie,
+      body: { role: "STAFF" },
+    });
+    expect(selfDemote.status).toBe(400);
   }, 30_000);
 
   it("requests a reset email without revealing whether the account exists", async () => {

@@ -36,6 +36,7 @@ import { Button } from "../../components/ui/button";
 import { ErrorState } from "../../components/ui/error-state";
 import { Skeleton } from "../../components/ui/skeleton";
 import { useAdminBooking, useCheckBookingAvailability } from "../../hooks/use-admin-bookings";
+import { useAdminSession } from "../../hooks/use-auth";
 import type { BookingActionOption, BookingAvailabilityCheck } from "../../lib/admin-bookings";
 import { adminStatusMeta, allowedBookingActions } from "../../lib/admin-bookings";
 import { formatDateTime, formatLongDate } from "../../lib/dates";
@@ -45,6 +46,8 @@ import { cn } from "../../lib/cn";
 
 export default function AdminBookingDetailPage() {
   const { id = "" } = useParams();
+  const session = useAdminSession();
+  const canManagePayments = session.data?.role !== "STAFF";
   const bookingQuery = useAdminBooking(id);
   const check = useCheckBookingAvailability();
   const [availability, setAvailability] = useState<BookingAvailabilityCheck | null>(null);
@@ -408,7 +411,7 @@ export default function AdminBookingDetailPage() {
             </section>
           ) : null}
 
-          <PaymentsPanel booking={booking} />
+          {canManagePayments ? <PaymentsPanel booking={booking} /> : null}
         </div>
 
         <aside className="min-w-0 space-y-4">
@@ -471,7 +474,9 @@ export default function AdminBookingDetailPage() {
               </Button>
             ) : null}
             <p className="mt-3 text-[0.7rem] leading-relaxed text-slate-500">
-              Amounts come from the booking record. Record and reconcile payments below.
+              {canManagePayments
+                ? "Amounts come from the booking record. Record and reconcile payments below."
+                : "Amounts come from the booking record. Payments are handled by the owner or an admin."}
             </p>
           </section>
 
