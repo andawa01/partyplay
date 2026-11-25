@@ -40,7 +40,9 @@ export default function BookingPage() {
   const [searchParams] = useSearchParams();
   const packageSlug = searchParams.get("package")?.trim() ?? "";
   const equipmentSlug = searchParams.get("equipment")?.trim() ?? "";
-  const seedKey = `${packageSlug}|${equipmentSlug}`;
+  const seedStartDate = searchParams.get("startDate")?.trim() ?? "";
+  const seedEndDate = searchParams.get("endDate")?.trim() ?? "";
+  const seedKey = `${packageSlug}|${equipmentSlug}|${seedStartDate}|${seedEndDate}`;
 
   const packagesQuery = usePackages();
   const catalogueQuery = useEquipmentList({ page: 1, pageSize: 100 });
@@ -146,6 +148,11 @@ export default function BookingPage() {
       matchedEquipment && seedQuantity > 0 ? { [matchedEquipment.id]: seedQuantity } : {},
     );
 
+    if (hasValidRentalDates(seedStartDate, seedEndDate)) {
+      setStartDate(seedStartDate);
+      setEndDate(seedEndDate);
+    }
+
     const missing: string[] = [];
     if (packageSlug && !matchedPackage) {
       missing.push("package");
@@ -158,7 +165,15 @@ export default function BookingPage() {
         ? `The ${missing.join(" and ")} from that link is no longer available. Choose a current option below.`
         : "",
     );
-  }, [catalogueQuery.data, equipmentSlug, packageSlug, packagesQuery.data, seedKey]);
+  }, [
+    catalogueQuery.data,
+    equipmentSlug,
+    packageSlug,
+    packagesQuery.data,
+    seedEndDate,
+    seedKey,
+    seedStartDate,
+  ]);
 
   const unitLabel =
     selectedPackage && !hasExtras ? "package" : demands.length > 1 ? "setup" : "unit";
@@ -358,6 +373,25 @@ export default function BookingPage() {
               Pick what you need, choose your dates, and send one request. The owner confirms
               availability, transport and the final total.
             </p>
+
+            <ol className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm font-medium">
+              {[
+                { step: 1, label: "Select items" },
+                { step: 2, label: "Pick dates" },
+                { step: 3, label: "Your details" },
+              ].map(({ step, label }, index) => (
+                <li key={step} className="flex items-center gap-2">
+                  <span className="grid size-7 place-items-center rounded-full bg-brand-700 text-xs font-bold text-white ring-4 ring-brand-100/70">
+                    {step}
+                  </span>
+                  <span className="text-slate-700">{label}</span>
+                  {index < 2 ? (
+                    <span aria-hidden="true" className="mx-1 h-px w-6 bg-brand-200 sm:w-10" />
+                  ) : null}
+                </li>
+              ))}
+            </ol>
+
             <Link
               to="/booking/status"
               className="mt-4 inline-flex items-center gap-2 rounded-sm text-sm font-semibold text-brand-700 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"

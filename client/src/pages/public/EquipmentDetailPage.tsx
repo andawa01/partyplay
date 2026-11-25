@@ -1,21 +1,36 @@
-import { ArrowLeft, Boxes, CalendarDays, ChevronRight, Info, PartyPopper } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  Boxes,
+  CalendarDays,
+  Check,
+  ChevronRight,
+  Info,
+  PartyPopper,
+} from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { EquipmentImage } from "../../components/catalogue/EquipmentImage";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { ErrorState } from "../../components/ui/error-state";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
 import { Skeleton } from "../../components/ui/skeleton";
 import { useEquipmentDetail } from "../../hooks/use-catalogue";
 import { useSite } from "../../hooks/use-site";
 import { isApiError } from "../../lib/api";
 import { priceLabel, stockLabel, weeklyPriceLabel } from "../../lib/catalogue";
+import { todayCalendarDate } from "../../lib/dates";
 
 export default function EquipmentDetailPage() {
   const { slug = "" } = useParams();
+  const navigate = useNavigate();
   const detail = useEquipmentDetail(slug);
   const site = useSite();
   const currency = site.data?.currency ?? "KES";
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   if (detail.isPending) {
     return <DetailSkeleton />;
@@ -147,15 +162,67 @@ export default function EquipmentDetailPage() {
               </div>
             </dl>
 
-            <Button asChild size="lg" className="mt-6 w-full">
-              <Link to={`/booking?equipment=${encodeURIComponent(equipment.slug)}`}>
+            <ul className="mt-4 grid gap-2 border-t border-slate-100 pt-4 text-sm text-slate-700 sm:grid-cols-2">
+              {["Delivery or collection", "Flexible hire dates", "Stock confirmed by owner"].map(
+                (feature) => (
+                  <li key={feature} className="flex items-center gap-2">
+                    <span className="grid size-5 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-700 ring-1 ring-brand-100">
+                      <Check aria-hidden="true" className="size-3" />
+                    </span>
+                    {feature}
+                  </li>
+                ),
+              )}
+            </ul>
+
+            <form
+              className="mt-5 border-t border-slate-100 pt-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const query = new URLSearchParams({ equipment: equipment.slug });
+                if (startDate) query.set("startDate", startDate);
+                if (endDate) query.set("endDate", endDate);
+                navigate(`/booking?${query.toString()}`);
+              }}
+            >
+              <p className="text-sm font-semibold text-slate-900">Select rental dates</p>
+              <div className="mt-2 grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="hire-start" className="text-xs text-slate-500">
+                    Start date
+                  </Label>
+                  <Input
+                    id="hire-start"
+                    type="date"
+                    value={startDate}
+                    min={todayCalendarDate()}
+                    onChange={(event) => setStartDate(event.target.value)}
+                    className="mt-1 h-10"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="hire-end" className="text-xs text-slate-500">
+                    End date
+                  </Label>
+                  <Input
+                    id="hire-end"
+                    type="date"
+                    value={endDate}
+                    min={startDate || todayCalendarDate()}
+                    onChange={(event) => setEndDate(event.target.value)}
+                    className="mt-1 h-10"
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" size="lg" className="mt-4 w-full">
                 <CalendarDays aria-hidden="true" className="size-4" />
-                Check dates &amp; book
-              </Link>
-            </Button>
-            <p className="mt-2 text-center text-xs text-slate-500">
-              Dates are confirmed by the owner after you send the request.
-            </p>
+                Add to Booking
+              </Button>
+              <p className="mt-2 text-center text-xs text-slate-500">
+                Dates are confirmed by the owner after you send the request.
+              </p>
+            </form>
           </div>
 
           <Link
