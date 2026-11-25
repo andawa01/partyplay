@@ -4,7 +4,7 @@ import type { Prisma, Role } from "@prisma/client";
 import bcrypt from "bcrypt";
 
 import { db } from "../config/db";
-import { ApiError, badRequest, unauthorized } from "../lib/api-error";
+import { ApiError, badRequest, forbidden, unauthorized } from "../lib/api-error";
 import { isEmailConfigured, sendPasswordResetEmail } from "../lib/email";
 import { passwordResetUrl } from "../lib/password-reset";
 import { signSessionToken } from "../lib/tokens";
@@ -23,6 +23,7 @@ export interface AdminSummary {
 
 export interface AdminSession extends AdminSummary {
   sessionVersion: number;
+  isActive: boolean;
 }
 
 const adminSummaryFields = {
@@ -47,7 +48,7 @@ function getDummyHash(): Promise<string> {
 export async function login(input: LoginInput): Promise<{ admin: AdminSummary; token: string }> {
   const admin = await db.admin.findUnique({
     where: { email: input.email },
-    select: { ...adminSummaryFields, password: true, sessionVersion: true },
+    select: { ...adminSummaryFields, password: true, sessionVersion: true, isActive: true },
   });
 
   if (!admin) {
@@ -60,7 +61,11 @@ export async function login(input: LoginInput): Promise<{ admin: AdminSummary; t
     throw new ApiError(401, "INVALID_CREDENTIALS", "Invalid email or password");
   }
 
-  const { password: _password, sessionVersion, ...summary } = admin;
+  if (!admin.isActive) {
+    throw forbidden("This account has been disabled. Ask the owner to re-enable it.");
+  }
+
+  const { password: _password, sessionVersion, isActive: _isActive, ...summary } = admin;
   return {
     admin: summary,
     token: signSessionToken(admin.id, sessionVersion),
@@ -71,7 +76,7 @@ export async function login(input: LoginInput): Promise<{ admin: AdminSummary; t
 export async function findAdminForSession(adminId: string): Promise<AdminSession | null> {
   return db.admin.findUnique({
     where: { id: adminId },
-    select: { ...adminSummaryFields, sessionVersion: true },
+    select: { ...adminSummaryFields, sessionVersion: true, isActive: true },
   });
 }
 

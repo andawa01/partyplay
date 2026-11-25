@@ -671,6 +671,38 @@ and the new demand is reserved; try a shortage and get `409`; confirm and edit a
 
 ---
 
+### F14 — Staff accounts
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/admin/users` | owner only — accounts with role, status and timestamps |
+| POST | `/api/admin/users` | owner only — create an account with an initial password |
+| PATCH | `/api/admin/users/:id` | owner only — change name, role or `isActive` |
+| POST | `/api/admin/users/:id/password` | owner only — set a temporary password |
+
+**Rules**
+
+- `Admin.isActive` defaults to true. Login and `requireAdmin` both reject a disabled
+  account, and disabling a user bumps `sessionVersion` so the change is immediate.
+- The last active owner cannot be demoted or disabled, and nobody can demote or disable
+  their own account. Role changes and deactivation run in a serializable transaction.
+- Setting another account's password revokes that account's sessions; owners change their
+  own password through `POST /api/auth/password`.
+- `requireRole` enforces the access levels per route:
+  - **STAFF** — dashboard, booking reads/edits/status changes, catalogue reads.
+  - **ADMIN** — everything STAFF has, plus payments/refunds, catalogue writes and settings.
+  - **OWNER** — everything, plus team management.
+- The client hides links the role cannot use, but the server is the authority; a typed URL
+  gets a `403` envelope.
+
+**Verify:** create a staff account, sign in with it, confirm a payment request gets `403`
+and a booking status change succeeds; disable the account and confirm its existing cookie
+stops working; try to demote the last owner and get `409`.
+
+**Depends on:** F2, F8, F9.
+
+---
+
 ## 7. Milestone C — Client (only after B1–B4 are done)
 
 Built feature-parallel to the backend slices above, in this order. Each consumes a
@@ -714,7 +746,7 @@ F1  platform ──┬── F2 auth ──┬── F4 admin catalogue
                └── (migration 5: D1, D3, D4) before F6b
 ```
 
-Engine order: **F1 → F2 → F3 → F4 → F5 → F6a → F6b → F6c → F7 → F8 → F9 → F10 → F11 → F12 → F13 → C1…C11.**
+Engine order: **F1 → F2 → F3 → F4 → F5 → F6a → F6b → F6c → F7 → F8 → F9 → F10 → F11 → F12 → F13 → F14 → C1…C11.**
 
 F2 before F4 because admin CRUD is meaningless without a login to test it through. F6a
 before F6b because creation without trustworthy pricing produces garbage snapshots. F7
@@ -771,7 +803,7 @@ the last unit and assert `[201, 409]`.
 |---|---|
 | WhatsApp / email notifications | Requirements: owner follows up manually |
 | M-Pesa Daraja integration, automated refunds | MVP records payments by hand |
-| Customer accounts, multiple staff accounts | Guest booking + one owner account |
+| Customer accounts | Guest booking, no customer login |
 | Discount engine for offers | D6 — offers are display-only |
 | Guest-count enforcement (package min/max) | D5 |
 | `pricePerWeek` | D3 — no weekly pricing in MVP |
@@ -800,6 +832,7 @@ the last unit and assert `[201, 409]`.
 | F11 | Maintenance blackout dates | ✅ | ✅ | `feat/f11-maintenance-blackouts` |
 | F12 | Refunds and overpayment policy | ✅ | ✅ | `feat/f12-refunds-overpayment` |
 | F13 | Booking edit | ✅ | ✅ | `feat/f13-booking-edit` |
+| F14 | Staff accounts | ✅ | ✅ | `feat/f14-staff-accounts` |
 | C1 | Client foundation | — | ✅ | `feat/c1-client-foundation` |
 | C2 | Public shell and site settings | — | ✅ | `feat/c2-public-shell` |
 | C3 | Equipment catalogue and detail | — | ✅ | `feat/c3-equipment-catalogue` |

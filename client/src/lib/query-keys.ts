@@ -38,5 +38,6 @@ export const queryKeys = {
     payments: (bookingId: string) => ["admin", "payments", bookingId] as const,
     dashboard: () => ["admin", "dashboard"] as const,
     settings: () => ["admin", "settings"] as const,
+    staff: () => ["admin", "staff"] as const,
   },
 } as const;

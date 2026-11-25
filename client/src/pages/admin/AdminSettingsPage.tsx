@@ -10,7 +10,11 @@ import { Button } from "../../components/ui/button";
 import { Label } from "../../components/ui/label";
 import { useAdminSession, useChangePassword } from "../../hooks/use-auth";
 import { isApiError } from "../../lib/api";
-import { changePasswordFormSchema, type ChangePasswordFormValues } from "../../lib/auth";
+import {
+  adminRoleLabel,
+  changePasswordFormSchema,
+  type ChangePasswordFormValues,
+} from "../../lib/auth";
 import { clearSession } from "../../lib/session";
 import { toast } from "../../lib/toast";
 
@@ -114,7 +118,7 @@ export default function AdminSettingsPage() {
                 {admin?.name?.trim() || "PartyPlay admin"}
               </p>
               <Badge variant="outline" className="mt-1">
-                {admin?.role === "OWNER" ? "Owner" : "Staff"}
+                {adminRoleLabel(admin?.role)}
               </Badge>
             </div>
           </div>
@@ -131,9 +135,7 @@ export default function AdminSettingsPage() {
               <UserRound aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-brand-700" />
               <div>
                 <dt className="text-xs text-slate-500">Access level</dt>
-                <dd className="font-medium text-slate-800">
-                  {admin?.role === "OWNER" ? "Owner" : "Staff"}
-                </dd>
+                <dd className="font-medium text-slate-800">{adminRoleLabel(admin?.role)}</dd>
               </div>
             </div>
             <div className="flex items-start gap-2.5">

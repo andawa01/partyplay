@@ -13,6 +13,7 @@ import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import { AdminSessionLoading } from "./components/admin/AdminSessionLoading";
 import { RequireAdmin } from "./components/admin/RequireAdmin";
+import { RequireRole } from "./components/admin/RequireRole";
 
 // Reference page, kept out of the main bundle because it pulls the full select primitive.
 const StyleGuidePage = lazy(() => import("./pages/StyleGuidePage"));
@@ -26,6 +27,7 @@ const AdminBookingsPage = lazy(() => import("./pages/admin/AdminBookingsPage"));
 const AdminBookingDetailPage = lazy(() => import("./pages/admin/AdminBookingDetailPage"));
 const AdminCataloguePage = lazy(() => import("./pages/admin/AdminCataloguePage"));
 const AdminSettingsPage = lazy(() => import("./pages/admin/AdminSettingsPage"));
+const AdminTeamPage = lazy(() => import("./pages/admin/AdminTeamPage"));
 
 export default function App() {
   return (
@@ -144,15 +146,17 @@ export default function App() {
             <Route
               path="catalogue"
               element={
-                <Suspense
-                  fallback={
-                    <div className="h-64 animate-pulse rounded-2xl bg-white" aria-busy="true">
-                      <span className="sr-only">Loading catalogue…</span>
-                    </div>
-                  }
-                >
-                  <AdminCataloguePage />
-                </Suspense>
+                <RequireRole roles={["OWNER", "ADMIN"]}>
+                  <Suspense
+                    fallback={
+                      <div className="h-64 animate-pulse rounded-2xl bg-white" aria-busy="true">
+                        <span className="sr-only">Loading catalogue…</span>
+                      </div>
+                    }
+                  >
+                    <AdminCataloguePage />
+                  </Suspense>
+                </RequireRole>
               }
             />
             <Route
@@ -167,6 +171,22 @@ export default function App() {
                 >
                   <AdminSettingsPage />
                 </Suspense>
+              }
+            />
+            <Route
+              path="team"
+              element={
+                <RequireRole roles={["OWNER"]}>
+                  <Suspense
+                    fallback={
+                      <div className="h-64 animate-pulse rounded-2xl bg-white" aria-busy="true">
+                        <span className="sr-only">Loading team…</span>
+                      </div>
+                    }
+                  >
+                    <AdminTeamPage />
+                  </Suspense>
+                </RequireRole>
               }
             />
           </Route>

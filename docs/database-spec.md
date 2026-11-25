@@ -279,8 +279,9 @@ see them and will never drop them; add new ones the same way, not in
 | `email` | text | no | — | **UNIQUE**, login identifier |
 | `name` | text | yes | — | |
 | `password` | text | no | — | bcrypt hash, cost 12; at least 8 characters with uppercase, lowercase and a number (app-enforced) |
-| `role` | `Role` | no | `STAFF` | |
-| `sessionVersion` | integer | no | `0` | Bumped by password reset; JWT `ver` must match |
+| `role` | `Role` | no | `STAFF` | `OWNER`, `ADMIN` or `STAFF` |
+| `isActive` | boolean | no | `true` | A disabled account cannot sign in and is rejected by `requireAdmin` |
+| `sessionVersion` | integer | no | `0` | Bumped by password reset or account changes; JWT `ver` must match |
 | `createdAt` | timestamp(3) | no | `now()` | |
 | `updatedAt` | timestamp(3) | no | auto | |
 

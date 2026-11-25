@@ -1,8 +1,8 @@
 # Backend gaps — what is not covered yet
 
 **Prepared:** 15 November 2026
-**Updated:** 24 November 2026 — F13 booking edit
-**Scope:** backend and deployment, as merged to `main` at `ab3d26c` plus the F13 branch
+**Updated:** 25 November 2026 — F14 staff accounts
+**Scope:** backend and deployment, as merged to `main` at `ab3d26c` plus the F13 and F14 branches
 **Purpose:** a plain list of what the backend does *not* do yet, so the owner can decide
 what is worth paying for next. Nothing here is a bug report against finished work — it is
 the boundary of the current build.
@@ -24,7 +24,8 @@ For context, the backend today covers:
 - Admin operations: approve, reject, cancel, complete, transport charge, payment
   records, partial/full refunds, booking date/item edits with audit history, dashboard
   summary.
-- Admin auth: one owner account, session cookie, password change, rate-limited login.
+- Admin auth: owner, admin and staff accounts, session cookie, password change,
+  rate-limited login, role-scoped routes and owner-managed team accounts.
 - Guard rails recently added: throttled public booking routes, committed HTTP smoke
   tests, idempotent seed.
 
@@ -103,12 +104,14 @@ in later without re-discovering them.
 
 ## 6. Accounts and access
 
-The system assumes exactly one owner. The schema already has `OWNER`/`ADMIN`/`STAFF`
-roles, but nothing creates or manages additional accounts.
+F14 gives the owner a team page: additional accounts with `OWNER`/`ADMIN`/`STAFF` roles can
+be created, disabled and reset. Staff handle bookings and see the dashboard; admins also
+handle payments and the catalogue; only owners manage accounts. The schema still assumes a
+single business (no separate tenant), which is correct for this deployment.
 
 | Gap | Why it matters | Risk | Effort |
 |---|---|---|---|
-| No staff accounts | The owner cannot give a helper limited access; they would have to share the owner password. | **High** | M |
+| ~~No staff accounts~~ | **Done in F14:** the owner creates separate `ADMIN` and `STAFF` accounts instead of sharing a password. Disabling an account ends its sessions immediately; the last active owner cannot be demoted or disabled. | — | — |
 | Reset email depends on Resend | Self-service reset works once `RESEND_API_KEY` and `MAIL_FROM` are configured. Without them the request endpoint returns `503`; the server CLI still works as a fallback. | Low | S |
 | Partial session revocation | Logout clears only the current cookie. Password reset bumps `Admin.sessionVersion` and revokes every existing session, but there is no per-session list or remote sign-out. | Low | M |
 | No two-factor authentication | One password protects all customer and payment data. | Medium | M |
@@ -181,10 +184,10 @@ unit of work:
 4. ~~**Refunds and overpayment policy** — closes the gap between the books and reality.
    *(§3)*~~ **Done in F12.**
 5. ~~**Booking edit** — removes the cancel-and-rebook workaround. *(§4)*~~ **Done in F13.**
-6. **Staff accounts** — stops password sharing. *(§6)*
+6. ~~**Staff accounts** — stops password sharing. *(§6)*~~ **Done in F14.**
 7. **Notifications** — the biggest labour saving for the owner. *(§5)*
 8. **Reports and CSV export** — needed at month end. *(§8)*
 
-The next item is **staff accounts**, which stops password sharing. Booking edit, refunds and
-maintenance blackouts are done; code-quality gates give new work lint, format and coverage
-feedback from CI.
+The next item is **notifications**, which removes the manual follow-up on every pending or
+expiring booking. Staff accounts, booking edit, refunds and maintenance blackouts are done;
+code-quality gates give new work lint, format and coverage feedback from CI.

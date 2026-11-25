@@ -1,7 +1,8 @@
+import type { Role } from "@prisma/client";
 import type { NextFunction, Request, Response } from "express";
 
 import { authConfig, sessionCookieOptions } from "../config/auth";
-import { unauthorized } from "../lib/api-error";
+import { forbidden, unauthorized } from "../lib/api-error";
 import { readSessionToken } from "../lib/tokens";
 import { findAdminForSession, type AdminSummary } from "../services/auth";
 
@@ -42,16 +43,34 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
     }
 
     const admin = await findAdminForSession(claims.adminId);
-    if (!admin || admin.sessionVersion !== claims.sessionVersion) {
+    if (!admin || admin.sessionVersion !== claims.sessionVersion || !admin.isActive) {
       res.clearCookie(authConfig.cookieName, sessionCookieOptions);
       next(unauthorized("Your session is no longer valid. Sign in again."));
       return;
     }
 
-    const { sessionVersion: _sessionVersion, ...summary } = admin;
+    const { sessionVersion: _sessionVersion, isActive: _isActive, ...summary } = admin;
     req.admin = summary;
     next();
   } catch (error) {
     next(error);
   }
+}
+
+/**
+ * Route-level authorisation. `requireAdmin` proves who the caller is; this decides what
+ * their role may do. Use it per route so the permission stays next to the action.
+ */
+export function requireRole(...roles: Role[]) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    if (!req.admin) {
+      next(unauthorized("Authentication required"));
+      return;
+    }
+    if (!roles.includes(req.admin.role)) {
+      next(forbidden("You do not have access to this action."));
+      return;
+    }
+    next();
+  };
 }
