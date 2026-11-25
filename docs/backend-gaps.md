@@ -158,7 +158,8 @@ From `build-plan.md` §11, kept here so they are not mistaken for oversights:
 - WhatsApp / email notifications — the owner follows up manually.
 - M-Pesa Daraja and provider-side automated refunds — payments and refunds are recorded by
   hand, though manual refunds now have an auditable workflow (F12).
-- Customer accounts and multiple staff accounts — guest booking, one owner.
+- Customer accounts — guest booking, no self-service history.
+- ~~Multiple staff accounts~~ **Done in F14** — the owner manages the team from `/admin/team`.
 - Discount engine for offers — offers are display-only.
 - Guest-count enforcement for packages (D5).
 - `pricePerWeek` weekly pricing (D3).
