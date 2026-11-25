@@ -162,7 +162,6 @@ const bookingReportSelect = {
   },
 } satisfies Prisma.BookingSelect;
 
-
 /**
  * Unit-days are the honest utilisation measure: one unit held for three days consumes
  * three unit-days of capacity, and only the part of the rental inside the report window
