@@ -1,5 +1,6 @@
 import {
   ArrowUpRight,
+  BarChart3,
   Boxes,
   CalendarDays,
   LayoutDashboard,
@@ -29,6 +30,7 @@ const links: Array<{
 }> = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/bookings", label: "Bookings", icon: CalendarDays },
+  { to: "/admin/reports", label: "Reports", icon: BarChart3, roles: ["OWNER", "ADMIN"] },
   { to: "/admin/catalogue", label: "Catalogue", icon: Boxes, roles: ["OWNER", "ADMIN"] },
   { to: "/admin/team", label: "Team", icon: UsersRound, roles: ["OWNER"] },
   { to: "/admin/settings", label: "Settings", icon: Settings },

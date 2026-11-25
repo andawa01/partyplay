@@ -37,6 +37,7 @@ export const queryKeys = {
     booking: (id: string) => ["admin", "booking", id] as const,
     payments: (bookingId: string) => ["admin", "payments", bookingId] as const,
     dashboard: () => ["admin", "dashboard"] as const,
+    reports: (range: { from: string; to: string }) => ["admin", "reports", range] as const,
     settings: () => ["admin", "settings"] as const,
     staff: () => ["admin", "staff"] as const,
   },

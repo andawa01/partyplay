@@ -740,6 +740,40 @@ sweeps. Then unset `MAIL_FROM` and confirm booking creation still succeeds with 
 
 ---
 
+### F16 — Reports and CSV export
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/admin/reports?from=YYYY-MM-DD&to=YYYY-MM-DD` | manager only; defaults to the current Nairobi month |
+| GET | `/api/admin/reports/export?type=bookings\|payments&from&to` | manager only; `text/csv` attachment |
+
+**Rules**
+
+- Revenue uses the same definition as the dashboard: successful payments (by `paidAt`, or
+  `createdAt` when a legacy row has no paid date) minus refunds by `refundedAt`.
+- Monthly buckets are Nairobi calendar months and include months with no activity, so the
+  trend never has unexplained gaps.
+- Bookings are counted by creation date and grouped by status; money is not filtered by
+  booking status, because a refund can arrive long after a cancellation.
+- Equipment utilisation is confirmed/completed unit-days that overlap the range over
+  inventory × days. Packages contribute the equipment they contain, and inactive equipment
+  stays visible when it has history.
+- Ranges are capped at 366 days; an inverted range is a `400`.
+- The bookings CSV lists every booking created in the range with total, paid and balance.
+  The payments CSV lists payments and refunds as signed rows on one timeline for the
+  accountant. Values containing commas, quotes or newlines are quoted (RFC 4180).
+- CSV is the only admin response that is not the `{ data }` envelope; errors still are.
+- The client page is limited to `OWNER` and `ADMIN`, and the server rejects staff even if
+  the page is reached by URL.
+
+**Verify:** compare net revenue for the current month with the dashboard; read the monthly
+and utilisation tables; export both CSVs and open them in a spreadsheet; request an
+inverted and a two-year range and get `400`; confirm a staff session gets `403`.
+
+**Depends on:** F9, F10.
+
+---
+
 ## 7. Milestone C — Client (only after B1–B4 are done)
 
 Built feature-parallel to the backend slices above, in this order. Each consumes a
@@ -783,7 +817,7 @@ F1  platform ──┬── F2 auth ──┬── F4 admin catalogue
                └── (migration 5: D1, D3, D4) before F6b
 ```
 
-Engine order: **F1 → F2 → F3 → F4 → F5 → F6a → F6b → F6c → F7 → F8 → F9 → F10 → F11 → F12 → F13 → F14 → F15 → C1…C11.**
+Engine order: **F1 → F2 → F3 → F4 → F5 → F6a → F6b → F6c → F7 → F8 → F9 → F10 → F11 → F12 → F13 → F14 → F15 → F16 → C1…C11.**
 
 F2 before F4 because admin CRUD is meaningless without a login to test it through. F6a
 before F6b because creation without trustworthy pricing produces garbage snapshots. F7
@@ -871,6 +905,7 @@ the last unit and assert `[201, 409]`.
 | F13 | Booking edit | ✅ | ✅ | `feat/f13-booking-edit` |
 | F14 | Staff accounts | ✅ | ✅ | `feat/f14-staff-accounts` |
 | F15 | Booking notifications (email) | ✅ | — | `feat/f15-notifications` |
+| F16 | Reports and CSV export | ✅ | ✅ | `feat/f16-reports-csv` |
 | C1 | Client foundation | — | ✅ | `feat/c1-client-foundation` |
 | C2 | Public shell and site settings | — | ✅ | `feat/c2-public-shell` |
 | C3 | Equipment catalogue and detail | — | ✅ | `feat/c3-equipment-catalogue` |

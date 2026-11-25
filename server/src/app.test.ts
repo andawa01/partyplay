@@ -792,6 +792,78 @@ describe.skipIf(!smokeDbAvailable)("API smoke tests", () => {
     expect(selfDemote.status).toBe(400);
   }, 30_000);
 
+  it("reports revenue and utilisation and exports CSV to managers", async () => {
+    const today = formatCalendarDate(todayInNairobi());
+    const from = formatCalendarDate(new Date(Date.now() - 30 * 86_400_000));
+
+    const report = await api("GET", `/api/admin/reports?from=${from}&to=${today}`, { cookie });
+    expect(report.status).toBe(200);
+    const data = report.body.data as {
+      range: { from: string; to: string; days: number };
+      revenue: { gross: string; net: string };
+      bookings: { created: number; byStatus: Record<string, number> };
+      monthly: Array<{ month: string; net: string }>;
+      equipment: Array<{ utilisation: number }>;
+    };
+    expect(data.range).toMatchObject({ from, to: today });
+    expect(data.range.days).toBe(31);
+    expect(Number(data.revenue.gross)).toBeGreaterThanOrEqual(0);
+    expect(data.bookings.byStatus).toHaveProperty("CONFIRMED");
+    expect(data.monthly.length).toBeGreaterThan(0);
+    expect(Array.isArray(data.equipment)).toBe(true);
+
+    // An inverted or unbounded range is a client error, not an empty report.
+    expect(
+      (await api("GET", `/api/admin/reports?from=${today}&to=${from}`, { cookie })).status,
+    ).toBe(400);
+    expect(
+      (await api("GET", `/api/admin/reports?from=2000-01-01&to=${today}`, { cookie })).status,
+    ).toBe(400);
+
+    const exportCsv = (type: "bookings" | "payments") =>
+      fetch(base + `/api/admin/reports/export?type=${type}&from=${from}&to=${today}`, {
+        headers: { Cookie: cookie },
+      });
+
+    const payments = await exportCsv("payments");
+    expect(payments.status).toBe(200);
+    expect(payments.headers.get("content-type")).toContain("text/csv");
+    expect(payments.headers.get("content-disposition")).toContain("attachment");
+    expect((await payments.text()).startsWith("Date,Type,Booking reference")).toBe(true);
+
+    const bookings = await exportCsv("bookings");
+    expect(bookings.status).toBe(200);
+    expect((await bookings.text()).startsWith("Reference,Created")).toBe(true);
+
+    // Money is manager-only: staff can run a booking but not read the books.
+    const staffEmail = `smoke-reports-${suffix}@example.test`;
+    const staffPassword = "Reports-Password1";
+    const created = await api("POST", "/api/admin/users", {
+      cookie,
+      body: { name: "Reports Staff", email: staffEmail, role: "STAFF", password: staffPassword },
+    });
+    expect(created.status).toBe(201);
+    staffAccountIds.push((created.body.data as { id: string }).id);
+
+    const login = await fetch(base + "/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: staffEmail, password: staffPassword }),
+    });
+    const staffCookie =
+      (login.headers as unknown as { getSetCookie?: () => string[] })
+        .getSetCookie?.()
+        ?.find((entry) => entry.startsWith("pt_sess="))
+        ?.split(";")[0] ?? "";
+    expect(staffCookie).not.toBe("");
+
+    expect(
+      (await api("GET", `/api/admin/reports?from=${from}&to=${today}`, { cookie: staffCookie }))
+        .status,
+    ).toBe(403);
+    expect((await api("GET", `/api/admin/reports?from=${from}&to=${today}`)).status).toBe(401);
+  }, 30_000);
+
   it("requests a reset email without revealing whether the account exists", async () => {
     emailMock.sendPasswordResetEmail.mockClear();
 
