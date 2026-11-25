@@ -63,7 +63,7 @@ export default function PackagesPage() {
 
         <div className="mt-6">
           {packages.isPending ? (
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 4 }, (_, index) => (
                 <PackageCardSkeleton key={index} />
               ))}
@@ -80,7 +80,7 @@ export default function PackagesPage() {
           ) : null}
 
           {packages.data && packages.data.length > 0 ? (
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {packages.data.map((pkg) => (
                 <PackageCard key={pkg.id} pkg={pkg} currency={currency} />
               ))}

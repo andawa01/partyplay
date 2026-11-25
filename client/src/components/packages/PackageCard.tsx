@@ -1,4 +1,4 @@
-import { ArrowUpRight, Check, Clock } from "lucide-react";
+import { Check, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import type { PartyPackage } from "../../lib/packages";
@@ -16,8 +16,8 @@ export function PackageCard({ pkg, currency }: { pkg: PartyPackage; currency: st
       to={`/packages/${pkg.slug}`}
       className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2"
     >
-      <div className="relative aspect-[16/10]">
-        <PackageImage src={pkg.imageUrl} alt={pkg.name} className="size-full" />
+      <div className="relative aspect-[16/10] shrink-0">
+        <PackageImage src={pkg.imageUrl} alt={pkg.name} className="absolute inset-0 size-full" />
         {pkg.isFeatured ? (
           <Badge className="absolute left-3 top-3 bg-blush-600 text-white shadow-sm">
             Most popular
@@ -55,20 +55,15 @@ export function PackageCard({ pkg, currency }: { pkg: PartyPackage; currency: st
           ) : null}
         </div>
 
-        <div className="mt-auto flex items-end justify-between gap-3 pt-5">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              Package price
-            </p>
-            <p className="mt-0.5 text-xl font-semibold tracking-tight text-slate-900">
-              {packagePriceLabel(pkg, currency)}
-            </p>
-          </div>
-          <span
-            aria-hidden="true"
-            className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-700 ring-1 ring-brand-100 transition group-hover:bg-brand-700 group-hover:text-white"
-          >
-            <ArrowUpRight className="size-4" />
+        <div className="mt-auto pt-5">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            Package price
+          </p>
+          <p className="mt-0.5 text-xl font-bold tracking-tight text-slate-900">
+            {packagePriceLabel(pkg, currency)}
+          </p>
+          <span className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition group-hover:bg-brand-800">
+            View Package
           </span>
         </div>
       </div>

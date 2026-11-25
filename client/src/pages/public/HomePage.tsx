@@ -42,64 +42,48 @@ export default function HomePage() {
 
   return (
     <div className="pb-20">
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-brand-50 via-white to-blush-50">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -left-24 -top-24 size-80 rounded-full bg-brand-100/70 blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-28 right-1/4 size-80 rounded-full bg-blush-200/50 blur-3xl"
-        />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 lg:grid-cols-2 lg:py-20">
-          <div className="max-w-xl">
-            <p className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 ring-1 ring-brand-100">
-              <Sparkles aria-hidden="true" className="size-3.5" />
-              Party equipment rental
-            </p>
-            <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-              Make Every Party{" "}
-              <span className="bg-gradient-to-r from-brand-600 to-blush-500 bg-clip-text text-transparent">
-                Unforgettable!
-              </span>
-            </h1>
-            <p className="mt-5 max-w-lg text-lg leading-relaxed text-slate-600">
-              Bouncy castles, slides, tents, tables and chairs for hire in Kenya. Premium party
-              equipment, delivered and set up so you can enjoy the day.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                to="/equipment"
-                className="inline-flex items-center gap-2 rounded-full bg-brand-700 px-6 py-3 font-semibold text-white shadow-sm transition hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2"
-              >
-                Browse Equipment
-                <ArrowRight aria-hidden="true" className="size-4" />
-              </Link>
-              <Link
-                to="/packages"
-                className="inline-flex items-center gap-2 rounded-full border border-blush-200 bg-white px-6 py-3 font-semibold text-blush-800 transition hover:bg-blush-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blush-300"
-              >
-                View Packages
-              </Link>
-            </div>
-          </div>
-
-          <div className="relative">
-            <div className="overflow-hidden rounded-[2rem] shadow-xl shadow-brand-900/10 ring-1 ring-white/60">
-              <img
-                src="/hero-party.jpg"
-                alt="A colourful bouncy castle set up for a party"
-                className="aspect-[4/3] w-full object-cover"
-              />
-            </div>
-            <div className="absolute -bottom-5 left-4 flex items-center gap-3 rounded-2xl bg-white p-3 pr-5 shadow-lg ring-1 ring-brand-100 sm:left-8">
-              <span className="grid size-10 place-items-center rounded-xl bg-brand-700 text-white">
-                <ShieldCheck aria-hidden="true" className="size-5" />
-              </span>
-              <div className="leading-tight">
-                <p className="text-sm font-bold text-slate-900">Trusted by families</p>
-                <p className="text-xs text-slate-500">Safe, clean and on time</p>
+      {/* Hero: full-bleed image with overlay, matching the mockup */}
+      <section className="mx-auto max-w-6xl px-4 pt-5">
+        <div className="relative overflow-hidden rounded-[2rem] shadow-xl shadow-brand-900/10">
+          <img
+            src="/hero-party.jpg"
+            alt="A colourful bouncy castle set up for a party"
+            className="h-[420px] w-full object-cover sm:h-[500px]"
+          />
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-gradient-to-r from-brand-950/90 via-brand-900/70 to-brand-800/10"
+          />
+          <div className="absolute inset-0 flex items-center">
+            <div className="max-w-xl px-6 text-white sm:px-10 lg:px-14">
+              <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white ring-1 ring-white/25 backdrop-blur">
+                <Sparkles aria-hidden="true" className="size-3.5" />
+                Party equipment rental
+              </p>
+              <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
+                Make Every Party{" "}
+                <span className="bg-gradient-to-r from-blush-200 via-white to-brand-200 bg-clip-text text-transparent">
+                  Unforgettable!
+                </span>
+              </h1>
+              <p className="mt-4 max-w-lg text-base leading-relaxed text-brand-50 sm:text-lg">
+                Bouncy castles, slides, tents, tables and chairs for hire in Kenya. Premium party
+                equipment, delivered and set up so you can enjoy the day.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link
+                  to="/equipment"
+                  className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 font-semibold text-brand-800 shadow-sm transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-900"
+                >
+                  Browse Equipment
+                  <ArrowRight aria-hidden="true" className="size-4" />
+                </Link>
+                <Link
+                  to="/packages"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-6 py-3 font-semibold text-white backdrop-blur transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                >
+                  View Packages
+                </Link>
               </div>
             </div>
           </div>
@@ -108,7 +92,7 @@ export default function HomePage() {
 
       {/* Highlights */}
       <section className="mx-auto max-w-6xl px-4">
-        <div className="-mt-2 grid gap-4 py-10 sm:grid-cols-3">
+        <div className="grid gap-4 py-10 sm:grid-cols-3">
           {highlights.map(({ icon: Icon, title, description }) => (
             <div
               key={title}
@@ -152,7 +136,7 @@ export default function HomePage() {
           </Button>
         </div>
 
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-8 grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
           {catalogue.isPending
             ? Array.from({ length: POPULAR_LIMIT }, (_, index) => (
                 <EquipmentCardSkeleton key={index} />

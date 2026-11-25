@@ -40,7 +40,9 @@ export default function BookingPage() {
   const [searchParams] = useSearchParams();
   const packageSlug = searchParams.get("package")?.trim() ?? "";
   const equipmentSlug = searchParams.get("equipment")?.trim() ?? "";
-  const seedKey = `${packageSlug}|${equipmentSlug}`;
+  const seedStartDate = searchParams.get("startDate")?.trim() ?? "";
+  const seedEndDate = searchParams.get("endDate")?.trim() ?? "";
+  const seedKey = `${packageSlug}|${equipmentSlug}|${seedStartDate}|${seedEndDate}`;
 
   const packagesQuery = usePackages();
   const catalogueQuery = useEquipmentList({ page: 1, pageSize: 100 });
@@ -146,6 +148,11 @@ export default function BookingPage() {
       matchedEquipment && seedQuantity > 0 ? { [matchedEquipment.id]: seedQuantity } : {},
     );
 
+    if (hasValidRentalDates(seedStartDate, seedEndDate)) {
+      setStartDate(seedStartDate);
+      setEndDate(seedEndDate);
+    }
+
     const missing: string[] = [];
     if (packageSlug && !matchedPackage) {
       missing.push("package");
@@ -158,7 +165,15 @@ export default function BookingPage() {
         ? `The ${missing.join(" and ")} from that link is no longer available. Choose a current option below.`
         : "",
     );
-  }, [catalogueQuery.data, equipmentSlug, packageSlug, packagesQuery.data, seedKey]);
+  }, [
+    catalogueQuery.data,
+    equipmentSlug,
+    packageSlug,
+    packagesQuery.data,
+    seedEndDate,
+    seedKey,
+    seedStartDate,
+  ]);
 
   const unitLabel =
     selectedPackage && !hasExtras ? "package" : demands.length > 1 ? "setup" : "unit";
