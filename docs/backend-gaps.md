@@ -1,8 +1,8 @@
 # Backend gaps — what is not covered yet
 
 **Prepared:** 15 November 2026
-**Updated:** 25 November 2026 — F14 staff accounts
-**Scope:** backend and deployment, as merged to `main` at `ab3d26c` plus the F13 and F14 branches
+**Updated:** 25 November 2026 — F15 booking notifications
+**Scope:** backend and deployment, as merged to `main` at `ab3d26c` plus the F13, F14 and F15 branches
 **Purpose:** a plain list of what the backend does *not* do yet, so the owner can decide
 what is worth paying for next. Nothing here is a bug report against finished work — it is
 the boundary of the current build.
@@ -26,6 +26,8 @@ For context, the backend today covers:
   summary.
 - Admin auth: owner, admin and staff accounts, session cookie, password change,
   rate-limited login, role-scoped routes and owner-managed team accounts.
+- Notifications: request acknowledgement, confirmation, rejection, cancellation and
+  expiry emails to the customer, plus a new-request alert to the business address.
 - Guard rails recently added: throttled public booking routes, committed HTTP smoke
   tests, idempotent seed.
 
@@ -93,7 +95,8 @@ in later without re-discovering them.
 
 | Gap | Consequence today | Effort |
 |---|---|---|
-| No email / WhatsApp / SMS | The owner must remember to follow up every request manually. A pending booking can expire without the customer ever being told. | M |
+| ~~No booking emails~~ | **Done in F15:** the customer is emailed when a request arrives and when it is confirmed, rejected, cancelled or expires; the business address gets a new-request alert. Customers without an email still need a phone call. | — |
+| No WhatsApp / SMS | Same events as the email notifications, but on the channel most customers actually use. Email or a manual call is the fallback. | M |
 | No M-Pesa / Daraja integration | Payments are typed in by hand; a customer's M-Pesa message has to be matched manually to a booking. | L |
 | No automated refunds | Tied to the refund workflow above. | M |
 | No orphaned-upload cleanup | An image uploaded and then abandoned before saving stays in Cloudinary. Saved-image replacements and package deletions are cleaned up. | S |
@@ -155,7 +158,8 @@ client 27% / 19% / 25% / 27%.
 
 From `build-plan.md` §11, kept here so they are not mistaken for oversights:
 
-- WhatsApp / email notifications — the owner follows up manually.
+- WhatsApp / SMS notifications — email notifications are done (F15); the owner still
+  follows up by phone where no email is given.
 - M-Pesa Daraja and provider-side automated refunds — payments and refunds are recorded by
   hand, though manual refunds now have an auditable workflow (F12).
 - Customer accounts — guest booking, no self-service history.
@@ -186,9 +190,10 @@ unit of work:
    *(§3)*~~ **Done in F12.**
 5. ~~**Booking edit** — removes the cancel-and-rebook workaround. *(§4)*~~ **Done in F13.**
 6. ~~**Staff accounts** — stops password sharing. *(§6)*~~ **Done in F14.**
-7. **Notifications** — the biggest labour saving for the owner. *(§5)*
+7. ~~**Notifications** — the biggest labour saving for the owner. *(§5)*~~ **Done in F15.**
 8. **Reports and CSV export** — needed at month end. *(§8)*
 
-The next item is **notifications**, which removes the manual follow-up on every pending or
-expiring booking. Staff accounts, booking edit, refunds and maintenance blackouts are done;
-code-quality gates give new work lint, format and coverage feedback from CI.
+The next item is **reports and CSV export**, which gives the owner month-end figures and an
+export for the accountant. Notifications, staff accounts, booking edit, refunds and
+maintenance blackouts are done; code-quality gates give new work lint, format and coverage
+feedback from CI.

@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 
 import { db } from "../config/db";
+import { notifyBookingsExpired, type BookingNotifiable } from "./notifications";
 
 /**
  * Hold expiry (F7). A pending request reserves stock only until its hold window lapses;
@@ -44,11 +45,18 @@ export async function expireOverdueBookings(scope: ExpiryScope = {}): Promise<nu
       : {}),
   };
 
-  return db.$transaction(async (tx) => {
+  const { expired, notifications } = await db.$transaction(async (tx) => {
     const overdue = await tx.booking.findMany({
       where: overdueWhere,
       select: {
         id: true,
+        code: true,
+        startDate: true,
+        endDate: true,
+        totalAmount: true,
+        currency: true,
+        holdExpiresAt: true,
+        customer: { select: { name: true, email: true, phone: true } },
         stockHolds: { where: { status: "ACTIVE" }, select: { id: true } },
       },
       orderBy: { holdExpiresAt: "asc" },
@@ -56,6 +64,7 @@ export async function expireOverdueBookings(scope: ExpiryScope = {}): Promise<nu
     });
 
     let expired = 0;
+    const notifications: BookingNotifiable[] = [];
 
     for (const booking of overdue) {
       // The status guard is what makes overlapping sweeps safe: only the transaction
@@ -86,8 +95,26 @@ export async function expireOverdueBookings(scope: ExpiryScope = {}): Promise<nu
           note: "Hold window lapsed",
         },
       });
+
+      // Only the transaction that flips the status gets here, so each expired booking
+      // produces at most one email even when the sweeper and a request race.
+      notifications.push({
+        id: booking.id,
+        code: booking.code,
+        customerName: booking.customer.name,
+        customerEmail: booking.customer.email,
+        customerPhone: booking.customer.phone,
+        startDate: booking.startDate,
+        endDate: booking.endDate,
+        totalAmount: booking.totalAmount.toFixed(2),
+        currency: booking.currency,
+        holdExpiresAt: booking.holdExpiresAt,
+      });
     }
 
-    return expired;
+    return { expired, notifications };
   });
+
+  await notifyBookingsExpired(notifications);
+  return expired;
 }

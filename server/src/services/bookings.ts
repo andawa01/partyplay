@@ -24,6 +24,7 @@ import { findShortages, type DemandLine } from "./availability";
 import { getBlackoutsForRange, serializeBlackout } from "./blackouts";
 import { assertTransition } from "./booking-status";
 import { expireOverdueBookings } from "./hold-expiry";
+import { notifyBookingReceived, notifyBookingStatusChanged } from "./notifications";
 import { derivePaymentStatus } from "./payments";
 import {
   expandPackages,
@@ -257,6 +258,22 @@ export async function createBookingRequest(input: CreateBookingInput) {
   for (let attempt = 1; attempt <= SERIALIZATION_ATTEMPTS; attempt += 1) {
     try {
       const result = await createInTransaction(input, startDate, endDate, days);
+
+      // Best-effort and awaited so the customer is told even when the process exits right
+      // after the response; the service swallows send failures.
+      await notifyBookingReceived({
+        id: result.booking.id,
+        code: result.booking.code,
+        customerName: input.customer.name,
+        customerEmail: input.customer.email ?? null,
+        customerPhone: input.customer.phone ?? null,
+        startDate,
+        endDate,
+        totalAmount: result.price.totalAmount.toFixed(2),
+        currency: result.currency,
+        holdExpiresAt: result.expiresAt,
+      });
+
       return toPublicBooking(result);
     } catch (error) {
       const retryable = isRetryableTransactionError(error) || isBookingCodeCollision(error);
@@ -1389,7 +1406,7 @@ export async function changeBookingStatus(
   input: UpdateBookingStatusInput,
   adminId: string,
 ) {
-  const changedId = await db.$transaction(
+  const result = await db.$transaction(
     async (tx) => {
       await lockBookingRecord(tx, id);
 
@@ -1397,11 +1414,15 @@ export async function changeBookingStatus(
         where: { id },
         select: {
           id: true,
+          code: true,
           status: true,
           startDate: true,
           endDate: true,
+          totalAmount: true,
+          currency: true,
           holdExpiresAt: true,
           fulfilmentDate: true,
+          customer: { select: { name: true, email: true, phone: true } },
           stockHolds: { where: { status: "ACTIVE" }, select: { expiresAt: true } },
         },
       });
@@ -1508,12 +1529,27 @@ export async function changeBookingStatus(
         },
       });
 
-      return id;
+      return {
+        id,
+        notification: {
+          id,
+          code: booking.code,
+          customerName: booking.customer.name,
+          customerEmail: booking.customer.email,
+          customerPhone: booking.customer.phone,
+          startDate: booking.startDate,
+          endDate: booking.endDate,
+          totalAmount: money(booking.totalAmount) ?? "0.00",
+          currency: booking.currency,
+          holdExpiresAt: booking.holdExpiresAt,
+        },
+      };
     },
     { isolationLevel: "Serializable", timeout: 10_000 },
   );
 
-  return loadAdminBooking(changedId);
+  await notifyBookingStatusChanged(result.notification, input.status, input.reason ?? null);
+  return loadAdminBooking(result.id);
 }
 
 /**

@@ -1,5 +1,7 @@
 import { Resend } from "resend";
 
+import { escapeHtml } from "./html";
+
 interface PasswordResetEmail {
   to: string;
   name?: string | null;
@@ -7,17 +9,31 @@ interface PasswordResetEmail {
   expiresAt: Date;
 }
 
+export interface EmailMessage {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+}
+
 export function isEmailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY?.trim() && process.env.MAIL_FROM?.trim());
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+/** One transport for every message; the caller decides whether the failure is fatal. */
+export async function sendEmail({ to, subject, text, html }: EmailMessage): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const from = process.env.MAIL_FROM?.trim();
+  if (!apiKey || !from) {
+    throw new Error("RESEND_API_KEY and MAIL_FROM must be set to send email.");
+  }
+
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({ from, to, subject, text, html });
+
+  if (error) {
+    throw new Error(`Resend rejected the email: ${error.message}`);
+  }
 }
 
 /** Sends through Resend; callers deliberately do not expose send failures to the client. */
@@ -27,13 +43,6 @@ export async function sendPasswordResetEmail({
   resetUrl,
   expiresAt,
 }: PasswordResetEmail): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.MAIL_FROM?.trim();
-  if (!apiKey || !from) {
-    throw new Error("RESEND_API_KEY and MAIL_FROM must be set to send password reset email.");
-  }
-
-  const resend = new Resend(apiKey);
   const greeting = name?.trim() ? `Hi ${name.trim()},` : "Hello,";
   const safeUrl = escapeHtml(resetUrl);
   const expires = expiresAt.toLocaleString("en-KE", {
@@ -42,8 +51,7 @@ export async function sendPasswordResetEmail({
     timeZone: "Africa/Nairobi",
   });
 
-  const { error } = await resend.emails.send({
-    from,
+  await sendEmail({
     to,
     subject: "Reset your PartyPlay admin password",
     text: [
@@ -71,8 +79,4 @@ export async function sendPasswordResetEmail({
       </div>
     `,
   });
-
-  if (error) {
-    throw new Error(`Resend rejected the password reset email: ${error.message}`);
-  }
 }

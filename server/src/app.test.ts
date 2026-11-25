@@ -8,11 +8,13 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 const emailMock = vi.hoisted(() => ({
   isEmailConfigured: vi.fn(() => true),
+  sendEmail: vi.fn().mockResolvedValue(undefined),
   sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("./lib/email", () => ({
   isEmailConfigured: emailMock.isEmailConfigured,
+  sendEmail: emailMock.sendEmail,
   sendPasswordResetEmail: emailMock.sendPasswordResetEmail,
 }));
 
