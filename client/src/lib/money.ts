@@ -16,6 +16,11 @@ export function formatMoney(value: string | number, currency = "KES"): string {
   }).format(numeric);
 }
 
+/** Catalogue-facing prices drop the trailing .00 so cards read “Ksh 4,500 / day”. */
+export function formatMoneyCompact(value: string | number, currency = "KES"): string {
+  return formatMoney(value, currency).replace(/\.00$/, "");
+}
+
 export function toMinorUnits(value: string | number): number {
   const numeric = typeof value === "string" ? Number(value) : value;
   return Math.round(numeric * 100);

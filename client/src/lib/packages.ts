@@ -1,4 +1,4 @@
-import { formatMoney } from "./money";
+import { formatMoney, formatMoneyCompact } from "./money";
 
 export interface PackageEquipment {
   slug: string;
@@ -59,7 +59,7 @@ function formatMoment(value: string): string {
 
 /** A package is priced per package, not per guest, so no guest-count language appears. */
 export function packagePriceLabel(pkg: Pick<PartyPackage, "price">, currency: string): string {
-  return formatMoney(pkg.price, currency);
+  return formatMoneyCompact(pkg.price, currency);
 }
 
 export function packageDurationLabel(duration: number | null): string | null {
