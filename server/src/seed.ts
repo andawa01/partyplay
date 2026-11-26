@@ -82,8 +82,8 @@ async function main() {
     create: {
       adminId: admin.id,
       businessName: "PartyPlay",
-      contactPhone: "0700000000",
-      contactWhatsApp: "0700000000",
+      contactPhone: "0115299171",
+      contactWhatsApp: "0115299171",
       contactEmail: "bounciellepartyevents254@gmail.com",
       facebookUrl: "https://www.facebook.com/share/19rE4zyYzN/?mibextid=wwXIfr",
       tiktokUrl: "https://www.tiktok.com/@bounciellepartyev",

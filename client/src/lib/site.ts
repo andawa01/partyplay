@@ -50,9 +50,27 @@ export function telHref(phone: string): string {
   return `tel:${phone.replace(/[^\d+]/g, "")}`;
 }
 
+/**
+ * Numbers are stored in the local 10-digit format the API validates (0712345678).
+ * WhatsApp needs the country code, so a leading 0 becomes 254.
+ */
 export function whatsAppHref(phone: string): string {
   const digits = phone.replace(/\D/g, "");
-  return `https://wa.me/${digits}`;
+  const international =
+    digits.length === 10 && digits.startsWith("0") ? `254${digits.slice(1)}` : digits;
+  return `https://wa.me/${international}`;
+}
+
+/** Display only: 0115299171 reads as +254 115 299171 while storage stays local. */
+export function formatPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 10 && digits.startsWith("0")) {
+    return `+254 ${digits.slice(1, 4)} ${digits.slice(4, 7)} ${digits.slice(7)}`;
+  }
+  if (digits.length === 12 && digits.startsWith("254")) {
+    return `+${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)} ${digits.slice(9)}`;
+  }
+  return phone;
 }
 
 export function mailtoHref(email: string): string {

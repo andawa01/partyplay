@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { publicLinks } from "../../lib/navigation";
 import {
+  formatPhone,
   mailtoHref,
   SITE_FALLBACK,
   telHref,
@@ -46,7 +47,7 @@ export function SiteFooter({ site = SITE_FALLBACK }: { site?: SiteSettings }) {
             </p>
             <p className="mt-1 text-sm text-slate-600">
               {site.contactPhone
-                ? `Call ${site.contactPhone} or send a booking request — we reply the same day.`
+                ? `Call ${formatPhone(site.contactPhone)} or send a booking request — we reply the same day.`
                 : "Send a booking request and we will confirm the details with you."}
             </p>
           </div>
@@ -106,7 +107,7 @@ export function SiteFooter({ site = SITE_FALLBACK }: { site?: SiteSettings }) {
                       <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white text-brand-700 ring-1 ring-blush-100">
                         <Phone aria-hidden="true" className="size-4" />
                       </span>
-                      {site.contactPhone}
+                      {formatPhone(site.contactPhone)}
                       <span className="sr-only">Call us</span>
                     </a>
                   </li>
@@ -122,7 +123,7 @@ export function SiteFooter({ site = SITE_FALLBACK }: { site?: SiteSettings }) {
                       <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white text-brand-700 ring-1 ring-blush-100">
                         <MessageCircle aria-hidden="true" className="size-4" />
                       </span>
-                      WhatsApp {site.contactWhatsApp}
+                      WhatsApp {formatPhone(site.contactWhatsApp)}
                       <span className="sr-only">(opens in a new tab)</span>
                     </a>
                   </li>
