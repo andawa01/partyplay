@@ -1,4 +1,4 @@
-import { ArrowRight, Loader2, Lock, Mail, PartyPopper, ShieldCheck } from "lucide-react";
+import { ArrowRight, Lock, Mail, PartyPopper, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 
@@ -195,18 +195,9 @@ export default function AdminLoginPage() {
               </Link>
             </div>
 
-            <Button
-              type="submit"
-              size="lg"
-              className="mt-4 w-full"
-              disabled={login.isPending}
-              aria-busy={login.isPending}
-            >
+            <Button type="submit" size="lg" className="mt-4 w-full" isLoading={login.isPending}>
               {login.isPending ? (
-                <>
-                  <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-                  Signing in…
-                </>
+                "Signing in…"
               ) : (
                 <>
                   Sign in to admin

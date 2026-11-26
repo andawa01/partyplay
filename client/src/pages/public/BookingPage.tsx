@@ -513,6 +513,7 @@ export default function BookingPage() {
                 endDate={endDate}
                 quote={quote.data}
                 quotePending={quoteRequest !== null && quote.isPending}
+                quoteRefreshing={quoteRequest !== null && quote.isFetching && !quote.isPending}
                 quoteError={quote.error}
                 onRetryQuote={() => void quote.refetch()}
                 isRetryingQuote={quote.isFetching}
