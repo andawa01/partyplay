@@ -12,6 +12,8 @@ export default function PublicLayout() {
   const { data } = useSite();
   const site = data ?? SITE_FALLBACK;
   const [menuOpen, setMenuOpen] = useState(false);
+  // The header mirrors the mockup; booking stays one tap away via the Book Now CTA.
+  const headerLinks = publicLinks.filter((link) => link.to !== "/booking");
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-slate-800">
@@ -30,7 +32,7 @@ export default function PublicLayout() {
           </NavLink>
 
           <ul className="hidden items-center gap-1 lg:flex">
-            {publicLinks.map((link) => (
+            {headerLinks.map((link) => (
               <li key={link.to}>
                 <NavLink
                   to={link.to}
@@ -85,7 +87,7 @@ export default function PublicLayout() {
         {menuOpen ? (
           <div id="mobile-nav" className="border-t border-brand-100 bg-white lg:hidden">
             <ul className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
-              {publicLinks.map((link) => (
+              {headerLinks.map((link) => (
                 <li key={link.to}>
                   <NavLink
                     to={link.to}

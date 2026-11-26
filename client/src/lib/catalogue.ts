@@ -1,4 +1,4 @@
-import { formatMoney } from "./money";
+import { formatMoney, formatMoneyCompact } from "./money";
 
 export type PricingMode = "PER_DAY" | "FLAT";
 
@@ -81,17 +81,17 @@ export function priceLabel(
 ): PriceLabel {
   if (equipment.pricingMode === "FLAT") {
     if (equipment.flatPrice) {
-      return { amount: formatMoney(equipment.flatPrice, currency), unit: "flat rate" };
+      return { amount: formatMoneyCompact(equipment.flatPrice, currency), unit: "flat rate" };
     }
     if (equipment.pricePerDay) {
-      return { amount: formatMoney(equipment.pricePerDay, currency), unit: "per day" };
+      return { amount: formatMoneyCompact(equipment.pricePerDay, currency), unit: "per day" };
     }
   } else {
     if (equipment.pricePerDay) {
-      return { amount: formatMoney(equipment.pricePerDay, currency), unit: "per day" };
+      return { amount: formatMoneyCompact(equipment.pricePerDay, currency), unit: "per day" };
     }
     if (equipment.flatPrice) {
-      return { amount: formatMoney(equipment.flatPrice, currency), unit: "flat rate" };
+      return { amount: formatMoneyCompact(equipment.flatPrice, currency), unit: "flat rate" };
     }
   }
   return { amount: "Price on request", unit: null };
