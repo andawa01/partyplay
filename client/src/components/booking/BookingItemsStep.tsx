@@ -143,7 +143,7 @@ export function BookingItemsStep({
                     </div>
                     <p className="mt-0.5 text-xs text-slate-500">
                       {item.category.name} · {price.amount}
-                      {price.unit ? ` ${price.unit}` : ""}
+                      {price.unit ? ` / ${price.unit}` : ""}
                     </p>
                   </div>
 

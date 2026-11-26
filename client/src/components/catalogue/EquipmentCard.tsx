@@ -12,7 +12,7 @@ export function EquipmentCard({
   currency: string;
 }) {
   const price = priceLabel(equipment, currency);
-  const unit = price.unit === "per day" ? "day" : null;
+  const unit = price.unit;
   const detailPath = `/equipment/${equipment.slug}`;
 
   return (
