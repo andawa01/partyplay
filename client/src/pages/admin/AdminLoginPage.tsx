@@ -11,6 +11,7 @@ import { Label } from "../../components/ui/label";
 import { useAdminSession, useLogin } from "../../hooks/use-auth";
 import { isApiError } from "../../lib/api";
 import { adminReturnPath, loginFormSchema, type LoginFormValues } from "../../lib/auth";
+import { toast } from "../../lib/toast";
 
 export default function AdminLoginPage() {
   const location = useLocation();
@@ -66,7 +67,10 @@ export default function AdminLoginPage() {
     }
 
     login.mutate(parsed.data, {
-      onSuccess: () => navigate(returnTo, { replace: true }),
+      onSuccess: (admin) => {
+        toast.success(`Signed in as ${admin.name?.trim() || admin.email}`);
+        navigate(returnTo, { replace: true });
+      },
     });
   }
 

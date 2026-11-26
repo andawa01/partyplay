@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 
 import { useUploadImage } from "../../../hooks/use-admin-catalogue";
 import { IMAGE_ACCEPT, validateImageFile, type ImageUploadKind } from "../../../lib/image-upload";
+import { toast } from "../../../lib/toast";
 import { Button } from "../../ui/button";
 import { Label } from "../../ui/label";
 
@@ -47,6 +48,7 @@ export function ImageUploadField({
       {
         onSuccess: (uploaded) => {
           onChange(uploaded.imageUrl, uploaded.imagePublicId);
+          toast.success("Image uploaded");
         },
         onError: (uploadError) => {
           setLocalError(

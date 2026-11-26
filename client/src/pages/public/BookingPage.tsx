@@ -25,6 +25,7 @@ import {
   type BookingQuoteRequest,
 } from "../../lib/bookings";
 import { currentMonth, todayCalendarDate } from "../../lib/dates";
+import { toast } from "../../lib/toast";
 
 const EMPTY_DETAILS: BookingDetails = {
   name: "",
@@ -321,6 +322,9 @@ export default function BookingPage() {
         ...(parsed.data.notes === "" ? {} : { notes: parsed.data.notes }),
       },
       {
+        onSuccess: () => {
+          toast.success("Booking request sent");
+        },
         onError: (error) => {
           setSubmitError(error);
           if (isApiError(error) && error.code === "VALIDATION_ERROR") {
