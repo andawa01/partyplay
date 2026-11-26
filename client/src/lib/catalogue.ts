@@ -1,4 +1,4 @@
-import { formatMoney, formatMoneyCompact } from "./money";
+import { formatMoneyCompact } from "./money";
 
 export type PricingMode = "PER_DAY" | "FLAT";
 
@@ -81,17 +81,17 @@ export function priceLabel(
 ): PriceLabel {
   if (equipment.pricingMode === "FLAT") {
     if (equipment.flatPrice) {
-      return { amount: formatMoneyCompact(equipment.flatPrice, currency), unit: "flat rate" };
+      return { amount: formatMoneyCompact(equipment.flatPrice, currency), unit: null };
     }
     if (equipment.pricePerDay) {
-      return { amount: formatMoneyCompact(equipment.pricePerDay, currency), unit: "per day" };
+      return { amount: formatMoneyCompact(equipment.pricePerDay, currency), unit: "day" };
     }
   } else {
     if (equipment.pricePerDay) {
-      return { amount: formatMoneyCompact(equipment.pricePerDay, currency), unit: "per day" };
+      return { amount: formatMoneyCompact(equipment.pricePerDay, currency), unit: "day" };
     }
     if (equipment.flatPrice) {
-      return { amount: formatMoneyCompact(equipment.flatPrice, currency), unit: "flat rate" };
+      return { amount: formatMoneyCompact(equipment.flatPrice, currency), unit: null };
     }
   }
   return { amount: "Price on request", unit: null };
@@ -104,7 +104,7 @@ export function weeklyPriceLabel(
   if (equipment.pricingMode !== "PER_DAY" || !equipment.pricePerWeek) {
     return null;
   }
-  return `${formatMoney(equipment.pricePerWeek, currency)} per week`;
+  return `${formatMoneyCompact(equipment.pricePerWeek, currency)} per week`;
 }
 
 export function stockLabel(total: number): {

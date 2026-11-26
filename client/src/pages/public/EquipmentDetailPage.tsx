@@ -138,7 +138,7 @@ export default function EquipmentDetailPage() {
               <span className="text-3xl font-bold tracking-tight text-slate-900">
                 {price.amount}
               </span>
-              {price.unit ? <span className="text-slate-500">{price.unit}</span> : null}
+              {price.unit ? <span className="text-slate-500">/ {price.unit}</span> : null}
             </p>
             {weekly ? <p className="mt-1 text-sm text-slate-500">{weekly}</p> : null}
 

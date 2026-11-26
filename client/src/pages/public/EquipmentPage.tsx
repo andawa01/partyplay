@@ -83,19 +83,29 @@ export default function EquipmentPage() {
 
   return (
     <div className="pb-16">
-      <section className="bg-gradient-to-br from-brand-50 via-white to-blush-50">
-        <div className="mx-auto max-w-6xl px-4 py-12 text-center sm:py-16">
-          <p className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 ring-1 ring-brand-100">
-            <PartyPopper aria-hidden="true" className="size-3.5" />
-            Our equipment
-          </p>
-          <h1 className="mx-auto mt-4 max-w-2xl text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
-            High-quality party equipment for every occasion
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-slate-600">
-            Browse what is in the fleet, check the price and open an item to see everything included
-            before you pick dates.
-          </p>
+      <section className="mx-auto max-w-6xl px-4 pt-10">
+        <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-blush-50 via-white to-brand-100 px-6 py-12 ring-1 ring-blush-100 sm:px-10 sm:py-14">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-blush-200/60 blur-3xl"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-28 left-1/3 size-72 rounded-full bg-brand-100/70 blur-3xl"
+          />
+          <div className="relative max-w-2xl">
+            <p className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-brand-700 ring-1 ring-brand-100">
+              <PartyPopper aria-hidden="true" className="size-3.5" />
+              Our equipment
+            </p>
+            <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+              High-quality party equipment for every occasion
+            </h1>
+            <p className="mt-4 max-w-xl text-lg leading-relaxed text-slate-600">
+              Browse what is in the fleet, check the price and open an item to see everything
+              included before you pick dates.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -144,14 +154,14 @@ export default function EquipmentPage() {
               </div>
             </div>
 
-            <div className="mt-4 hidden rounded-2xl bg-gradient-to-br from-brand-700 to-brand-900 p-5 text-white lg:block">
+            <div className="mt-4 hidden rounded-2xl bg-gradient-to-br from-blush-100 to-blush-200 p-5 text-blush-900 ring-1 ring-blush-200 lg:block">
               <p className="text-sm font-semibold">Not sure what you need?</p>
-              <p className="mt-1 text-xs leading-relaxed text-brand-100">
+              <p className="mt-1 text-xs leading-relaxed text-blush-800">
                 Tell us about the venue and guest list and we will suggest a setup.
               </p>
               <Link
                 to="/contact"
-                className="mt-3 inline-flex items-center rounded-full bg-white px-4 py-2 text-xs font-semibold text-brand-800 transition hover:bg-brand-50"
+                className="mt-3 inline-flex items-center rounded-full bg-white px-4 py-2 text-xs font-semibold text-blush-800 shadow-sm transition hover:bg-blush-50"
               >
                 Talk to us
               </Link>
