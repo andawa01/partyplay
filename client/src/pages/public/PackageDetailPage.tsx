@@ -85,9 +85,7 @@ export default function PackageDetailPage() {
 
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            {pkg.isFeatured ? (
-              <Badge className="bg-blush-600 text-white">Most popular</Badge>
-            ) : null}
+            {pkg.isFeatured ? <Badge className="bg-blush-600 text-white">Featured</Badge> : null}
             {duration ? (
               <Badge variant="outline" className="gap-1">
                 <Clock aria-hidden="true" className="size-3.5" />

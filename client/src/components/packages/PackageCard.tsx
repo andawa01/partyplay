@@ -20,7 +20,7 @@ export function PackageCard({ pkg, currency }: { pkg: PartyPackage; currency: st
         <PackageImage src={pkg.imageUrl} alt={pkg.name} className="absolute inset-0 size-full" />
         {pkg.isFeatured ? (
           <Badge className="absolute left-3 top-3 bg-blush-600 text-white shadow-sm">
-            Most popular
+            Featured
           </Badge>
         ) : null}
         {duration ? (
