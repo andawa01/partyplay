@@ -1,5 +1,5 @@
 import type { ComponentType, ReactNode } from "react";
-import { AlertTriangle, Loader2, Plus } from "lucide-react";
+import { AlertTriangle, Plus } from "lucide-react";
 
 import { cn } from "../../../lib/cn";
 import { Alert, AlertDescription, AlertTitle } from "../../ui/alert";
@@ -159,15 +159,8 @@ export function FormActions({
       <Button type="button" variant="outline" onClick={onCancel} disabled={pending}>
         Cancel
       </Button>
-      <Button type="submit" disabled={pending} aria-busy={pending}>
-        {pending ? (
-          <>
-            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-            Saving…
-          </>
-        ) : (
-          submitLabel
-        )}
+      <Button type="submit" isLoading={pending}>
+        {pending ? "Saving…" : submitLabel}
       </Button>
     </DialogFooter>
   );
@@ -297,17 +290,9 @@ export function ConfirmDialog({
             type="button"
             variant={destructive ? "destructive" : "default"}
             onClick={onConfirm}
-            disabled={pending}
-            aria-busy={pending}
+            isLoading={pending}
           >
-            {pending ? (
-              <>
-                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-                Working…
-              </>
-            ) : (
-              confirmLabel
-            )}
+            {pending ? "Working…" : confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -15,6 +15,7 @@ export function BookingEstimate({
   endDate,
   quote,
   quotePending,
+  quoteRefreshing,
   quoteError,
   onRetryQuote,
   isRetryingQuote,
@@ -34,6 +35,7 @@ export function BookingEstimate({
   endDate: string;
   quote?: BookingQuote;
   quotePending: boolean;
+  quoteRefreshing: boolean;
   quoteError: unknown;
   onRetryQuote: () => void;
   isRetryingQuote: boolean;
@@ -58,6 +60,16 @@ export function BookingEstimate({
           <div>
             <h2 className="text-lg font-semibold tracking-tight text-slate-900">Your estimate</h2>
             <p className="mt-1 text-sm text-slate-600">Calculated on the server.</p>
+            {quoteRefreshing ? (
+              <p
+                role="status"
+                aria-live="polite"
+                className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-brand-700"
+              >
+                <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
+                Updating total…
+              </p>
+            ) : null}
           </div>
           <Badge variant="outline" className="shrink-0 bg-blush-50">
             Estimate
@@ -105,7 +117,13 @@ export function BookingEstimate({
               />
             ) : null}
 
-            {quote ? <QuoteBreakdown quote={quote} fallbackCurrency={currency} /> : null}
+            {quote ? (
+              <QuoteBreakdown
+                quote={quote}
+                fallbackCurrency={currency}
+                refreshing={quoteRefreshing}
+              />
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -149,14 +167,11 @@ export function BookingEstimate({
           type="submit"
           size="lg"
           className="w-full"
-          disabled={!canSubmit || isSubmitting}
-          aria-busy={isSubmitting}
+          disabled={!canSubmit}
+          isLoading={isSubmitting}
         >
           {isSubmitting ? (
-            <>
-              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-              Sending request…
-            </>
+            "Sending request…"
           ) : (
             <>
               <Send aria-hidden="true" className="size-4" />
@@ -177,9 +192,11 @@ export function BookingEstimate({
 function QuoteBreakdown({
   quote,
   fallbackCurrency,
+  refreshing,
 }: {
   quote: BookingQuote;
   fallbackCurrency: string;
+  refreshing: boolean;
 }) {
   const currency = quote.currency || fallbackCurrency;
   const hasLines = quote.packages.length > 0 || quote.items.length > 0;
@@ -242,7 +259,9 @@ function QuoteBreakdown({
         </div>
         <div className="flex justify-between gap-3 border-t border-slate-100 pt-2 text-base font-semibold text-slate-900">
           <dt>Estimated total</dt>
-          <dd>{formatMoney(quote.totalAmount, currency)}</dd>
+          <dd className={refreshing ? "animate-pulse" : undefined}>
+            {formatMoney(quote.totalAmount, currency)}
+          </dd>
         </div>
       </dl>
 

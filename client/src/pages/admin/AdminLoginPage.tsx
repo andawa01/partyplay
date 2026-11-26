@@ -1,4 +1,4 @@
-import { ArrowRight, Loader2, Lock, Mail, PartyPopper, ShieldCheck } from "lucide-react";
+import { ArrowRight, Lock, Mail, PartyPopper, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 
@@ -11,6 +11,7 @@ import { Label } from "../../components/ui/label";
 import { useAdminSession, useLogin } from "../../hooks/use-auth";
 import { isApiError } from "../../lib/api";
 import { adminReturnPath, loginFormSchema, type LoginFormValues } from "../../lib/auth";
+import { toast } from "../../lib/toast";
 
 export default function AdminLoginPage() {
   const location = useLocation();
@@ -66,7 +67,10 @@ export default function AdminLoginPage() {
     }
 
     login.mutate(parsed.data, {
-      onSuccess: () => navigate(returnTo, { replace: true }),
+      onSuccess: (admin) => {
+        toast.success(`Signed in as ${admin.name?.trim() || admin.email}`);
+        navigate(returnTo, { replace: true });
+      },
     });
   }
 
@@ -191,18 +195,9 @@ export default function AdminLoginPage() {
               </Link>
             </div>
 
-            <Button
-              type="submit"
-              size="lg"
-              className="mt-4 w-full"
-              disabled={login.isPending}
-              aria-busy={login.isPending}
-            >
+            <Button type="submit" size="lg" className="mt-4 w-full" isLoading={login.isPending}>
               {login.isPending ? (
-                <>
-                  <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-                  Signing in…
-                </>
+                "Signing in…"
               ) : (
                 <>
                   Sign in to admin

@@ -41,7 +41,7 @@ import type { BookingActionOption, BookingAvailabilityCheck } from "../../lib/ad
 import { adminStatusMeta, allowedBookingActions } from "../../lib/admin-bookings";
 import { formatDateTime, formatLongDate } from "../../lib/dates";
 import { formatMoney } from "../../lib/money";
-import { toastError } from "../../lib/toast";
+import { toast, toastError } from "../../lib/toast";
 import { cn } from "../../lib/cn";
 
 export default function AdminBookingDetailPage() {
@@ -100,7 +100,10 @@ export default function AdminBookingDetailPage() {
 
   function runCheck() {
     check.mutate(booking.id, {
-      onSuccess: setAvailability,
+      onSuccess: (result) => {
+        setAvailability(result);
+        toast.success("Availability checked");
+      },
       onError: (error) => toastError(error, "The stock check could not run."),
     });
   }

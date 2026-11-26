@@ -10,9 +10,10 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { EquipmentCard, EquipmentCardSkeleton } from "../../components/catalogue/EquipmentCard";
-import { PackageCard } from "../../components/packages/PackageCard";
+import { PackageCard, PackageCardSkeleton } from "../../components/packages/PackageCard";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import { Skeleton } from "../../components/ui/skeleton";
 import { useCategories, useEquipmentList } from "../../hooks/use-catalogue";
 import { usePackages } from "../../hooks/use-packages";
 import { useSite } from "../../hooks/use-site";
@@ -221,7 +222,7 @@ export default function HomePage() {
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             {categories.isPending
               ? Array.from({ length: 3 }, (_, index) => (
-                  <div key={index} className="h-20 animate-pulse rounded-2xl bg-white/70" />
+                  <Skeleton key={index} className="h-20 rounded-2xl bg-white/80" />
                 ))
               : rootCategories.map((category) => (
                   <Link
@@ -265,7 +266,7 @@ export default function HomePage() {
       </section>
 
       {/* Packages */}
-      {shownPackages.length > 0 ? (
+      {packages.isPending || shownPackages.length > 0 ? (
         <section className="bg-brand-50/70 py-12" aria-labelledby="packages-heading">
           <div className="mx-auto max-w-6xl px-4">
             <div className="flex flex-wrap items-end justify-between gap-3">
@@ -291,9 +292,13 @@ export default function HomePage() {
             </div>
 
             <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {shownPackages.map((pkg) => (
-                <PackageCard key={pkg.id} pkg={pkg} currency={currency} />
-              ))}
+              {packages.isPending
+                ? Array.from({ length: PACKAGE_LIMIT }, (_, index) => (
+                    <PackageCardSkeleton key={index} />
+                  ))
+                : shownPackages.map((pkg) => (
+                    <PackageCard key={pkg.id} pkg={pkg} currency={currency} />
+                  ))}
             </div>
           </div>
         </section>

@@ -15,7 +15,7 @@ import { Button } from "../../components/ui/button";
 import { ErrorState } from "../../components/ui/error-state";
 import { Skeleton } from "../../components/ui/skeleton";
 import { useSite } from "../../hooks/use-site";
-import { mailtoHref, siteSocialLinks, telHref, whatsAppHref } from "../../lib/site";
+import { formatPhone, mailtoHref, siteSocialLinks, telHref, whatsAppHref } from "../../lib/site";
 
 const cardClass =
   "group relative flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300";
@@ -197,7 +197,7 @@ export default function ContactPage() {
             <ContactCard
               icon={Phone}
               label="Phone"
-              value={site.contactPhone}
+              value={formatPhone(site.contactPhone)}
               href={telHref(site.contactPhone)}
             />
           ) : null}
@@ -205,7 +205,7 @@ export default function ContactPage() {
             <ContactCard
               icon={MessageCircle}
               label="WhatsApp"
-              value={site.contactWhatsApp}
+              value={formatPhone(site.contactWhatsApp)}
               href={whatsAppHref(site.contactWhatsApp)}
               external
             />

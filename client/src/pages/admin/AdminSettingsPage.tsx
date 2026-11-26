@@ -1,4 +1,4 @@
-import { KeyRound, Loader2, Mail, ShieldCheck, UserRound } from "lucide-react";
+import { KeyRound, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -210,19 +210,8 @@ export default function AdminSettingsPage() {
               <p className="text-xs leading-relaxed text-slate-500">
                 You stay signed in on this device after changing the password.
               </p>
-              <Button
-                type="submit"
-                disabled={changePassword.isPending}
-                aria-busy={changePassword.isPending}
-              >
-                {changePassword.isPending ? (
-                  <>
-                    <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-                    Updating…
-                  </>
-                ) : (
-                  "Update password"
-                )}
+              <Button type="submit" isLoading={changePassword.isPending}>
+                {changePassword.isPending ? "Updating…" : "Update password"}
               </Button>
             </div>
           </form>

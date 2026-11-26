@@ -24,7 +24,7 @@ import { isApiError } from "../lib/api";
 import { adminRoleLabel, type AdminRole } from "../lib/auth";
 import { cn } from "../lib/cn";
 import { clearSession } from "../lib/session";
-import { toastError } from "../lib/toast";
+import { toast, toastError } from "../lib/toast";
 
 const links: Array<{
   to: string;
@@ -52,6 +52,7 @@ export default function AdminLayout() {
     logout.mutate(undefined, {
       onSuccess: () => {
         clearSession(queryClient);
+        toast.success("Signed out");
         navigate("/admin/login", { replace: true });
       },
       onError: (error) => {

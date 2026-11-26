@@ -66,12 +66,13 @@ export function useChangePassword() {
 
 export function useForgotPassword() {
   return useMutation({
-    mutationFn: async (input: ForgotPasswordInput) => {
-      await apiFetch<{ message: string }>("/api/auth/forgot-password", {
-        method: "POST",
-        body: JSON.stringify(input),
-      });
-    },
+    mutationFn: async (input: ForgotPasswordInput) =>
+      (
+        await apiFetch<{ message: string }>("/api/auth/forgot-password", {
+          method: "POST",
+          body: JSON.stringify(input),
+        })
+      ).data,
     retry: false,
   });
 }

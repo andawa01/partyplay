@@ -1,8 +1,19 @@
-import { QueryClient } from "@tanstack/react-query";
+import { MutationCache, QueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "./api";
+import { toastError } from "./toast";
+
+/**
+ * Every mutation reports its failure through the shared toast, using the message the
+ * backend returned. Components may still show inline detail; toastError marks the error
+ * so the two paths never produce two toasts.
+ */
+const mutationCache = new MutationCache({
+  onError: (error) => toastError(error),
+});
 
 export const queryClient = new QueryClient({
+  mutationCache,
   defaultOptions: {
     queries: {
       staleTime: 30_000,

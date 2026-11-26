@@ -9,6 +9,7 @@ import { Label } from "../../components/ui/label";
 import { useForgotPassword } from "../../hooks/use-auth";
 import { isApiError } from "../../lib/api";
 import { forgotPasswordFormSchema } from "../../lib/auth";
+import { toast } from "../../lib/toast";
 
 export default function AdminForgotPasswordPage() {
   const forgotPassword = useForgotPassword();
@@ -31,7 +32,11 @@ export default function AdminForgotPasswordPage() {
     }
 
     setFieldError(null);
-    forgotPassword.mutate(parsed.data);
+    forgotPassword.mutate(parsed.data, {
+      onSuccess: (result) => {
+        toast.success(result.message);
+      },
+    });
   }
 
   return (

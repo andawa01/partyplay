@@ -9,6 +9,7 @@ import { Label } from "../../components/ui/label";
 import { useResetPassword } from "../../hooks/use-auth";
 import { isApiError } from "../../lib/api";
 import { resetPasswordFormSchema, type ResetPasswordFormValues } from "../../lib/auth";
+import { toast } from "../../lib/toast";
 
 function readResetToken(): string {
   // The token lives in the fragment so it never reaches server logs or a Referer header.
@@ -67,6 +68,7 @@ export default function AdminResetPasswordPage() {
       { token, newPassword: parsed.data.newPassword },
       {
         onSuccess: () => {
+          toast.success("Password updated");
           window.history.replaceState(null, "", "/admin/reset-password");
         },
       },

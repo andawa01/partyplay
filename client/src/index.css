@@ -34,6 +34,53 @@
     @apply bg-white text-slate-800 antialiased;
   }
 
+  /* One shimmer sweep shared by skeletons and images that are still loading. */
+  @keyframes skeleton-shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .skeleton-shimmer {
+    transform: translateX(-100%);
+    background-image: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+    animation: skeleton-shimmer 1.6s infinite;
+  }
+
+  @keyframes route-progress {
+    0% {
+      width: 0;
+      opacity: 1;
+    }
+    22% {
+      width: 58%;
+      opacity: 1;
+    }
+    65% {
+      width: 86%;
+      opacity: 1;
+    }
+    100% {
+      width: 100%;
+      opacity: 0;
+    }
+  }
+
+  .route-progress {
+    animation: route-progress 900ms ease-out forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-shimmer {
+      animation: none;
+    }
+
+    .route-progress {
+      animation: none;
+      opacity: 0;
+    }
+  }
+
   ::selection {
     @apply bg-blush-200 text-blush-900;
   }
